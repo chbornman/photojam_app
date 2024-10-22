@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'current_journey_page.dart';
+import 'journeys/the_art_of_storytelling.dart';
+import 'journeys/landscapes.dart';
+import 'journeys/walk_the_streets.dart';
+import 'journeys/abstract_photography.dart';
 
 class JourneyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Jam Journey'),
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -19,37 +19,88 @@ class JourneyPage extends StatelessWidget {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => CurrentJourneyPage()),
-                );
-              },
-              child: Text(
-                'the ART of STORYTELLING',
-                style: TextStyle(fontSize: 18, color: Colors.blue, decoration: TextDecoration.underline),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => TheArtOfStorytellingPage()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  foregroundColor: Colors.black,
+                  backgroundColor: Colors.amberAccent,
+                ),
+                child: Text('the ART of STORYTELLING', style: TextStyle(fontSize: 18)),
               ),
             ),
             SizedBox(height: 20),
+
             // Previous Journeys section
             Text(
               'Previous Journeys',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
-            // Placeholder for previous journeys
+
+            // Previous journeys with buttons
             Expanded(
               child: ListView(
                 children: [
-                  ListTile(
-                    title: Text('Previous Journey 1'),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => AbstractPhotographyPage()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        foregroundColor: Colors.black,
+                        backgroundColor: Colors.amberAccent,
+                      ),
+                      child: Text('Abstract Photography', style: TextStyle(fontSize: 18)),
+                    ),
                   ),
-                  ListTile(
-                    title: Text('Previous Journey 2'),
+                  SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => WalkTheStreetsPage()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        foregroundColor: Colors.black,
+                        backgroundColor: Colors.amberAccent,
+                      ),
+                      child: Text('Walk the Streets', style: TextStyle(fontSize: 18)),
+                    ),
                   ),
-                  ListTile(
-                    title: Text('Previous Journey 3'),
+                  SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => LandscapesPage()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        foregroundColor: Colors.black,
+                        backgroundColor: Colors.amberAccent,
+                      ),
+                      child: Text('Lushous Landscapes', style: TextStyle(fontSize: 18)),
+                    ),
                   ),
                 ],
               ),

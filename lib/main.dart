@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'home_page.dart';  // Import home page
 import 'journey_page.dart';  // Import journey page
 import 'profile_page.dart';  // Import profile page
+import 'signup_page.dart';         // Import the Sign Up Page
+import 'journeys/the_art_of_storytelling.dart'; // Import the Current Journey Page
 
 void main() {
   runApp(MyApp());
@@ -79,25 +81,26 @@ class _MainPageState extends State<MainPage> {
                 ),
               ),
             ),
+            // Join the Jam link to SignUpPage
             ListTile(
-              leading: Icon(Icons.music_note),
+              leading: Icon(Icons.camera_alt),
               title: Text('Join the Jam'),
               onTap: () {
-                Navigator.pop(context);  // Close the drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SignUpPage()), // Navigate to Sign Up Page
+                );
               },
             ),
+            // Journey link to CurrentJourneyPage
             ListTile(
-              leading: Icon(Icons.directions_run),
-              title: Text('Current Jam Journey'),
+              leading: Icon(Icons.pedal_bike),
+              title: Text('Current Journey'),
               onTap: () {
-                Navigator.pop(context);  // Close the drawer
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.person),
-              title: Text('Member Center'),
-              onTap: () {
-                Navigator.pop(context);  // Close the drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => TheArtOfStorytellingPage()), // Navigate to Current Journey Page
+                );
               },
             ),
           ],

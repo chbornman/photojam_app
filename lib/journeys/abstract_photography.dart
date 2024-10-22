@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 
-class CurrentJourneyPage extends StatelessWidget {
+class AbstractPhotographyPage extends StatelessWidget {
   final List<String> lessons = [
-    'Lesson 1: Introduction to Storytelling',
-    'Lesson 2: Crafting Your Narrative',
-    'Lesson 3: Developing Characters',
-    'Lesson 4: The Art of Dialogue',
-    'Lesson 5: Visual Storytelling',
-    'Lesson 6: Storytelling in Photography',
-    'Lesson 7: Editing Your Story',
+    'Lesson 1: Light and Shadow',
+    'Lesson 2: Constructivism',
+    'Lesson 3: Minimalism',
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('ART of STORYTELLING'),
+        title: Text('Abstract Photography'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

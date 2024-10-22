@@ -36,4 +36,5 @@ flutter:
     - assets/images/photo7.jpeg
     - assets/images/photo8.jpeg
     - assets/images/photo9.jpeg
+    - assets/images/qrcode.png
   uses-material-design: true
