@@ -26,6 +26,7 @@ flutter_icons:
 flutter:
   assets:
     - assets/icon/app_icon.png
+    - assets/images/current_week.jpg
     - assets/images/photo1.jpeg
     - assets/images/photo2.jpeg
     - assets/images/photo3.jpeg
