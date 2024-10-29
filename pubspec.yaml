@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   appwrite: ^13.0.0 
+  flutter_svg: ^2.0.10+1
+  provider: ^6.1.2
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.1
@@ -37,4 +39,9 @@ flutter:
     - assets/images/photo8.jpeg
     - assets/images/photo9.jpeg
     - assets/images/qrcode.png
+    - assets/google_icon.svg
+    - assets/apple_icon.svg
+    - assets/github_icon.svg
+    - assets/twitter_icon.svg
+
   uses-material-design: true
