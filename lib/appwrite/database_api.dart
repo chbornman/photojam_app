@@ -47,4 +47,12 @@ class DatabaseAPI {
         collectionId: COLLECTION_MESSAGES,
         documentId: id);
   }
+
+
+  Future<DocumentList> getJams() {
+    return databases.listDocuments(
+      databaseId: APPWRITE_DATABASE_ID,
+      collectionId: COLLECTION_JAMS,
+    );
+  }
 }
