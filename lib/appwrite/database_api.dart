@@ -48,11 +48,42 @@ class DatabaseAPI {
         documentId: id);
   }
 
-
   Future<DocumentList> getJams() {
     return databases.listDocuments(
       databaseId: APPWRITE_DATABASE_ID,
       collectionId: COLLECTION_JAMS,
     );
+  }
+
+  /// Retrieves a specific journey by its ID.
+  Future<Document> getJourneyById(String journeyId) async {
+    try {
+      return await databases.getDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JOURNEYS,
+        documentId: journeyId,
+      );
+    } catch (e) {
+      print('Error fetching journey: $e');
+      rethrow;
+    }
+  }
+
+  /// Retrieves a list of past journeys that the user has participated in.
+  Future<DocumentList> getPastJourneys() async {
+    try {
+      // This assumes that there's a field like 'participants' in each journey document
+      // containing user IDs, and it checks if the current user is in this list.
+      return await databases.listDocuments(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JOURNEYS,
+        queries: [
+          Query.equal('participants', auth.userid) // Adjust as per actual field name
+        ],
+      );
+    } catch (e) {
+      print('Error fetching past journeys: $e');
+      rethrow;
+    }
   }
 }

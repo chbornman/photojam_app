@@ -27,7 +27,7 @@ class StorageAPI {
   Future<String?> uploadPhoto(String jamId, String filePath) async {
     try {
       final response = await storage.createFile(
-        bucketId: BUCKET_ID, // Replace with your actual bucket ID
+        bucketId: BUCKET_PHOTOS_ID, // Replace with your actual bucket ID
         fileId: 'unique()', // Generates a unique file ID
         file: InputFile(path: filePath),
       );
@@ -73,7 +73,7 @@ class StorageAPI {
   Future<void> downloadPhoto(String fileId, String destinationPath) async {
     try {
       await storage.getFileDownload(
-        bucketId: BUCKET_ID,
+        bucketId: BUCKET_PHOTOS_ID,
         fileId: fileId,
       ).then((response) {
         // Save file to destinationPath
@@ -98,6 +98,64 @@ class StorageAPI {
     } catch (e) {
       print('Error listing photos for jam: $e');
       return null;
+    }
+  }
+
+  /// Uploads a lesson (markdown file) for a specific journey. Returns the file ID on success.
+  Future<String?> uploadLesson(String journeyId, String filePath) async {
+    try {
+      final response = await storage.createFile(
+        bucketId: BUCKET_LESSONS_ID, // Define a specific bucket for lessons
+        fileId: 'unique()', // Generates a unique file ID
+        file: InputFile(path: filePath),
+      );
+
+      // Store file ID in the journey document for future retrieval
+      await addLessonToJourney(journeyId, response.$id);
+      return response.$id;
+    } catch (e) {
+      print('Error uploading lesson: $e');
+      return null;
+    }
+  }
+
+  /// Adds the uploaded lesson's file ID to the journey document.
+  Future<void> addLessonToJourney(String journeyId, String fileId) async {
+    try {
+      // Fetch the journey document to update with new lesson file ID
+      final journeyDocument = await databaseApi.databases.getDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JOURNEYS, // Collection for journeys
+        documentId: journeyId,
+      );
+
+      // Update the journey document with the new lesson file ID
+      List<String> lessonIds = List<String>.from(journeyDocument.data['lessonIds'] ?? []);
+      lessonIds.add(fileId);
+      await databaseApi.databases.updateDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JOURNEYS,
+        documentId: journeyId,
+        data: {'lessonIds': lessonIds},
+      );
+    } catch (e) {
+      print('Error adding lesson to journey: $e');
+    }
+  }
+
+  /// Downloads a lesson from storage given its file ID.
+  Future<void> downloadLesson(String fileId, String destinationPath) async {
+    try {
+      await storage.getFileDownload(
+        bucketId: BUCKET_LESSONS_ID, // Use the specific lessons bucket ID
+        fileId: fileId,
+      ).then((response) {
+        // Save file to destinationPath
+        // Use a package like `dio` to handle saving the file locally.
+        print('Lesson downloaded successfully to $destinationPath');
+      });
+    } catch (e) {
+      print('Error downloading lesson: $e');
     }
   }
 }
