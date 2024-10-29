@@ -77,7 +77,14 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Appwrite App'),
+        title: const Text(
+          'Photo Jam',
+          style: TextStyle(
+            fontSize: 40.0, // Adjust this value to set the desired text size
+          ),
+        ),
+        foregroundColor: Colors.black,
+        backgroundColor: Colors.amber,
       ),
       body: Center(
         child: Padding(
@@ -119,15 +126,6 @@ class _LoginPageState extends State<LoginPage> {
                 },
                 child: const Text('Create Account'),
               ),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const MessagesPage()));
-                },
-                child: const Text('Read Messages as Guest'),
-              ),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -153,6 +151,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
+      backgroundColor: const Color.fromARGB(255, 243, 243, 243),
     );
   }
 }

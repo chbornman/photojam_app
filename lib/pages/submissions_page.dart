@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class ProfilePage extends StatelessWidget {
+class SubmissionsPage extends StatelessWidget {
   // Mock data for the current week submission with three images
   final List<String> currentSubmission = [
     'assets/images/current_week.jpg',
