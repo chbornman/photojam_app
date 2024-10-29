@@ -28,8 +28,7 @@ class AuthAPI extends ChangeNotifier {
   AuthAPI() {
     init();
     loadUser().then((_) {
-      // Only prints after loadUser completes successfully
-      print('Authenticated user ID: $userid');
+      print('Authenticated user ID: $userid'); // Debug print
     });
   }
 
@@ -42,6 +41,7 @@ class AuthAPI extends ChangeNotifier {
     account = Account(client);
   }
 
+  /// Fetch user information and set authentication status
   Future<User?> loadUser() async {
     try {
       final user = await account.get();
@@ -56,8 +56,15 @@ class AuthAPI extends ChangeNotifier {
     return _currentUser;
   }
 
-  Future<User> createUser(
-      {required String email, required String password}) async {
+  /// Ensures that the user ID is available by loading the user if necessary
+  Future<String?> fetchUserId() async {
+    if (_currentUser == null) {
+      await loadUser();
+    }
+    return userid;
+  }
+
+  Future<User> createUser({required String email, required String password}) async {
     try {
       final user = await account.create(
           userId: ID.unique(),
@@ -70,11 +77,9 @@ class AuthAPI extends ChangeNotifier {
     }
   }
 
-  Future<Session> createEmailPasswordSession(
-      {required String email, required String password}) async {
+  Future<Session> createEmailPasswordSession({required String email, required String password}) async {
     try {
-      final session =
-          await account.createEmailPasswordSession(email: email, password: password);
+      final session = await account.createEmailPasswordSession(email: email, password: password);
       _currentUser = await account.get();
       _status = AuthStatus.authenticated;
       return session;
@@ -86,7 +91,6 @@ class AuthAPI extends ChangeNotifier {
   signInWithProvider({required OAuthProvider provider}) async {
     try {
       final session = await account.createOAuth2Session(provider: provider);
-      /* TODO need to catch PlatformException (PlatformException(CANCELED, User canceled login, null, null)) when user cancels login from Oauth provider */
       _currentUser = await account.get();
       _status = AuthStatus.authenticated;
       return session;

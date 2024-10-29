@@ -43,22 +43,17 @@ class DatabaseAPI {
     }
   }
 
-  /// Retrieves a list of past journeys that the user has participated in.
-  Future<DocumentList> getPastJourneys() async {
-    try {
-      return await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
-        queries: [
-          Query.equal(
-              'participants', auth.userid) // Adjust as per actual field name
-        ],
-      );
-    } catch (e) {
-      print('Error fetching past journeys: $e');
-      rethrow;
-    }
+ Future<DocumentList> getPastJourneys() async {
+  try {
+    return await databases.listDocuments(
+      databaseId: APPWRITE_DATABASE_ID,
+      collectionId: COLLECTION_JOURNEYS,
+    );
+  } catch (e) {
+    print('Error fetching past journeys: $e');
+    rethrow;
   }
+}
 
   /// Retrieves a list of past jams that the user has participated in.
   Future<List<Document>> getPastJams() async {
@@ -68,7 +63,8 @@ class DatabaseAPI {
         databaseId: APPWRITE_DATABASE_ID,
         collectionId: COLLECTION_JAMS,
         queries: [
-          Query.equal('participants', auth.userid) // Adjust field as per your schema
+          Query.equal(
+              'participants', auth.userid) // Adjust field as per your schema
         ],
       );
 
