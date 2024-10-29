@@ -4,7 +4,6 @@ import 'package:photojam_app/pages/journey_page.dart';
 import 'package:photojam_app/pages/messages_page.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/pages/submissions_page.dart';
-import 'package:photojam_app/pages/signup_page.dart';
 
 class TabsPage extends StatefulWidget {
   const TabsPage({Key? key}) : super(key: key);
