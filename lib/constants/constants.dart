@@ -9,6 +9,5 @@ const String COLLECTION_JOURNEYS = "67213b090020e5283610";
 const String COLLECTION_SUBMISSIONS = "67213cde000525ad9f2d";
 
 //Storage
-const String APPWRITE_STORAGE_ID = "";
-const String BUCKET_PHOTOS_ID = "";
-const String BUCKET_LESSONS_ID = "";
+const String BUCKET_PHOTOS_ID = "67213a72003b1857f9be";
+const String BUCKET_LESSONS_ID = "672139d200007a432b87";
