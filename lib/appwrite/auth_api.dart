@@ -14,25 +14,27 @@ class AuthAPI extends ChangeNotifier {
   Client client = Client();
   late final Account account;
 
-  late User _currentUser;
-
+  User? _currentUser;
   AuthStatus _status = AuthStatus.uninitialized;
 
   // Getter methods
-  User get currentUser => _currentUser;
+  User? get currentUser => _currentUser;
   AuthStatus get status => _status;
-  String? get username => _currentUser.name;
-  String? get email => _currentUser.email;
-  String? get userid => _currentUser.$id;
+  String? get username => _currentUser?.name;
+  String? get email => _currentUser?.email;
+  String? get userid => _currentUser?.$id;
 
   // Constructor
   AuthAPI() {
     init();
-    loadUser();
+    loadUser().then((_) {
+      // Only prints after loadUser completes successfully
+      print('Authenticated user ID: $userid');
+    });
   }
 
   // Initialize the Appwrite client
-  init() {
+  void init() {
     client
         .setEndpoint(APPWRITE_URL)
         .setProject(APPWRITE_PROJECT_ID)
@@ -40,16 +42,18 @@ class AuthAPI extends ChangeNotifier {
     account = Account(client);
   }
 
-  loadUser() async {
+  Future<User?> loadUser() async {
     try {
       final user = await account.get();
       _status = AuthStatus.authenticated;
       _currentUser = user;
     } catch (e) {
       _status = AuthStatus.unauthenticated;
+      _currentUser = null;
     } finally {
       notifyListeners();
     }
+    return _currentUser;
   }
 
   Future<User> createUser(

@@ -125,7 +125,6 @@ class _TabsPageState extends State<TabsPage> {
     BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
     BottomNavigationBarItem(icon: Icon(Icons.directions_run), label: "Journey"),
     BottomNavigationBarItem(icon: Icon(Icons.subscriptions), label: "Submissions"),
-    BottomNavigationBarItem(icon: Icon(Icons.message), label: "Messages"),
     BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: "Account"),
   ],
 ),
