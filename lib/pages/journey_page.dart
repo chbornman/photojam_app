@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'journeys/the_art_of_storytelling.dart';
-import 'journeys/landscapes.dart';
-import 'journeys/walk_the_streets.dart';
-import 'journeys/abstract_photography.dart';
+import '../journeys/the_art_of_storytelling.dart';
+import '../journeys/landscapes.dart';
+import '../journeys/walk_the_streets.dart';
+import '../journeys/abstract_photography.dart';
 
 class JourneyPage extends StatelessWidget {
   @override
