@@ -22,32 +22,6 @@ class DatabaseAPI {
     databases = Databases(client);
   }
 
-  Future<DocumentList> getMessages() {
-    return databases.listDocuments(
-      databaseId: APPWRITE_DATABASE_ID,
-      collectionId: COLLECTION_MESSAGES,
-    );
-  }
-
-  Future<Document> addMessage({required String message}) {
-    return databases.createDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_MESSAGES,
-        documentId: ID.unique(),
-        data: {
-          'text': message,
-          'date': DateTime.now().toString(),
-          'user_id': auth.userid
-        });
-  }
-
-  Future<dynamic> deleteMessage({required String id}) {
-    return databases.deleteDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_MESSAGES,
-        documentId: id);
-  }
-
   Future<DocumentList> getJams() {
     return databases.listDocuments(
       databaseId: APPWRITE_DATABASE_ID,
@@ -72,17 +46,43 @@ class DatabaseAPI {
   /// Retrieves a list of past journeys that the user has participated in.
   Future<DocumentList> getPastJourneys() async {
     try {
-      // This assumes that there's a field like 'participants' in each journey document
-      // containing user IDs, and it checks if the current user is in this list.
       return await databases.listDocuments(
         databaseId: APPWRITE_DATABASE_ID,
         collectionId: COLLECTION_JOURNEYS,
         queries: [
-          Query.equal('participants', auth.userid) // Adjust as per actual field name
+          Query.equal(
+              'participants', auth.userid) // Adjust as per actual field name
         ],
       );
     } catch (e) {
       print('Error fetching past journeys: $e');
+      rethrow;
+    }
+  }
+
+  /// Retrieves a list of past jams that the user has participated in.
+  Future<List<Document>> getPastJams() async {
+    try {
+      // Fetch documents where the user is listed as a participant
+      final result = await databases.listDocuments(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JAMS,
+        queries: [
+          Query.equal('participants', auth.userid) // Adjust field as per your schema
+        ],
+      );
+
+      // Sort documents by date in descending order (most recent first)
+      List<Document> sortedDocuments = result.documents;
+      sortedDocuments.sort((a, b) {
+        final dateA = DateTime.parse(a.data['date']);
+        final dateB = DateTime.parse(b.data['date']);
+        return dateB.compareTo(dateA); // Descending order
+      });
+
+      return sortedDocuments;
+    } catch (e) {
+      print('Error fetching past jams: $e');
       rethrow;
     }
   }

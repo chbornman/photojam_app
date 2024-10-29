@@ -1,7 +1,6 @@
 import 'package:photojam_app/pages/account_page.dart';
 import 'package:photojam_app/pages/home_page.dart';
 import 'package:photojam_app/pages/journey_page.dart';
-import 'package:photojam_app/pages/messages_page.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/pages/submissions_page.dart';
 
@@ -19,7 +18,6 @@ class _TabsPageState extends State<TabsPage> {
     HomePage(),
     JourneyPage(),
     SubmissionsPage(),
-    MessagesPage(),
     AccountPage(),
   ];
 
@@ -99,21 +97,11 @@ class _TabsPageState extends State<TabsPage> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.message),
-              title: Text('Messages'),
-              onTap: () {
-                setState(() {
-                  _currentIndex = 3; // Switches to Messages screen
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
               leading: Icon(Icons.account_circle),
               title: Text('Account'),
               onTap: () {
                 setState(() {
-                  _currentIndex = 4; // Switches to Account screen
+                  _currentIndex = 3; // Switches to Account screen
                 });
                 Navigator.pop(context);
               },

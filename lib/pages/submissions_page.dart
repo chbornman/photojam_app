@@ -1,143 +1,115 @@
 import 'package:flutter/material.dart';
+import 'package:photojam_app/appwrite/database_api.dart';
+import 'package:photojam_app/appwrite/storage_api.dart';
+import 'dart:io';
 
-class SubmissionsPage extends StatelessWidget {
-  // Mock data for the current week submission with three images
-  final List<String> currentSubmission = [
-    'assets/images/current_week.jpg',
-    'assets/icon/app_icon.png',
-    'assets/icon/app_icon.png',
-  ];
+class SubmissionsPage extends StatefulWidget {
+  @override
+  _SubmissionsPageState createState() => _SubmissionsPageState();
+}
 
-  // Mock data for the previous submissions
-  final List<Map<String, List<String>>> previousSubmissions = [
-    {
-      'the ART of STORYTELLING': [
-        'assets/images/photo1.jpeg',
-        'assets/images/photo2.jpeg',
-        'assets/images/photo3.jpeg',
-      ]
-    },
-    {
-      'EVERYDAY MOMENTS': [
-        'assets/images/photo4.jpeg',
-        'assets/images/photo5.jpeg',
-        'assets/images/photo6.jpeg',
-      ]
-    },
-    {
-      'the GESTURE': [
-        'assets/images/photo7.jpeg',
-        'assets/images/photo8.jpeg',
-        'assets/images/photo9.jpeg',
-      ]
-    },
-    {
-      'Week 4': [
-        'assets/images/photo1.jpeg',
-        'assets/images/photo2.jpeg',
-        'assets/images/photo3.jpeg',
-      ]
-    },
-    {
-      'Week 5': [
-        'assets/images/photo4.jpeg',
-        'assets/images/photo5.jpeg',
-        'assets/images/photo6.jpeg',
-      ]
-    },
-    {
-      'Week 6': [
-        'assets/images/photo7.jpeg',
-        'assets/images/photo8.jpeg',
-        'assets/images/photo9.jpeg',
-      ]
-    },
-    // Add more weeks as needed
-  ];
+class _SubmissionsPageState extends State<SubmissionsPage> {
+  final databaseApi = DatabaseAPI();
+  final storageApi = StorageAPI();
+  List<Map<String, dynamic>> pastSubmissions = [];
+  bool isLoading = true; // To manage loading state
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPastSubmissions();
+  }
+
+  Future<void> _fetchPastSubmissions() async {
+    try {
+      // Retrieve past jams that the user participated in
+      final response = await databaseApi.getPastJams(); // Implement getPastJams in DatabaseAPI
+      
+      // Process each jam to get title, date, and images
+      List<Map<String, dynamic>> submissions = [];
+      for (var doc in response) {
+        final title = doc.data['title'] ?? 'Unnamed Jam';
+        final date = doc.data['date'] ?? 'Unknown Date';
+        final photoIds = List<String>.from(doc.data['photoIds'] ?? []);
+
+        // Fetch each photo associated with this jam
+        List<File> images = [];
+        for (var photoId in photoIds) {
+          final filePath = '/path/to/save/$photoId.jpg'; // Define a local path to save images
+          await storageApi.downloadPhoto(photoId, filePath);
+          images.add(File(filePath));
+        }
+
+        submissions.add({'title': title, 'date': date, 'images': images});
+      }
+
+      setState(() {
+        pastSubmissions = submissions;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching past submissions: $e');
+      setState(() {
+        isLoading = false; // Stop loading on error
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: Text("Past Jam Submissions")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Current Week Submission section
-            Text(
-              'Current Week Submission',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: currentSubmission
-                  .map(
-                    (image) => Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Image.asset(
-                          image,
-                          fit: BoxFit.cover,
-                          height: 100,  // Set a height for the images
-                        ),
-                      ),
+        child: isLoading
+            ? Center(child: CircularProgressIndicator())
+            : pastSubmissions.isEmpty
+                ? Center(
+                    child: Text(
+                      "No submissions yet",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                   )
-                  .toList(),
-            ),
-            SizedBox(height: 20),
-            // Previous Submissions section
-            Text(
-              'Previous Submissions',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            Expanded(
-              child: ListView.builder(
-                itemCount: previousSubmissions.length,
-                itemBuilder: (context, index) {
-                  String week = previousSubmissions[index].keys.first;
-                  List<String> images = previousSubmissions[index][week]!;
+                : ListView.builder(
+                    itemCount: pastSubmissions.length,
+                    itemBuilder: (context, index) {
+                      final submission = pastSubmissions[index];
+                      final title = submission['title'];
+                      final date = submission['date'];
+                      final images = submission['images'] as List<File>;
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          week,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '$title ($date)',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Row(
+                              children: images
+                                  .map((image) => Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(4.0),
+                                          child: Image.file(
+                                            image,
+                                            fit: BoxFit.cover,
+                                            height: 100,
+                                          ),
+                                        ),
+                                      ))
+                                  .toList(),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: images
-                              .map(
-                                (image) => Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(4.0),
-                                    child: Image.asset(
-                                      image,
-                                      fit: BoxFit.cover,
-                                      height: 100,  // Set a height for the images
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+                      );
+                    },
+                  ),
       ),
     );
   }
