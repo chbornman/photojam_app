@@ -64,22 +64,22 @@ class AuthAPI extends ChangeNotifier {
     return userid;
   }
 
-  Future<User> createUser({required String email, required String password}) async {
+  Future<User> createUser(
+      {required String email, required String password}) async {
     try {
       final user = await account.create(
-          userId: ID.unique(),
-          email: email,
-          password: password,
-          name: 'Cal B');
+          userId: ID.unique(), email: email, password: password, name: 'Cal B');
       return user;
     } finally {
       notifyListeners();
     }
   }
 
-  Future<Session> createEmailPasswordSession({required String email, required String password}) async {
+  Future<Session> createEmailPasswordSession(
+      {required String email, required String password}) async {
     try {
-      final session = await account.createEmailPasswordSession(email: email, password: password);
+      final session = await account.createEmailPasswordSession(
+          email: email, password: password);
       _currentUser = await account.get();
       _status = AuthStatus.authenticated;
       return session;
@@ -114,5 +114,28 @@ class AuthAPI extends ChangeNotifier {
 
   updatePreferences({required String bio}) async {
     return account.updatePrefs(prefs: {'bio': bio});
+  }
+
+  // Method to update the user's name
+  Future<void> updateName(String newName) async {
+    try {
+      await account.updateName(name: newName);
+      _currentUser = await account.get(); // Refresh current user data
+      notifyListeners(); // Notify listeners of the change
+    } catch (e) {
+      print("Error updating name: $e");
+      rethrow;
+    }
+  }
+
+// Method to update the user's password
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      await account.updatePassword(password: newPassword);
+      notifyListeners(); // Notify listeners if there's any UI dependency
+    } catch (e) {
+      print("Error updating password: $e");
+      rethrow;
+    }
   }
 }

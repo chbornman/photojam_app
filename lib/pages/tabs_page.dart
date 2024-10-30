@@ -77,7 +77,7 @@ class _TabsPageState extends State<TabsPage> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.directions_walk),
+              leading: Icon(Icons.directions_run),
               title: Text('Journey'),
               onTap: () {
                 setState(() {
@@ -87,7 +87,7 @@ class _TabsPageState extends State<TabsPage> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.assignment),
+              leading: Icon(Icons.photo_camera),
               title: Text('Submissions'),
               onTap: () {
                 setState(() {
@@ -124,7 +124,7 @@ class _TabsPageState extends State<TabsPage> {
   items: [
     BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
     BottomNavigationBarItem(icon: Icon(Icons.directions_run), label: "Journey"),
-    BottomNavigationBarItem(icon: Icon(Icons.subscriptions), label: "Submissions"),
+    BottomNavigationBarItem(icon: Icon(Icons.photo_camera), label: "Submissions"),
     BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: "Account"),
   ],
 ),
