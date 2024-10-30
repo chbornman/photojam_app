@@ -57,25 +57,36 @@ class DatabaseAPI {
     }
   }
 
-  Future<List<Document>> getAllSubmissions() async {
-    try {
-      // Query submissions where user_id matches the authenticated user's ID and order by date
-      final submissionsResult = await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId:
-            COLLECTION_SUBMISSIONS, // Use the correct collection ID for submissions
-        queries: [
-          Query.equal('user_id', auth.userid), // Match user ID
-          Query.orderDesc('date') // Order by date in descending order
-        ],
-      );
+Future<List<Document>> getAllSubmissions({required String userId}) async {
+  try {
+    // Query submissions for the specified user ID and order by date
+    final submissionsResult = await databases.listDocuments(
+      databaseId: APPWRITE_DATABASE_ID,
+      collectionId: COLLECTION_SUBMISSIONS,
+      queries: [
+        Query.equal('user_id', userId), // Use the provided userId
+        Query.orderDesc('date'), // Order by date in descending order
+      ],
+    );
 
-      // Return the list of submissions directly
-      return submissionsResult.documents;
+    return submissionsResult.documents;
+  } catch (e) {
+    print('Error fetching all submissions: $e');
+    rethrow;
+  }
+}
+
+  /// Retrieves a specific jam by its ID.
+  Future<Document> getJamById(String jamId) async {
+    try {
+      return await databases.getDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JAMS, // Use the correct collection ID for jams
+        documentId: jamId,
+      );
     } catch (e) {
-      print('Error fetching All submissions: $e');
+      print('Error fetching jam: $e');
       rethrow;
     }
   }
-
 }

@@ -22,30 +22,39 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
 
   Future<void> _fetchAllSubmissions() async {
     try {
-      // Fetch and wait for the user ID to be available
       final userId = await auth.fetchUserId();
-      print("User ID fetched in _setCurrentJourneyId: $userId");
+      print("User ID fetched in _fetchAllSubmissions: $userId");
 
       if (userId == null || userId.isEmpty) {
         print('User ID is still not available after fetching.');
         throw Exception("User ID is not available");
       }
-      // Retrieve All submissions for the authenticated user
-      final response = await databaseApi.getAllSubmissions();
 
-      // Process each submission to get relevant data
+      // Retrieve all submissions for the authenticated user, passing userId as an argument
+      final response = await databaseApi.getAllSubmissions(userId: userId);
+
       List<Map<String, dynamic>> submissions = [];
       for (var doc in response) {
         final date = doc.data['date'] ?? 'Unknown Date';
-        final photos = List<String>.from(doc.data['photos'] ?? [])
-            .take(3)
-            .toList(); // Limit to 3 photos
+        final photos =
+            List<String>.from(doc.data['photos'] ?? []).take(3).toList();
+
+        // Retrieve the title from the embedded jam relationship
+        String jamTitle = 'Untitled';
+        final jamData = doc.data['jam'];
+        if (jamData is Map && jamData.containsKey('title')) {
+          jamTitle = jamData['title'] ?? 'Untitled';
+        }
 
         submissions.add({
           'date': date,
+          'jamTitle': jamTitle,
           'photos': photos,
         });
       }
+
+      // Sort submissions by date in descending order
+      submissions.sort((a, b) => b['date'].compareTo(a['date']));
 
       setState(() {
         AllSubmissions = submissions;
@@ -54,7 +63,7 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
     } catch (e) {
       print('Error fetching All submissions: $e');
       setState(() {
-        isLoading = false; // Stop loading on error
+        isLoading = false;
       });
     }
   }
@@ -76,11 +85,9 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
                   itemCount: AllSubmissions.length,
                   itemBuilder: (context, index) {
                     final submission = AllSubmissions[index];
-                    final date = submission['date'];
+                    final jamTitle =
+                        submission['jamTitle']; // Display jam title
                     final photos = submission['photos'] as List<String>;
-
-                    print(
-                        'Photos for submission at index $index: $photos'); // Debugging output
 
                     final backgroundColor =
                         index % 2 == 0 ? Colors.white : Colors.grey[200];
@@ -93,7 +100,7 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Date: $date',
+                            jamTitle, // Display jam title instead of date
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,

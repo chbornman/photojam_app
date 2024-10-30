@@ -141,7 +141,7 @@ class _JourneyPageState extends State<JourneyPage> {
     }
 
     // Check if the user ID is valid before navigating
-    if (userId != null && userId.isNotEmpty) {
+    if (userId.isNotEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(
