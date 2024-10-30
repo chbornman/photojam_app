@@ -1,6 +1,7 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:flutter/material.dart';
+import 'package:photojam_app/constants/constants.dart';
 import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -11,6 +12,7 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final nameTextController = TextEditingController();  // Controller for name
   final emailTextController = TextEditingController();
   final passwordTextController = TextEditingController();
 
@@ -31,6 +33,7 @@ class _RegisterPageState extends State<RegisterPage> {
     try {
       final AuthAPI appwrite = context.read<AuthAPI>();
       await appwrite.createUser(
+        name: nameTextController.text,  // Pass the name to createUser
         email: emailTextController.text,
         password: passwordTextController.text,
       );
@@ -66,6 +69,8 @@ class _RegisterPageState extends State<RegisterPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create your account'),
+        backgroundColor: accentColor,
+        foregroundColor: Colors.black,
       ),
       body: Center(
         child: Padding(
@@ -75,18 +80,38 @@ class _RegisterPageState extends State<RegisterPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextField(
+                controller: nameTextController,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+                  ),
+                  filled: true,
+                  fillColor: secondaryAccentColor, // Light grey background
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
                 controller: emailTextController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Email',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+                  ),
+                  filled: true,
+                  fillColor: secondaryAccentColor,
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: passwordTextController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Password',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+                  ),
+                  filled: true,
+                  fillColor: secondaryAccentColor,
                 ),
                 obscureText: true,
               ),
@@ -97,11 +122,20 @@ class _RegisterPageState extends State<RegisterPage> {
                 },
                 icon: const Icon(Icons.app_registration),
                 label: const Text('Sign up'),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.black,  // Black text color
+                  backgroundColor: accentColor,  // Amber background
+                  minimumSize: Size(double.infinity, defaultButtonHeight),  // Full-width button with fixed height
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),  // Consistent corner radius
+                  ),
+                ),
               ),
             ],
           ),
         ),
       ),
+      backgroundColor: secondaryAccentColor,
     );
   }
 }

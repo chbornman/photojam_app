@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/pages/markdownviewer_page.dart';
 import 'package:http/http.dart' as http;
 
@@ -150,20 +151,20 @@ void _goToAllJourneys() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(journeyTitle),
+        backgroundColor: accentColor,
+        foregroundColor: Colors.black,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              journeyTitle,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
             ...lessons.map((lesson) => ListTile(
                   title: Text(
                     lesson['title'],
-                    style: TextStyle(color: Colors.black),
+                    style: const TextStyle(color: Colors.black),
                   ),
                   onTap: () => Navigator.push(
                     context,
@@ -172,16 +173,25 @@ void _goToAllJourneys() async {
                           MarkdownViewerPage(url: lesson['url']),
                     ),
                   ),
-                  trailing: Icon(Icons.arrow_forward),
+                  trailing: Icon(Icons.arrow_forward, color: Colors.black),
                 )),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _goToAllJourneys,
-              child: Text("View All Journeys"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentColor,
+                foregroundColor: Colors.black,
+                minimumSize: Size(double.infinity, defaultButtonHeight),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(defaultCornerRadius),
+                ),
+              ),
+              child: const Text("View All Journeys"),
             ),
           ],
         ),
       ),
+      backgroundColor: secondaryAccentColor,
     );
   }
 }

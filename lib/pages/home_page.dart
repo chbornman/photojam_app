@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:photojam_app/constants/constants.dart';
 import 'signup_page.dart'; // Placeholder for the sign-up page
 import 'master_of_the_month_page.dart'; // Placeholder for Master of the Month page
 
@@ -6,6 +7,11 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: accentColor,
+        foregroundColor: Colors.black,
+        title: const Text('Home'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -27,11 +33,14 @@ class HomePage extends StatelessWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: accentColor,
                   foregroundColor: Colors.black,
-                  backgroundColor: Colors.amberAccent,
+                  minimumSize: Size(double.infinity, defaultButtonHeight),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+                  ),
                 ),
-                child: Text('Sign Up Now'),
+                child: const Text('Sign Up Now'),
               ),
             ),
             SizedBox(height: 20),
@@ -47,22 +56,22 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: Container(
-                color: Colors.grey[200], // Light grey background
-                padding:
-                    const EdgeInsets.all(16.0), // Padding inside the container
+                decoration: BoxDecoration(
+                  color: secondaryAccentColor,
+                  borderRadius: BorderRadius.circular(defaultCornerRadius),
+                ),
+                padding: const EdgeInsets.all(16.0), // Padding inside the container
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Master of the Month',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 10),
                     Text(
                       'Sebastiano Salgado',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                     SizedBox(height: 10),
                     Container(
@@ -118,6 +127,7 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
+      backgroundColor: secondaryAccentColor,
     );
   }
 }

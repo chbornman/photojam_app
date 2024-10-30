@@ -5,6 +5,7 @@ import 'package:photojam_app/pages/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:photojam_app/constants/constants.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -79,11 +80,11 @@ class _LoginPageState extends State<LoginPage> {
         title: const Text(
           'Photo Jam',
           style: TextStyle(
-            fontSize: 40.0, // Adjust this value to set the desired text size
+            fontSize: 40.0,
           ),
         ),
         foregroundColor: Colors.black,
-        backgroundColor: Colors.amber,
+        backgroundColor: accentColor,
       ),
       body: Center(
         child: Padding(
@@ -94,17 +95,28 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               TextField(
                 controller: emailTextController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Email',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                        defaultCornerRadius), 
+                  ),
+                  filled: true,
+                  fillColor:
+                      secondaryAccentColor, 
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: passwordTextController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Password',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                        defaultCornerRadius),
+                  ),
+                  filled: true,
+                  fillColor: secondaryAccentColor,
                 ),
                 obscureText: true,
               ),
@@ -115,7 +127,19 @@ class _LoginPageState extends State<LoginPage> {
                 },
                 icon: const Icon(Icons.login),
                 label: const Text("Sign in"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      accentColor, 
+                  foregroundColor: Colors.black, 
+                  minimumSize: const Size(double.infinity,
+                      defaultButtonHeight), 
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                        defaultCornerRadius), 
+                  ),
+                ),
               ),
+              const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
                   Navigator.push(
@@ -124,25 +148,55 @@ class _LoginPageState extends State<LoginPage> {
                           builder: (context) => const RegisterPage()));
                 },
                 child: const Text('Create Account'),
+                style: TextButton.styleFrom(
+                  backgroundColor: accentColor,
+                  foregroundColor: Colors.black, // Black text color
+                  minimumSize: const Size(double.infinity,
+                      defaultButtonHeight), // Full-width button with fixed height
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                        defaultCornerRadius), // Consistent corner radius
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  ElevatedButton(
-                    onPressed: () => signInWithProvider(OAuthProvider.google),
-                    style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.black,
-                        backgroundColor: Colors.white),
-                    child:
-                        SvgPicture.asset('assets/google_icon.svg', width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => signInWithProvider(OAuthProvider.google),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accentColor,
+                        foregroundColor:
+                            Colors.black, // Black text color for OAuth buttons
+                        minimumSize: const Size(double.infinity,
+                            defaultButtonHeight), // Half-width button with fixed height
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                              defaultCornerRadius), // Consistent corner radius
+                        ),
+                      ),
+                      child:
+                          SvgPicture.asset('assets/google_icon.svg', width: 20),
+                    ),
                   ),
-                  ElevatedButton(
-                    onPressed: () => signInWithProvider(OAuthProvider.apple),
-                    style: ElevatedButton.styleFrom(
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => signInWithProvider(OAuthProvider.apple),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accentColor,
                         foregroundColor: Colors.black,
-                        backgroundColor: Colors.white),
-                    child: SvgPicture.asset('assets/apple_icon.svg', width: 12),
+                        minimumSize: const Size(double.infinity,
+                            defaultButtonHeight), // Half-width button with fixed height
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                              defaultCornerRadius), // Consistent corner radius
+                        ),
+                      ),
+                      child:
+                          SvgPicture.asset('assets/apple_icon.svg', width: 20),
+                    ),
                   ),
                 ],
               ),
@@ -150,7 +204,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
-      backgroundColor: const Color.fromARGB(255, 243, 243, 243),
+      backgroundColor: secondaryAccentColor,
     );
   }
 }

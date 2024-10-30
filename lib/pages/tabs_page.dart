@@ -3,6 +3,7 @@ import 'package:photojam_app/pages/home_page.dart';
 import 'package:photojam_app/pages/journey_page.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/pages/submissions_page.dart';
+import 'package:photojam_app/constants/constants.dart';
 
 class TabsPage extends StatefulWidget {
   const TabsPage({Key? key}) : super(key: key);
@@ -26,7 +27,7 @@ class _TabsPageState extends State<TabsPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Photo Jam'),
-        backgroundColor: Colors.amber, // Colored top bar
+        backgroundColor: accentColor, // Colored top bar
         leading: GestureDetector(
           onTap: () {
             setState(() {
@@ -56,7 +57,7 @@ class _TabsPageState extends State<TabsPage> {
           children: <Widget>[
             DrawerHeader(
               decoration: BoxDecoration(
-                color: Colors.amber,
+                color: accentColor,
               ),
               child: Text(
                 'Menu',
@@ -119,7 +120,7 @@ class _TabsPageState extends State<TabsPage> {
       });
     }
   },
-  selectedItemColor: (_currentIndex >= 0 && _currentIndex < _screens.length) ? Colors.amber : Colors.grey,
+  selectedItemColor: (_currentIndex >= 0 && _currentIndex < _screens.length) ? accentColor : Colors.grey,
   unselectedItemColor: Colors.grey,
   items: [
     BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
+import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 
 class SubmissionsPage extends StatefulWidget {
@@ -71,51 +72,65 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("All Submissions")),
+      appBar: AppBar(
+        title: const Text("All Submissions"),
+        backgroundColor: accentColor,
+        foregroundColor: Colors.black,
+      ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : AllSubmissions.isEmpty
               ? Center(
                   child: Text(
                     "No submissions yet",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 )
               : ListView.builder(
                   itemCount: AllSubmissions.length,
                   itemBuilder: (context, index) {
                     final submission = AllSubmissions[index];
-                    final jamTitle =
-                        submission['jamTitle']; // Display jam title
+                    final jamTitle = submission['jamTitle'];
                     final photos = submission['photos'] as List<String>;
 
                     final backgroundColor =
-                        index % 2 == 0 ? Colors.white : Colors.grey[200];
+                        index % 2 == 0 ? Colors.white : secondaryAccentColor;
 
                     return Container(
-                      color: backgroundColor,
+                      decoration: BoxDecoration(
+                        color: backgroundColor,
+                        borderRadius:
+                            BorderRadius.circular(defaultCornerRadius),
+                      ),
                       padding: const EdgeInsets.all(16.0),
                       margin: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            jamTitle, // Display jam title instead of date
-                            style: TextStyle(
+                            jamTitle,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Wrap(
                             spacing: 8.0,
                             runSpacing: 8.0,
                             children: photos
-                                .map((photoUrl) => Image.network(
-                                      photoUrl,
-                                      fit: BoxFit.cover,
-                                      width: 100,
-                                      height: 100,
+                                .map((photoUrl) => ClipRRect(
+                                      borderRadius: BorderRadius.circular(
+                                          defaultCornerRadius),
+                                      child: Image.network(
+                                        photoUrl,
+                                        fit: BoxFit.cover,
+                                        width: 100,
+                                        height: 100,
+                                      ),
                                     ))
                                 .toList(),
                           ),

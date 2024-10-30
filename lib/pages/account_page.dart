@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/constants/constants.dart';
 import 'package:provider/provider.dart';
 
 class AccountPage extends StatefulWidget {
@@ -24,7 +25,7 @@ class _AccountPageState extends State<AccountPage> {
     username = appwrite.username;
 
     // Check if user is OAuth connected
-    isOAuthUser = false;//TODO appwrite.isOAuthUser();
+    isOAuthUser = false; // TODO: Use appwrite.isOAuthUser() once implemented
 
     appwrite.getUserPreferences().then((value) {
       if (value.data.isNotEmpty) {
@@ -192,6 +193,8 @@ class _AccountPageState extends State<AccountPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Account'),
+        backgroundColor: accentColor,
+        foregroundColor: Colors.black,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -202,22 +205,30 @@ class _AccountPageState extends State<AccountPage> {
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch, // Full-width buttons
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Welcome back, $username!',
-                style: Theme.of(context).textTheme.headlineSmall),
-            Text('$email', style: TextStyle(color: Colors.grey)),
+            Text(
+              'Welcome back, $username!',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            Text(
+              '$email',
+              style: const TextStyle(color: Colors.grey),
+            ),
             const SizedBox(height: 30),
 
             // Change Name Button
             ElevatedButton(
               onPressed: showUpdateNameDialog,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber, // Background color
-                foregroundColor: Colors.black, // Text color
-                minimumSize: Size(double.infinity, 50), // Full-width, height 50
+                backgroundColor: accentColor,
+                foregroundColor: Colors.black,
+                minimumSize: Size(double.infinity, defaultButtonHeight),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(defaultCornerRadius),
+                ),
               ),
-              child: Text("Change Name"),
+              child: const Text("Change Name"),
             ),
             const SizedBox(height: 20),
 
@@ -226,14 +237,17 @@ class _AccountPageState extends State<AccountPage> {
               ElevatedButton(
                 onPressed: showUpdateEmailDialog,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber,
+                  backgroundColor: accentColor,
                   foregroundColor: Colors.black,
-                  minimumSize: Size(double.infinity, 50),
+                  minimumSize: Size(double.infinity, defaultButtonHeight),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+                  ),
                 ),
-                child: Text("Change Email"),
+                child: const Text("Change Email"),
               ),
             if (isOAuthUser)
-              Text(
+              const Text(
                 "Email updates are managed through your OAuth provider.",
                 style: TextStyle(color: Colors.grey),
               ),
@@ -243,11 +257,14 @@ class _AccountPageState extends State<AccountPage> {
             ElevatedButton(
               onPressed: showUpdatePasswordDialog,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
+                backgroundColor: accentColor,
                 foregroundColor: Colors.black,
-                minimumSize: Size(double.infinity, 50),
+                minimumSize: Size(double.infinity, defaultButtonHeight),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(defaultCornerRadius),
+                ),
               ),
-              child: Text("Change Password"),
+              child: const Text("Change Password"),
             ),
             const SizedBox(height: 20),
 
@@ -255,15 +272,19 @@ class _AccountPageState extends State<AccountPage> {
             ElevatedButton(
               onPressed: showUpdateBioDialog,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
+                backgroundColor: accentColor,
                 foregroundColor: Colors.black,
-                minimumSize: Size(double.infinity, 50),
+                minimumSize: Size(double.infinity, defaultButtonHeight),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(defaultCornerRadius),
+                ),
               ),
-              child: Text("Change Bio"),
+              child: const Text("Change Bio"),
             ),
           ],
         ),
       ),
+      backgroundColor: secondaryAccentColor,
     );
   }
 }

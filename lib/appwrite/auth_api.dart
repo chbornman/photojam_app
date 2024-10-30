@@ -65,10 +65,10 @@ class AuthAPI extends ChangeNotifier {
   }
 
   Future<User> createUser(
-      {required String email, required String password}) async {
+      {required String name, required String email, required String password}) async {
     try {
       final user = await account.create(
-          userId: ID.unique(), email: email, password: password, name: 'Cal B');
+          userId: ID.unique(), email: email, password: password, name: name);
       return user;
     } finally {
       notifyListeners();
@@ -143,8 +143,6 @@ class AuthAPI extends ChangeNotifier {
 
   // Method to check if the user is connected via OAuth
   bool isOAuthUser() {
-    // This function assumes OAuth users have a `provider` field in `_currentUser`
-    // Adjust based on how you track OAuth users in Appwrite
     return _currentUser != null && _currentUser!.emailVerification == false;
   }
 
