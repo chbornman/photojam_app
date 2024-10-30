@@ -11,16 +11,16 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
   final databaseApi = DatabaseAPI();
   final auth = AuthAPI(); // Instantiate AuthAPI
 
-  List<Map<String, dynamic>> pastSubmissions = [];
+  List<Map<String, dynamic>> AllSubmissions = [];
   bool isLoading = true; // To manage loading state
 
   @override
   void initState() {
     super.initState();
-    _fetchPastSubmissions();
+    _fetchAllSubmissions();
   }
 
-  Future<void> _fetchPastSubmissions() async {
+  Future<void> _fetchAllSubmissions() async {
     try {
       // Fetch and wait for the user ID to be available
       final userId = await auth.fetchUserId();
@@ -30,8 +30,8 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
         print('User ID is still not available after fetching.');
         throw Exception("User ID is not available");
       }
-      // Retrieve past submissions for the authenticated user
-      final response = await databaseApi.getPastSubmissions();
+      // Retrieve All submissions for the authenticated user
+      final response = await databaseApi.getAllSubmissions();
 
       // Process each submission to get relevant data
       List<Map<String, dynamic>> submissions = [];
@@ -48,11 +48,11 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
       }
 
       setState(() {
-        pastSubmissions = submissions;
+        AllSubmissions = submissions;
         isLoading = false;
       });
     } catch (e) {
-      print('Error fetching past submissions: $e');
+      print('Error fetching All submissions: $e');
       setState(() {
         isLoading = false; // Stop loading on error
       });
@@ -62,10 +62,10 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Past Submissions")),
+      appBar: AppBar(title: Text("All Submissions")),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
-          : pastSubmissions.isEmpty
+          : AllSubmissions.isEmpty
               ? Center(
                   child: Text(
                     "No submissions yet",
@@ -73,9 +73,9 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
                   ),
                 )
               : ListView.builder(
-                  itemCount: pastSubmissions.length,
+                  itemCount: AllSubmissions.length,
                   itemBuilder: (context, index) {
-                    final submission = pastSubmissions[index];
+                    final submission = AllSubmissions[index];
                     final date = submission['date'];
                     final photos = submission['photos'] as List<String>;
 

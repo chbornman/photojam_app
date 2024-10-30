@@ -91,7 +91,7 @@ class _JourneyPageState extends State<JourneyPage> {
       }
 
       // Fetch all journeys and filter by user ID in participant_ids
-      final journeyList = await databaseApi.getPastJourneys();
+      final journeyList = await databaseApi.getAllJourneys();
       final userJourneys = journeyList.documents.where((journey) {
         final participantIds = journey.data['participant_ids'] as List<dynamic>;
         return participantIds.contains(userId);
@@ -130,20 +130,26 @@ class _JourneyPageState extends State<JourneyPage> {
     }
   }
 
-  void _goToPastJourneys() async {
-    // Fetch the user ID
+  void _goToAllJourneys() async {
+    // Fetch and wait for the user ID to be available
     final userId = await auth.fetchUserId();
+    print("User ID fetched in _setCurrentJourneyId: $userId");
+
+    if (userId == null || userId.isEmpty) {
+      print('User ID is still not available after fetching.');
+      throw Exception("User ID is not available");
+    }
 
     // Check if the user ID is valid before navigating
     if (userId != null && userId.isNotEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => PastJourneysPage(
-                userId: userId)), // Pass userId to PastJourneysPage
+            builder: (context) => AllJourneysPage(
+                userId: userId)), 
       );
     } else {
-      print("User ID not available for PastJourneysPage");
+      print("User ID not available for AllJourneysPage");
     }
   }
 
@@ -176,8 +182,8 @@ class _JourneyPageState extends State<JourneyPage> {
                 )),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _goToPastJourneys,
-              child: Text("View Past Journeys"),
+              onPressed: _goToAllJourneys,
+              child: Text("View All Journeys"),
             ),
           ],
         ),
@@ -186,21 +192,21 @@ class _JourneyPageState extends State<JourneyPage> {
   }
 }
 
-class PastJourneysPage extends StatelessWidget {
+class AllJourneysPage extends StatelessWidget {
   final DatabaseAPI databaseApi = DatabaseAPI();
   final String userId; // Add userId as a parameter
 
-  PastJourneysPage({required this.userId}); // Require userId in constructor
+  AllJourneysPage({required this.userId}); // Require userId in constructor
 
-  Future<List<Map<String, dynamic>>> _fetchPastJourneys() async {
+  Future<List<Map<String, dynamic>>> _fetchAllJourneys() async {
     try {
-      // Pass userId to getPastJourneys
+      // Pass userId to getAllJourneys
       final response = await databaseApi
-          .getPastJourneys(); // Implement getPastJourneys in DatabaseAPI
+          .getAllJourneys(); // Implement getAllJourneys in DatabaseAPI
       return List<Map<String, dynamic>>.from(response.documents
-          .map((doc) => {'id': doc.$id, 'title': doc.data['name']}));
+          .map((doc) => {'id': doc.$id, 'title': doc.data['title']}));
     } catch (e) {
-      print('Error fetching past journeys: $e');
+      print('Error fetching all journeys: $e');
       return [];
     }
   }
@@ -208,21 +214,21 @@ class PastJourneysPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Past Journeys")),
+      appBar: AppBar(title: Text("All Journeys")),
       body: FutureBuilder(
-        future: _fetchPastJourneys(),
+        future: _fetchAllJourneys(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text("No past journeys available."));
+            return Center(child: Text("No journeys available."));
           }
-          final pastJourneys = snapshot.data as List<Map<String, dynamic>>;
+          final AllJourneys = snapshot.data as List<Map<String, dynamic>>;
           return ListView.builder(
-            itemCount: pastJourneys.length,
+            itemCount: AllJourneys.length,
             itemBuilder: (context, index) {
-              final journey = pastJourneys[index];
+              final journey = AllJourneys[index];
               return ListTile(
                 title: Text(journey['title']),
                 onTap: () {
@@ -244,24 +250,54 @@ class PastJourneysPage extends StatelessWidget {
   }
 }
 
-// Define JourneyLessonsPage to display lessons within a selected past journey
 class JourneyLessonsPage extends StatelessWidget {
   final String journeyId;
   final String journeyTitle;
   final databaseApi = DatabaseAPI();
-  final storageApi = StorageAPI();
-
+  
   JourneyLessonsPage({required this.journeyId, required this.journeyTitle});
 
+  // Fetch lessons for a specific journey, extracting titles from the first line of each markdown file
   Future<List<Map<String, dynamic>>> _fetchLessons() async {
     try {
       final journey = await databaseApi.getJourneyById(journeyId);
-      return List<Map<String, dynamic>>.from(journey.data['lessonIds']
-              ?.map((id) => {'id': id, 'title': 'Lesson $id'}) ??
-          []);
+      final lessonUrls = journey.data['lessons'] as List<dynamic>? ?? [];
+
+      List<Map<String, dynamic>> fetchedLessons = [];
+
+      for (String url in lessonUrls) {
+        final title = await _fetchTitleFromMarkdown(url);
+        fetchedLessons.add({
+          'url': url,
+          'title': title,
+        });
+      }
+
+      return fetchedLessons;
     } catch (e) {
       print('Error fetching lessons: $e');
       return [];
+    }
+  }
+
+  // Helper function to fetch the title from the first line of a markdown file
+  Future<String> _fetchTitleFromMarkdown(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final lines = response.body.split('\n');
+        if (lines.isNotEmpty) {
+          String title = lines.first.trim();
+          title = title.replaceFirst(RegExp(r'^#+\s*'), ''); // Remove leading "#" and spaces
+          return title.isNotEmpty ? title : 'Untitled Lesson';
+        }
+        return 'Untitled Lesson';
+      } else {
+        throw Exception('Failed to load markdown content');
+      }
+    } catch (e) {
+      print('Error fetching markdown content: $e');
+      return 'Untitled Lesson';
     }
   }
 
@@ -269,25 +305,32 @@ class JourneyLessonsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(journeyTitle)),
-      body: FutureBuilder(
+      body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _fetchLessons(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(
-                child: Text("No lessons available for this journey."));
+            return Center(child: Text("No lessons available for this journey."));
           }
-          final lessons = snapshot.data as List<Map<String, dynamic>>;
+          final lessons = snapshot.data!;
           return ListView.builder(
             itemCount: lessons.length,
             itemBuilder: (context, index) {
               final lesson = lessons[index];
               return ListTile(
-                title: Text(lesson['title']),
-                onTap: () => storageApi.downloadLesson(
-                    lesson['id'], '/path/to/save'), // Replace with actual path
+                title: Text(
+                  lesson['title'],
+                  style: TextStyle(color: Colors.black),
+                ),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MarkdownViewerPage(url: lesson['url']),
+                  ),
+                ),
+                trailing: Icon(Icons.arrow_forward),
               );
             },
           );

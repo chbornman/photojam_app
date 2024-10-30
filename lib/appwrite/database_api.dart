@@ -45,19 +45,19 @@ class DatabaseAPI {
     }
   }
 
-  Future<DocumentList> getPastJourneys() async {
+  Future<DocumentList> getAllJourneys() async {
     try {
       return await databases.listDocuments(
         databaseId: APPWRITE_DATABASE_ID,
         collectionId: COLLECTION_JOURNEYS,
       );
     } catch (e) {
-      print('Error fetching past journeys: $e');
+      print('Error fetching All journeys: $e');
       rethrow;
     }
   }
 
-  Future<List<Document>> getPastSubmissions() async {
+  Future<List<Document>> getAllSubmissions() async {
     try {
       // Query submissions where user_id matches the authenticated user's ID and order by date
       final submissionsResult = await databases.listDocuments(
@@ -73,7 +73,7 @@ class DatabaseAPI {
       // Return the list of submissions directly
       return submissionsResult.documents;
     } catch (e) {
-      print('Error fetching past submissions: $e');
+      print('Error fetching All submissions: $e');
       rethrow;
     }
   }

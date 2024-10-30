@@ -32,7 +32,7 @@ class _SignupPageState extends State<SignupPage> {
         jamEvents = response.documents
             .map((doc) => DropdownMenuItem(
                   value: doc.$id,
-                  child: Text(doc.data['name'] ?? 'Unnamed Event'),
+                  child: Text(doc.data['title'] ?? 'Unnamed Event'),
                 ))
             .toList();
       });
