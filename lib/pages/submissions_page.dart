@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
-import 'package:photojam_app/appwrite/storage_api.dart';
-import 'dart:io';
+import 'package:photojam_app/appwrite/auth_api.dart';
 
 class SubmissionsPage extends StatefulWidget {
   @override
@@ -10,7 +9,8 @@ class SubmissionsPage extends StatefulWidget {
 
 class _SubmissionsPageState extends State<SubmissionsPage> {
   final databaseApi = DatabaseAPI();
-  final storageApi = StorageAPI();
+  final auth = AuthAPI(); // Instantiate AuthAPI
+
   List<Map<String, dynamic>> pastSubmissions = [];
   bool isLoading = true; // To manage loading state
 
@@ -22,25 +22,29 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
 
   Future<void> _fetchPastSubmissions() async {
     try {
-      // Retrieve past jams that the user participated in
-      final response = await databaseApi.getPastJams(); // Implement getPastJams in DatabaseAPI
-      
-      // Process each jam to get title, date, and images
+      // Fetch and wait for the user ID to be available
+      final userId = await auth.fetchUserId();
+      print("User ID fetched in _setCurrentJourneyId: $userId");
+
+      if (userId == null || userId.isEmpty) {
+        print('User ID is still not available after fetching.');
+        throw Exception("User ID is not available");
+      }
+      // Retrieve past submissions for the authenticated user
+      final response = await databaseApi.getPastSubmissions();
+
+      // Process each submission to get relevant data
       List<Map<String, dynamic>> submissions = [];
       for (var doc in response) {
-        final title = doc.data['title'] ?? 'Unnamed Jam';
         final date = doc.data['date'] ?? 'Unknown Date';
-        final photoIds = List<String>.from(doc.data['photoIds'] ?? []);
+        final photos = List<String>.from(doc.data['photos'] ?? [])
+            .take(3)
+            .toList(); // Limit to 3 photos
 
-        // Fetch each photo associated with this jam
-        List<File> images = [];
-        for (var photoId in photoIds) {
-          final filePath = '/path/to/save/$photoId.jpg'; // Define a local path to save images
-          await storageApi.downloadPhoto(photoId, filePath);
-          images.add(File(filePath));
-        }
-
-        submissions.add({'title': title, 'date': date, 'images': images});
+        submissions.add({
+          'date': date,
+          'photos': photos,
+        });
       }
 
       setState(() {
@@ -58,59 +62,61 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Past Jam Submissions")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: isLoading
-            ? Center(child: CircularProgressIndicator())
-            : pastSubmissions.isEmpty
-                ? Center(
-                    child: Text(
-                      "No submissions yet",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: pastSubmissions.length,
-                    itemBuilder: (context, index) {
-                      final submission = pastSubmissions[index];
-                      final title = submission['title'];
-                      final date = submission['date'];
-                      final images = submission['images'] as List<File>;
-
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '$title ($date)',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Row(
-                              children: images
-                                  .map((image) => Expanded(
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(4.0),
-                                          child: Image.file(
-                                            image,
-                                            fit: BoxFit.cover,
-                                            height: 100,
-                                          ),
-                                        ),
-                                      ))
-                                  .toList(),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+      appBar: AppBar(title: Text("Past Submissions")),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : pastSubmissions.isEmpty
+              ? Center(
+                  child: Text(
+                    "No submissions yet",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
-      ),
+                )
+              : ListView.builder(
+                  itemCount: pastSubmissions.length,
+                  itemBuilder: (context, index) {
+                    final submission = pastSubmissions[index];
+                    final date = submission['date'];
+                    final photos = submission['photos'] as List<String>;
+
+                    print(
+                        'Photos for submission at index $index: $photos'); // Debugging output
+
+                    final backgroundColor =
+                        index % 2 == 0 ? Colors.white : Colors.grey[200];
+
+                    return Container(
+                      color: backgroundColor,
+                      padding: const EdgeInsets.all(16.0),
+                      margin: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Date: $date',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8.0,
+                            runSpacing: 8.0,
+                            children: photos
+                                .map((photoUrl) => Image.network(
+                                      photoUrl,
+                                      fit: BoxFit.cover,
+                                      width: 100,
+                                      height: 100,
+                                    ))
+                                .toList(),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }

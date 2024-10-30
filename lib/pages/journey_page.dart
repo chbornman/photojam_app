@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
-import 'package:photojam_app/appwrite/auth_api.dart'; // Import AuthAPI
+import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/pages/markdownviewer_page.dart';
+import 'package:http/http.dart' as http;
 
 class JourneyPage extends StatefulWidget {
   @override
@@ -11,10 +13,11 @@ class JourneyPage extends StatefulWidget {
 class _JourneyPageState extends State<JourneyPage> {
   final databaseApi = DatabaseAPI();
   final storageApi = StorageAPI();
-  final auth = AuthAPI(); // Instantiate AuthAPI
+  final auth = AuthAPI();
 
   String currentJourneyId =
       "currentJourneyId"; // Placeholder for the current journey ID
+  String journeyTitle = "Journey"; // Placeholder for the journey title
   List<Map<String, dynamic>> lessons =
       []; // Stores lessons for the current journey
 
@@ -24,57 +27,96 @@ class _JourneyPageState extends State<JourneyPage> {
     _setCurrentJourneyId();
   }
 
- Future<void> _setCurrentJourneyId() async {
-  try {
-    // Fetch and wait for the user ID to be available
-    final userId = await auth.fetchUserId();
-    print("User ID fetched in _setCurrentJourneyId: $userId");
-
-    if (userId == null || userId.isEmpty) {
-      print('User ID is still not available after fetching.');
-      throw Exception("User ID is not available");
-    }
-
-    // Fetch all journeys and filter by user ID in participant_ids
-    final journeyList = await databaseApi.getPastJourneys();
-    final userJourneys = journeyList.documents.where((journey) {
-      final participantIds = journey.data['participant_ids'] as List<dynamic>;
-      return participantIds.contains(userId);
-    }).toList();
-
-    if (userJourneys.isNotEmpty) {
-      // Sort journeys by start_date in descending order
-      userJourneys.sort((a, b) {
-        DateTime dateA = DateTime.parse(a.data['start_date']);
-        DateTime dateB = DateTime.parse(b.data['start_date']);
-        return dateB.compareTo(dateA); // Descending order
-      });
-
-      // Set currentJourneyId to the most recent journey's ID
-      setState(() {
-        currentJourneyId = userJourneys.first.$id;
-      });
-
-      // Now fetch lessons for this journey
-      _fetchCurrentJourneyLessons();
-    } else {
-      print('No journeys found for this user.');
-    }
-  } catch (e) {
-    print('Error setting current journey ID: $e');
-  }
-}
-
   Future<void> _fetchCurrentJourneyLessons() async {
     try {
       final journey = await databaseApi.getJourneyById(currentJourneyId);
+      journeyTitle =
+          journey.data['title'] ?? 'Current Journey'; // Set the journey title
+
+      final lessonUrls = journey.data['lessons'] as List<dynamic>? ?? [];
+
+      List<Map<String, dynamic>> fetchedLessons = [];
+
+      for (String url in lessonUrls) {
+        // Fetch the markdown file content
+        final title = await _fetchTitleFromMarkdown(url);
+
+        // Add to lessons list with the title from the file
+        fetchedLessons.add({
+          'url': url,
+          'title': title,
+        });
+      }
+
       setState(() {
-        lessons = List<Map<String, dynamic>>.from(journey.data['lessonIds']
-                ?.map((id) => {'id': id, 'title': 'Lesson $id'}) ??
-            []);
+        lessons = fetchedLessons;
       });
     } catch (e) {
       print('Error fetching lessons: $e');
+    }
+  }
+
+// Helper function to fetch the title from the first line of a markdown file
+  Future<String> _fetchTitleFromMarkdown(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        // Get the first line and remove leading "#" and spaces
+        final lines = response.body.split('\n');
+        if (lines.isNotEmpty) {
+          String title = lines.first.trim();
+          title = title.replaceFirst(
+              RegExp(r'^#+\s*'), ''); // Remove leading "#" and spaces
+          return title.isNotEmpty ? title : 'Untitled Lesson';
+        }
+        return 'Untitled Lesson';
+      } else {
+        throw Exception('Failed to load markdown content');
+      }
+    } catch (e) {
+      print('Error fetching markdown content: $e');
+      return 'Untitled Lesson';
+    }
+  }
+
+  Future<void> _setCurrentJourneyId() async {
+    try {
+      // Fetch and wait for the user ID to be available
+      final userId = await auth.fetchUserId();
+      print("User ID fetched in _setCurrentJourneyId: $userId");
+
+      if (userId == null || userId.isEmpty) {
+        print('User ID is still not available after fetching.');
+        throw Exception("User ID is not available");
+      }
+
+      // Fetch all journeys and filter by user ID in participant_ids
+      final journeyList = await databaseApi.getPastJourneys();
+      final userJourneys = journeyList.documents.where((journey) {
+        final participantIds = journey.data['participant_ids'] as List<dynamic>;
+        return participantIds.contains(userId);
+      }).toList();
+
+      if (userJourneys.isNotEmpty) {
+        // Sort journeys by start_date in descending order
+        userJourneys.sort((a, b) {
+          DateTime dateA = DateTime.parse(a.data['start_date']);
+          DateTime dateB = DateTime.parse(b.data['start_date']);
+          return dateB.compareTo(dateA); // Descending order
+        });
+
+        // Set currentJourneyId to the most recent journey's ID
+        setState(() {
+          currentJourneyId = userJourneys.first.$id;
+        });
+
+        // Now fetch lessons for this journey
+        _fetchCurrentJourneyLessons();
+      } else {
+        print('No journeys found for this user.');
+      }
+    } catch (e) {
+      print('Error setting current journey ID: $e');
     }
   }
 
@@ -88,45 +130,51 @@ class _JourneyPageState extends State<JourneyPage> {
     }
   }
 
-void _goToPastJourneys() async {
-  // Fetch the user ID
-  final userId = await auth.fetchUserId();
-  
-  // Check if the user ID is valid before navigating
-  if (userId != null && userId.isNotEmpty) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (context) => PastJourneysPage(userId: userId)), // Pass userId to PastJourneysPage
-    );
-  } else {
-    print("User ID not available for PastJourneysPage");
+  void _goToPastJourneys() async {
+    // Fetch the user ID
+    final userId = await auth.fetchUserId();
+
+    // Check if the user ID is valid before navigating
+    if (userId != null && userId.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => PastJourneysPage(
+                userId: userId)), // Pass userId to PastJourneysPage
+      );
+    } else {
+      print("User ID not available for PastJourneysPage");
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Journey")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Current Journey Lessons
             Text(
-              'Current Journey Lessons',
+              journeyTitle,
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
             ...lessons.map((lesson) => ListTile(
-                  title: Text(lesson['title']),
-                  onTap: () => _openLesson(lesson['id']),
+                  title: Text(
+                    lesson['title'],
+                    style: TextStyle(color: Colors.black),
+                  ),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          MarkdownViewerPage(url: lesson['url']),
+                    ),
+                  ),
                   trailing: Icon(Icons.arrow_forward),
                 )),
             SizedBox(height: 20),
-
-            // Past Journeys Button
             ElevatedButton(
               onPressed: _goToPastJourneys,
               child: Text("View Past Journeys"),
@@ -147,7 +195,8 @@ class PastJourneysPage extends StatelessWidget {
   Future<List<Map<String, dynamic>>> _fetchPastJourneys() async {
     try {
       // Pass userId to getPastJourneys
-      final response = await databaseApi.getPastJourneys(); // Implement getPastJourneys in DatabaseAPI
+      final response = await databaseApi
+          .getPastJourneys(); // Implement getPastJourneys in DatabaseAPI
       return List<Map<String, dynamic>>.from(response.documents
           .map((doc) => {'id': doc.$id, 'title': doc.data['name']}));
     } catch (e) {
