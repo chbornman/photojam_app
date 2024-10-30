@@ -128,13 +128,34 @@ class AuthAPI extends ChangeNotifier {
     }
   }
 
-// Method to update the user's password
-  Future<void> updatePassword(String newPassword) async {
+  // Method to update the user's password
+  Future<void> updatePassword(
+      String currentPassword, String newPassword) async {
     try {
-      await account.updatePassword(password: newPassword);
+      await account.updatePassword(
+          password: newPassword, oldPassword: currentPassword);
       notifyListeners(); // Notify listeners if there's any UI dependency
     } catch (e) {
       print("Error updating password: $e");
+      rethrow;
+    }
+  }
+
+  // Method to check if the user is connected via OAuth
+  bool isOAuthUser() {
+    // This function assumes OAuth users have a `provider` field in `_currentUser`
+    // Adjust based on how you track OAuth users in Appwrite
+    return _currentUser != null && _currentUser!.emailVerification == false;
+  }
+
+  // Method to update the user's email
+  Future<void> updateEmail(String newEmail, String currentPassword) async {
+    try {
+      await account.updateEmail(email: newEmail, password: currentPassword);
+      _currentUser = await account.get(); // Refresh current user data
+      notifyListeners();
+    } catch (e) {
+      print("Error updating email: $e");
       rethrow;
     }
   }

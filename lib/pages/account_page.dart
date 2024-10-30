@@ -12,9 +12,9 @@ class AccountPage extends StatefulWidget {
 class _AccountPageState extends State<AccountPage> {
   late String? email;
   late String? username;
+  bool isOAuthUser = false;
+
   TextEditingController bioTextController = TextEditingController();
-  TextEditingController nameController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
 
   @override
   void initState() {
@@ -22,7 +22,10 @@ class _AccountPageState extends State<AccountPage> {
     final AuthAPI appwrite = context.read<AuthAPI>();
     email = appwrite.email;
     username = appwrite.username;
-    nameController.text = username ?? '';
+
+    // Check if user is OAuth connected
+    isOAuthUser = false;//TODO appwrite.isOAuthUser();
+
     appwrite.getUserPreferences().then((value) {
       if (value.data.isNotEmpty) {
         setState(() {
@@ -32,47 +35,156 @@ class _AccountPageState extends State<AccountPage> {
     });
   }
 
-  // Method to update the user's name in Appwrite
-  updateName(String newName) async {
-    try {
-      final AuthAPI appwrite = context.read<AuthAPI>();
-      await appwrite.updateName(newName); // Assuming updateName is a method in AuthAPI
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Name updated successfully!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update name: $e')),
-      );
-    }
+  // Method to show dialog for updating name
+  void showUpdateNameDialog() {
+    final nameController = TextEditingController(text: username);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Update Name'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(labelText: 'New Name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await context.read<AuthAPI>().updateName(nameController.text);
+              Navigator.of(context).pop();
+              setState(() {
+                username = nameController.text;
+              });
+            },
+            child: Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
-  // Method to update the user's password in Appwrite
-  updatePassword(String newPassword) async {
-    try {
-      final AuthAPI appwrite = context.read<AuthAPI>();
-      await appwrite.updatePassword(newPassword); // Assuming updatePassword is a method in AuthAPI
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Password updated successfully!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update password: $e')),
-      );
-    }
+  // Method to show dialog for updating email
+  void showUpdateEmailDialog() {
+    final emailController = TextEditingController(text: email);
+    final passwordController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Update Email'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(labelText: 'New Email'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: passwordController,
+              decoration: const InputDecoration(labelText: 'Current Password'),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await context
+                  .read<AuthAPI>()
+                  .updateEmail(emailController.text, passwordController.text);
+              Navigator.of(context).pop();
+              setState(() {
+                email = emailController.text;
+              });
+            },
+            child: Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
-  // Method to update the user's bio (already implemented)
-  savePreferences() {
-    final AuthAPI appwrite = context.read<AuthAPI>();
-    appwrite.updatePreferences(bio: bioTextController.text);
-    const snackbar = SnackBar(content: Text('Bio updated!'));
-    ScaffoldMessenger.of(context).showSnackBar(snackbar);
+  // Method to show dialog for updating password
+  void showUpdatePasswordDialog() {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Update Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: currentPasswordController,
+              decoration: const InputDecoration(labelText: 'Current Password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: newPasswordController,
+              decoration: const InputDecoration(labelText: 'New Password'),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await context.read<AuthAPI>().updatePassword(
+                  currentPasswordController.text, newPasswordController.text);
+              Navigator.of(context).pop();
+            },
+            child: Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Method to show dialog for updating bio
+  void showUpdateBioDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Update Bio'),
+        content: TextField(
+          controller: bioTextController,
+          decoration: const InputDecoration(labelText: 'Bio'),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              context
+                  .read<AuthAPI>()
+                  .updatePreferences(bio: bioTextController.text);
+              Navigator.of(context).pop();
+            },
+            child: Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
   signOut() {
-    final AuthAPI appwrite = context.read<AuthAPI>();
-    appwrite.signOut();
+    context.read<AuthAPI>().signOut();
   }
 
   @override
@@ -87,78 +199,69 @@ class _AccountPageState extends State<AccountPage> {
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch, // Full-width buttons
+          children: [
+            Text('Welcome back, $username!',
+                style: Theme.of(context).textTheme.headlineSmall),
+            Text('$email', style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 30),
+
+            // Change Name Button
+            ElevatedButton(
+              onPressed: showUpdateNameDialog,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber, // Background color
+                foregroundColor: Colors.black, // Text color
+                minimumSize: Size(double.infinity, 50), // Full-width, height 50
+              ),
+              child: Text("Change Name"),
+            ),
+            const SizedBox(height: 20),
+
+            // Change Email Button (Only if not OAuth)
+            if (!isOAuthUser)
+              ElevatedButton(
+                onPressed: showUpdateEmailDialog,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  foregroundColor: Colors.black,
+                  minimumSize: Size(double.infinity, 50),
+                ),
+                child: Text("Change Email"),
+              ),
+            if (isOAuthUser)
               Text(
-                'Welcome back, $username!',
-                style: Theme.of(context).textTheme.headlineSmall,
+                "Email updates are managed through your OAuth provider.",
+                style: TextStyle(color: Colors.grey),
               ),
-              Text('$email', style: TextStyle(color: Colors.grey)),
-              const SizedBox(height: 30),
+            const SizedBox(height: 20),
 
-              // Change Name Card
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.person),
-                  title: TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  trailing: IconButton(
-                    icon: Icon(Icons.save),
-                    onPressed: () => updateName(nameController.text),
-                  ),
-                ),
+            // Change Password Button
+            ElevatedButton(
+              onPressed: showUpdatePasswordDialog,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.black,
+                minimumSize: Size(double.infinity, 50),
               ),
-              const SizedBox(height: 20),
+              child: Text("Change Password"),
+            ),
+            const SizedBox(height: 20),
 
-              // Change Password Card
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.lock),
-                  title: TextField(
-                    controller: passwordController,
-                    decoration: const InputDecoration(
-                      labelText: 'New Password',
-                      border: OutlineInputBorder(),
-                    ),
-                    obscureText: true,
-                  ),
-                  trailing: IconButton(
-                    icon: Icon(Icons.save),
-                    onPressed: () => updatePassword(passwordController.text),
-                  ),
-                ),
+            // Change Bio Button
+            ElevatedButton(
+              onPressed: showUpdateBioDialog,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.black,
+                minimumSize: Size(double.infinity, 50),
               ),
-              const SizedBox(height: 20),
-
-              // Change Bio Card
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.info),
-                  title: TextField(
-                    controller: bioTextController,
-                    decoration: const InputDecoration(
-                      labelText: 'Bio',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  trailing: IconButton(
-                    icon: Icon(Icons.save),
-                    onPressed: savePreferences,
-                  ),
-                ),
-              ),
-            ],
-          ),
+              child: Text("Change Bio"),
+            ),
+          ],
         ),
       ),
     );
