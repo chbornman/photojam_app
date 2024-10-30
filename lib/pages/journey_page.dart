@@ -92,7 +92,7 @@ class _JourneyPageState extends State<JourneyPage> {
       }
 
       // Fetch all journeys and filter by user ID in participant_ids
-      final journeyList = await databaseApi.getAllJourneys();
+      final journeyList = await databaseApi.getJourneys();
       final userJourneys = journeyList.documents.where((journey) {
         final participantIds = journey.data['participant_ids'] as List<dynamic>;
         return participantIds.contains(userId);
@@ -205,7 +205,7 @@ class AllJourneysPage extends StatelessWidget {
   Future<List<Map<String, dynamic>>> _fetchUserJourneys() async {
     try {
       // Fetch all journeys and filter by participant_ids containing the userId
-      final response = await databaseApi.getAllJourneys();
+      final response = await databaseApi.getJourneys();
       final journeys = response.documents.where((doc) {
         final participantIds = doc.data['participant_ids'] as List<dynamic>;
         return participantIds.contains(userId);

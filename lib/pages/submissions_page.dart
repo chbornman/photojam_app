@@ -32,7 +32,7 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
       }
 
       // Retrieve all submissions for the authenticated user, passing userId as an argument
-      final response = await databaseApi.getAllSubmissions(userId: userId);
+      final response = await databaseApi.getSubmissionsByUser(userId: userId);
 
       List<Map<String, dynamic>> submissions = [];
       for (var doc in response) {
