@@ -87,7 +87,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     borderRadius: BorderRadius.circular(defaultCornerRadius),
                   ),
                   filled: true,
-                  fillColor: secondaryAccentColor, // Light grey background
+                  fillColor: secondaryAccentColor, 
                 ),
               ),
               const SizedBox(height: 16),
@@ -123,11 +123,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 icon: const Icon(Icons.app_registration),
                 label: const Text('Sign up'),
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.black,  // Black text color
-                  backgroundColor: accentColor,  // Amber background
-                  minimumSize: Size(double.infinity, defaultButtonHeight),  // Full-width button with fixed height
+                  foregroundColor: Colors.black,  
+                  backgroundColor: accentColor,  
+                  minimumSize: Size(double.infinity, defaultButtonHeight),  
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(defaultCornerRadius),  // Consistent corner radius
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),  
                   ),
                 ),
               ),
