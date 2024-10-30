@@ -130,28 +130,22 @@ class _JourneyPageState extends State<JourneyPage> {
     }
   }
 
-  void _goToAllJourneys() async {
-    // Fetch and wait for the user ID to be available
-    final userId = await auth.fetchUserId();
-    print("User ID fetched in _setCurrentJourneyId: $userId");
+void _goToAllJourneys() async {
+  final userId = await auth.fetchUserId();
+  print("User ID fetched in _goToAllJourneys: $userId");
 
-    if (userId == null || userId.isEmpty) {
-      print('User ID is still not available after fetching.');
-      throw Exception("User ID is not available");
-    }
-
-    // Check if the user ID is valid before navigating
-    if (userId.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => AllJourneysPage(
-                userId: userId)), 
-      );
-    } else {
-      print("User ID not available for AllJourneysPage");
-    }
+  if (userId == null || userId.isEmpty) {
+    print('User ID is still not available after fetching.');
+    throw Exception("User ID is not available");
   }
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => AllJourneysPage(userId: userId),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -194,19 +188,25 @@ class _JourneyPageState extends State<JourneyPage> {
 
 class AllJourneysPage extends StatelessWidget {
   final DatabaseAPI databaseApi = DatabaseAPI();
-  final String userId; // Add userId as a parameter
+  final String userId;
 
-  AllJourneysPage({required this.userId}); // Require userId in constructor
+  AllJourneysPage({required this.userId});
 
-  Future<List<Map<String, dynamic>>> _fetchAllJourneys() async {
+  Future<List<Map<String, dynamic>>> _fetchUserJourneys() async {
     try {
-      // Pass userId to getAllJourneys
-      final response = await databaseApi
-          .getAllJourneys(); // Implement getAllJourneys in DatabaseAPI
-      return List<Map<String, dynamic>>.from(response.documents
-          .map((doc) => {'id': doc.$id, 'title': doc.data['title']}));
+      // Fetch all journeys and filter by participant_ids containing the userId
+      final response = await databaseApi.getAllJourneys();
+      final journeys = response.documents.where((doc) {
+        final participantIds = doc.data['participant_ids'] as List<dynamic>;
+        return participantIds.contains(userId);
+      }).map((doc) => {
+        'id': doc.$id,
+        'title': doc.data['title'] ?? 'Untitled Journey'
+      }).toList();
+
+      return journeys;
     } catch (e) {
-      print('Error fetching all journeys: $e');
+      print('Error fetching user journeys: $e');
       return [];
     }
   }
@@ -215,8 +215,8 @@ class AllJourneysPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("All Journeys")),
-      body: FutureBuilder(
-        future: _fetchAllJourneys(),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _fetchUserJourneys(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -224,21 +224,23 @@ class AllJourneysPage extends StatelessWidget {
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(child: Text("No journeys available."));
           }
-          final AllJourneys = snapshot.data as List<Map<String, dynamic>>;
+          final userJourneys = snapshot.data!;
           return ListView.builder(
-            itemCount: AllJourneys.length,
+            itemCount: userJourneys.length,
             itemBuilder: (context, index) {
-              final journey = AllJourneys[index];
+              final journey = userJourneys[index];
               return ListTile(
                 title: Text(journey['title']),
                 onTap: () {
-                  // Navigate to lesson list for this journey
+                  // Navigate to the specific journey page with lessons
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => JourneyLessonsPage(
-                            journeyId: journey['id'],
-                            journeyTitle: journey['title'])),
+                      builder: (context) => JourneyLessonsPage(
+                        journeyId: journey['id'],
+                        journeyTitle: journey['title'],
+                      ),
+                    ),
                   );
                 },
               );
