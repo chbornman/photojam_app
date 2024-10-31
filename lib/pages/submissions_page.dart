@@ -90,8 +90,8 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => PhotoScrollPage(
-                              jamTitle: jamTitle,
-                              photos: photos,
+                              allSubmissions: allSubmissions,
+                              initialIndex: index,
                             ),
                           ),
                         );
