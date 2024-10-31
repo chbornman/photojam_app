@@ -102,8 +102,8 @@ class _HomePageState extends State<HomePage> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed:
-                    (nextJam != null && nextJam!.data['zoom_link'] != null)
-                        ? () => _goToZoomCall(nextJam!.data['zoom_link'])
+                    (nextJam != null && nextJam!.data['jam']['zoom_link'] != null)
+                        ? () => _goToZoomCall(nextJam!.data['jam']['zoom_link'])
                         : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accentColor,
