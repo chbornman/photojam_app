@@ -67,7 +67,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
     final database = Provider.of<DatabaseAPI>(context, listen: false);
     final jamData = await database.getJamById(jamId);
     setState(() {
-      selectedJamName = jamData?.data['title'] ?? "UnknownJam";
+      selectedJamName = jamData.data['title'] ?? "UnknownJam";
     });
   }
 
