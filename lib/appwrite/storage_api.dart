@@ -10,29 +10,32 @@ class StorageAPI {
   StorageAPI(this.client) : storage = Storage(client);
 
   ////////////// Photos API /////////////
-Future<Uint8List?> fetchAuthenticatedImage(String imageUrl, String authToken) async {
-  try {
-    print("Fetching image from: $imageUrl");
+  Future<Uint8List?> fetchAuthenticatedImage(
+      String imageUrl, String authToken) async {
+    try {
+      print("Fetching image from: $imageUrl");
 
-    final response = await http.get(
-      Uri.parse(imageUrl),
-      headers: {
-        'Authorization': 'Bearer $authToken',
-        'X-Appwrite-Project': APPWRITE_PROJECT_ID, // Ensure project ID is correct
-      },
-    );
+      final response = await http.get(
+        Uri.parse(Uri.encodeFull(imageUrl)), // Encode URL for compatibility
+        headers: {
+          'Authorization': 'Bearer $authToken',
+          'X-Appwrite-Project': APPWRITE_PROJECT_ID,
+        },
+      );
 
-    if (response.statusCode == 200) {
-      return response.bodyBytes;
-    } else {
-      print('Failed to load image. Status code: ${response.statusCode}, Reason: ${response.reasonPhrase}');
-      throw Exception('Failed to load image');
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      } else {
+        print(
+            'Failed to load image. Status code: ${response.statusCode}, Reason: ${response.reasonPhrase}');
+        throw Exception('Failed to load image');
+      }
+    } catch (e) {
+      print('Error fetching authenticated image: $e');
+      return null;
     }
-  } catch (e) {
-    print('Error fetching authenticated image: $e');
-    return null;
   }
-}
+
   // Simplified getPhotoUrl without appending /v1
   Future<String> getPhotoUrl(String fileId) async {
     final endpoint = client.endPoint; // Base endpoint from client
