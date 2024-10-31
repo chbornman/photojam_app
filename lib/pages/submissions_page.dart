@@ -1,9 +1,9 @@
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
+import 'package:photojam_app/pages/photoscroll_page.dart';
 import 'package:provider/provider.dart';
 
 class SubmissionsPage extends StatefulWidget {
@@ -20,12 +20,13 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
     super.initState();
     _fetchAllSubmissions();
   }
+
   Future<void> _fetchAllSubmissions() async {
     try {
       final auth = Provider.of<AuthAPI>(context, listen: false);
       final userId = auth.userid;
-      final authToken = await auth.getToken(); // Add a method in AuthAPI to retrieve auth token
-      
+      final authToken = await auth.getToken();
+
       if (userId == null || userId.isEmpty || authToken == null) throw Exception("User ID or auth token is not available.");
 
       final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
@@ -65,6 +66,7 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
       setState(() => isLoading = false);
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,24 +84,37 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
                     final jamTitle = submission['jamTitle'];
                     final photos = submission['photos'] as List<Uint8List?>;
 
-                    return Container(
-                      padding: const EdgeInsets.all(16.0),
-                      margin: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(jamTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8.0,
-                            runSpacing: 8.0,
-                            children: photos.map((photoData) {
-                              return photoData != null
-                                  ? Image.memory(photoData, width: 100, height: 100)
-                                  : Container(width: 100, height: 100, color: Colors.grey);
-                            }).toList(),
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PhotoScrollPage(
+                              jamTitle: jamTitle,
+                              photos: photos,
+                            ),
                           ),
-                        ],
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16.0),
+                        margin: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(jamTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8.0,
+                              runSpacing: 8.0,
+                              children: photos.map((photoData) {
+                                return photoData != null
+                                    ? Image.memory(photoData, width: 100, height: 100)
+                                    : Container(width: 100, height: 100, color: Colors.grey);
+                              }).toList(),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
