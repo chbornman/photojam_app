@@ -29,6 +29,7 @@ class AuthAPI extends ChangeNotifier {
   String? get userid => _currentUser?.$id;
   String? get email => _currentUser?.email;
   String? get username => _currentUser?.name;
+  AuthStatus get status => _status;
 
   /// Fetch user information and set authentication status
   Future<User?> loadUser() async {
@@ -54,7 +55,9 @@ class AuthAPI extends ChangeNotifier {
   }
 
   Future<User> createUser(
-      {required String name, required String email, required String password}) async {
+      {required String name,
+      required String email,
+      required String password}) async {
     try {
       final user = await account.create(
           userId: ID.unique(), email: email, password: password, name: name);
@@ -64,15 +67,26 @@ class AuthAPI extends ChangeNotifier {
     }
   }
 
-  Future<Session> createEmailPasswordSession({
+  Future<Session?> createEmailPasswordSession({
     required String email,
     required String password,
   }) async {
     try {
-      // Create a new session without deleting the existing one
+      // Attempt to delete any existing session
+      try {
+        await account.deleteSession(sessionId: 'current');
+        print("Existing session deleted.");
+      } catch (e) {
+        print("No existing session to delete or deletion failed: $e");
+      }
+
+      // Create a new session
       final session = await account.createEmailPasswordSession(
-          email: email, password: password);
-      _currentUser = await account.get();
+        email: email,
+        password: password,
+      );
+      _currentUser =
+          await account.get(); // Get user details for the new session
       _status = AuthStatus.authenticated;
       return session;
     } on AppwriteException catch (e) {
@@ -82,7 +96,6 @@ class AuthAPI extends ChangeNotifier {
       notifyListeners();
     }
   }
-
 
   signInWithProvider({required OAuthProvider provider}) async {
     try {

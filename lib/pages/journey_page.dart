@@ -13,7 +13,7 @@ class JourneyPage extends StatefulWidget {
 class _JourneyPageState extends State<JourneyPage> {
   String currentJourneyId = "currentJourneyId"; // Placeholder for the current journey ID
   String journeyTitle = "Journey"; // Placeholder for the journey title
-  List<Map<String, dynamic>> lessons = []; // Stores lessons for the current journey
+  List<String> lessons = []; // Stores URLs for the lessons
 
   @override
   void initState() {
@@ -29,12 +29,14 @@ class _JourneyPageState extends State<JourneyPage> {
       if (userId != null) {
         final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
         final response = await databaseApi.getJourneysByUser(userId);
-        
+
         if (response.documents.isNotEmpty) {
           setState(() {
             currentJourneyId = response.documents[0].$id;
             journeyTitle = response.documents[0].data['title'];
-            lessons = response.documents[0].data['lessons'] ?? [];
+            
+            // Cast lessons to List<String> assuming they are URLs
+            lessons = List<String>.from(response.documents[0].data['lessons'] ?? []);
           });
         }
       }
@@ -43,21 +45,21 @@ class _JourneyPageState extends State<JourneyPage> {
     }
   }
 
-Future<void> _viewLesson(String lessonId) async {
-  try {
-    final storageApi = Provider.of<StorageAPI>(context, listen: false);
-    final lessonData = await storageApi.getLesson(lessonId); // getLesson now returns Uint8List
+  Future<void> _viewLesson(String lessonUrl) async {
+    try {
+      final storageApi = Provider.of<StorageAPI>(context, listen: false);
+      final lessonData = await storageApi.getLesson(lessonUrl); // getLesson now returns Uint8List
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MarkdownViewerPage(content: lessonData), // Passing raw content
-      ),
-    );
-  } catch (e) {
-    print('Error viewing lesson: $e');
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MarkdownViewerPage(content: lessonData),
+        ),
+      );
+    } catch (e) {
+      print('Error viewing lesson: $e');
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -70,10 +72,10 @@ Future<void> _viewLesson(String lessonId) async {
         child: ListView.builder(
           itemCount: lessons.length,
           itemBuilder: (context, index) {
-            final lesson = lessons[index];
+            final lessonUrl = lessons[index];
             return ListTile(
-              title: Text(lesson['title'] ?? 'Untitled'),
-              onTap: () => _viewLesson(lesson['url']),
+              title: Text('Lesson ${index + 1}'), // Placeholder title for each lesson
+              onTap: () => _viewLesson(lessonUrl),
             );
           },
         ),

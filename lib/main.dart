@@ -35,12 +35,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authAPI = Provider.of<AuthAPI>(context);
+    
+    // Display TabsPage if authenticated, otherwise LoginPage
     return MaterialApp(
       title: 'PhotoJam App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const LoginPage(), // Or TabsPage, depending on your logic
+      home: authAPI.status == AuthStatus.authenticated
+          ? const TabsPage()
+          : const LoginPage(),
     );
   }
 }

@@ -51,13 +51,19 @@ class DatabaseAPI {
     }
   }
 
-  /// Retrieve a List of journeys by user_id
+  /// Get all journeys and filter by participant_ids in code
   Future<DocumentList> getJourneysByUser(String userId) async {
     try {
-      return await databases.listDocuments(
+      final response = await databases.listDocuments(
         databaseId: APPWRITE_DATABASE_ID,
         collectionId: COLLECTION_JOURNEYS,
-        queries: [Query.equal('participant_ids', userId)],
+      );
+      final filteredDocuments = response.documents.where((doc) {
+        return (doc.data['participant_ids'] ?? []).contains(userId);
+      }).toList();
+      return DocumentList(
+        documents: filteredDocuments,
+        total: filteredDocuments.length,
       );
     } catch (e) {
       print('Error fetching journeys for user $userId: $e');
