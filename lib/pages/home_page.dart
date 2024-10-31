@@ -1,9 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/pages/jamsignup_page.dart';
-import 'master_of_the_month_page.dart'; // Placeholder for Master of the Month page
+import 'package:photojam_app/pages/master_of_the_month_page.dart';
+import 'package:provider/provider.dart';
+import 'package:photojam_app/appwrite/database_api.dart';
+import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:appwrite/models.dart'; // Import for Appwrite Document model
+import 'package:intl/intl.dart'; // Import for date formatting
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<Document> userJams = []; // List to hold user jams as Documents
+  Document? nextJam; // Holds the next upcoming jam
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserJams(); // Fetch jams the user has submitted for
+  }
+
+  // Fetch jams from the database where the user has submissions
+  Future<void> _fetchUserJams() async {
+    final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
+    final userId = Provider.of<AuthAPI>(context, listen: false).userid;
+
+    // Fetch jams associated with the user's submissions
+    final jams = await databaseApi.getUserJamsWithSubmissions(userId!);
+
+    // Sort jams by date and find the next upcoming one
+    jams.sort((a, b) {
+      DateTime dateA = DateTime.parse(a.data['jam']['date']);
+      DateTime dateB = DateTime.parse(b.data['jam']['date']);
+      return dateA.compareTo(dateB);
+    });
+
+    setState(() {
+      userJams = jams;
+      try {
+        // Find the first upcoming jam by date
+        nextJam = userJams.firstWhere(
+          (cal) => DateTime.parse(cal.data['jam']['date']).isAfter(DateTime.now()),
+        );
+      } catch (e) {
+        // If no upcoming jam is found, set nextJam to null
+        nextJam = null;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -12,7 +61,8 @@ class HomePage extends StatelessWidget {
         foregroundColor: Colors.black,
         title: const Text('Home'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
+        // Enable scrolling
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -23,6 +73,8 @@ class HomePage extends StatelessWidget {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
+
+            // Sign Up Now button at the top of Join the Jam section
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -43,6 +95,31 @@ class HomePage extends StatelessWidget {
                 child: const Text('Sign Up Now'),
               ),
             ),
+            SizedBox(height: 10),
+
+            // Join next upcoming jam button with date
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed:
+                    (nextJam != null && nextJam!.data['zoom_link'] != null)
+                        ? () => _goToZoomCall(nextJam!.data['zoom_link'])
+                        : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentColor,
+                  foregroundColor: Colors.black,
+                  minimumSize: Size(double.infinity, defaultButtonHeight),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+                  ),
+                ),
+                child: Text(
+                  nextJam != null
+                      ? 'Join: ${DateFormat('MMM dd, yyyy').format(DateTime.parse(nextJam!.data['jam']['date']))}'
+                      : 'No upcoming jams available',
+                ),
+              ),
+            ),
             SizedBox(height: 20),
 
             // Master of the Month section with a light grey background
@@ -60,18 +137,21 @@ class HomePage extends StatelessWidget {
                   color: secondaryAccentColor,
                   borderRadius: BorderRadius.circular(defaultCornerRadius),
                 ),
-                padding: const EdgeInsets.all(16.0), // Padding inside the container
+                padding:
+                    const EdgeInsets.all(16.0), // Padding inside the container
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Master of the Month',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 10),
                     Text(
                       'Sebastiano Salgado',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                     SizedBox(height: 10),
                     Container(
@@ -129,5 +209,15 @@ class HomePage extends StatelessWidget {
       ),
       backgroundColor: secondaryAccentColor,
     );
+  }
+
+  // Function to launch the Zoom link
+  void _goToZoomCall(String url) {
+    final Uri zoomUri = Uri.parse(url);
+    if (zoomUri.hasScheme) {
+      launchUrl(zoomUri);
+    } else {
+      print("Invalid Zoom URL");
+    }
   }
 }

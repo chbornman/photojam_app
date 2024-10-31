@@ -163,6 +163,24 @@ class DatabaseAPI {
     }
   }
 
+Future<List<Document>> getUserJamsWithSubmissions(String userId) async {
+  try {
+    // Step 1: Retrieve all submissions made by the user
+    final userSubmissions = await databases.listDocuments(
+      databaseId: APPWRITE_DATABASE_ID,
+      collectionId: COLLECTION_SUBMISSIONS,
+      queries: [
+        Query.equal('user_id', userId), // Filter by userId in submissions
+      ],
+    );
+
+    return userSubmissions.documents;
+  } catch (e) {
+    print("Error fetching jams with submissions for user $userId: $e");
+    return []; // Return an empty list if the query fails
+  }
+}
+
 /////////////// Submission API calls ////////////////
 
   /// Retrieve a List of submissions by a user_id in order of date
