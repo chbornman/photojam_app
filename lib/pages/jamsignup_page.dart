@@ -142,12 +142,20 @@ class _JamSignupPageState extends State<JamSignupPage> {
         }
       }
     }
-
-    // Check for existing submission by user ID for the selected jam
+// Check for existing submission by user ID for the selected jam
     final existingSubmission =
         await database.getUserSubmissionForJam(selectedJamId!, userId);
 
     if (existingSubmission != null) {
+      // Delete existing photos
+      for (String url in existingSubmission.data['photos']) {
+        // Extract file ID from URL if needed, then delete
+        final fileId = extractFileIdFromUrl(
+            url); // Implement a helper to parse file ID from URL
+        await storage.deletePhoto(fileId);
+      }
+
+      // Update submission with new photos
       await database.updateSubmission(
         existingSubmission.$id,
         photoUrls,
@@ -158,9 +166,20 @@ class _JamSignupPageState extends State<JamSignupPage> {
       await database.createSubmission(selectedJamId!, photoUrls, userId);
       print("Submission created successfully for Jam: $selectedJamId");
     }
-
     // Show confirmation dialog and navigate to the home page after confirmation
     _showConfirmationDialog();
+  }
+
+  String extractFileIdFromUrl(String url) {
+    // Using RegExp to match the fileId in the URL pattern
+    final regex = RegExp(r'/files/([^/]+)/view');
+    final match = regex.firstMatch(url);
+
+    if (match != null && match.groupCount >= 1) {
+      return match.group(1)!; // Return the fileId
+    } else {
+      throw Exception('Invalid URL format: Unable to extract file ID');
+    }
   }
 
   Future<void> _showConfirmationDialog() async {
@@ -208,7 +227,8 @@ class _JamSignupPageState extends State<JamSignupPage> {
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.white,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16.0),
                   ),

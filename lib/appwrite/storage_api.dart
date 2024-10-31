@@ -74,6 +74,16 @@ class StorageAPI {
     }
   }
 
+  Future<void> deletePhoto(String fileId) async {
+    try {
+      await storage.deleteFile(
+        bucketId: BUCKET_PHOTOS_ID,
+        fileId: fileId,
+      );
+    } catch (e) {
+      print('Error deleting photo: $e');
+    }
+  }
   ////////////// Lessons API /////////////
 
   /// Uploads a lesson (markdown file) and returns the storage item ID.
