@@ -22,15 +22,40 @@ class _JamSignupPageState extends State<JamSignupPage> {
   List<DropdownMenuItem<String>> jamEvents = [];
   List<File?> photos = [null, null, null];
 
+  late DatabaseAPI database;
+  late StorageAPI storage;
+  late AuthAPI auth;
+  bool hasInitializedDependencies = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!hasInitializedDependencies) {
+      database = Provider.of<DatabaseAPI>(context, listen: false);
+      storage = Provider.of<StorageAPI>(context, listen: false);
+      auth = Provider.of<AuthAPI>(context, listen: false);
+      hasInitializedDependencies = true;
+      _fetchJamEvents();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _fetchJamEvents();
   }
 
   Future<void> _fetchJamEvents() async {
     try {
-      final database = Provider.of<DatabaseAPI>(context, listen: false);
+      late DatabaseAPI database;
+
+      @override
+      void didChangeDependencies() {
+        super.didChangeDependencies();
+        database = Provider.of<DatabaseAPI>(context, listen: false);
+        storage = Provider.of<StorageAPI>(context, listen: false);
+        auth = Provider.of<AuthAPI>(context, listen: false);
+      }
+
       final response = await database.getJams();
 
       setState(() {
@@ -95,7 +120,17 @@ class _JamSignupPageState extends State<JamSignupPage> {
     });
 
     // Get the selected Jam name from the database
-    final database = Provider.of<DatabaseAPI>(context, listen: false);
+
+    late DatabaseAPI database;
+
+    @override
+    void didChangeDependencies() {
+      super.didChangeDependencies();
+      database = Provider.of<DatabaseAPI>(context, listen: false);
+      storage = Provider.of<StorageAPI>(context, listen: false);
+      auth = Provider.of<AuthAPI>(context, listen: false);
+    }
+
     final jamData = await database.getJamById(jamId);
     setState(() {
       selectedJamName = jamData.data['title'] ?? "UnknownJam";
@@ -125,9 +160,6 @@ class _JamSignupPageState extends State<JamSignupPage> {
     }
 
     // Step 3: Proceed with photo upload and submission
-    final database = Provider.of<DatabaseAPI>(context, listen: false);
-    final storage = Provider.of<StorageAPI>(context, listen: false);
-    final auth = Provider.of<AuthAPI>(context, listen: false);
 
     final userId = await auth.fetchUserId();
     if (userId == null) {
@@ -224,9 +256,18 @@ class _JamSignupPageState extends State<JamSignupPage> {
 
 // Helper function to delete the existing submission and its associated photos
   Future<void> _deleteExistingSubmission() async {
-    final database = Provider.of<DatabaseAPI>(context, listen: false);
-    final storage = Provider.of<StorageAPI>(context, listen: false);
-    final auth = Provider.of<AuthAPI>(context, listen: false);
+    late DatabaseAPI database;
+    late StorageAPI storage;
+    late AuthAPI auth;
+
+    @override
+    void didChangeDependencies() {
+      super.didChangeDependencies();
+      database = Provider.of<DatabaseAPI>(context, listen: false);
+      storage = Provider.of<StorageAPI>(context, listen: false);
+      auth = Provider.of<AuthAPI>(context, listen: false);
+    }
+
     final userId = await auth.fetchUserId();
 
     if (userId != null) {
@@ -262,35 +303,37 @@ class _JamSignupPageState extends State<JamSignupPage> {
     }
   }
 
-  Future<void> _showConfirmationDialog() async {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Submission Successful"),
-          content: Text("Your photos have been submitted successfully."),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close the dialog
+Future<void> _showConfirmationDialog() async {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text("Submission Successful"),
+        content: Text("Your photos have been submitted successfully."),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close the dialog
 
-                // Navigate directly to the home page
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          TabsPage()), // Change to TabsPage or HomePage widget as needed
-                  (route) =>
-                      false, // This removes all routes until the specified route
-                );
-              },
-              child: Text("OK"),
-            ),
-          ],
-        );
-      },
-    );
-  }
+              // Retrieve user role before navigating
+              String? userRole = await Provider.of<AuthAPI>(context, listen: false).getUserRole();
+
+              // Navigate to TabsPage with the resolved user role
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TabsPage(userRole: userRole ?? 'UnknownRole'),
+                ),
+                (route) => false, // This removes all routes until the specified route
+              );
+            },
+            child: Text("OK"),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {

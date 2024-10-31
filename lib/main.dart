@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/constants/constants.dart';
@@ -28,27 +27,32 @@ void main() async {
         Provider<DatabaseAPI>(create: (_) => DatabaseAPI(client)),
         Provider<StorageAPI>(create: (_) => StorageAPI(client)),
       ],
-      child: const MyApp(),
+      child: MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
-    final authAPI = Provider.of<AuthAPI>(context);
-    
-    // Display TabsPage if authenticated, otherwise LoginPage
     return MaterialApp(
-      title: 'PhotoJam App',
+      title: 'PhotoJam',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: authAPI.status == AuthStatus.authenticated
-          ? const TabsPage()
-          : const LoginPage(),
+      home: FutureBuilder<String?>(
+        future: Provider.of<AuthAPI>(context, listen: false).getUserRole(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return CircularProgressIndicator();
+          } else if (snapshot.hasData && snapshot.data != null) {
+            final userRole = snapshot.data!;
+            return TabsPage(userRole: userRole);
+          } else {
+            return LoginPage();
+          }
+        },
+      ),
     );
   }
 }
