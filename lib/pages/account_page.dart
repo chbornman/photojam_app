@@ -15,11 +15,7 @@ class _AccountPageState extends State<AccountPage> {
   String? username;
   bool isOAuthUser = false;
 
-  TextEditingController bioTextController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
+  Future<void> initializeUserData() async {
     final AuthAPI appwrite = context.read<AuthAPI>();
 
     // Set class-level variables for email and username
@@ -27,16 +23,7 @@ class _AccountPageState extends State<AccountPage> {
     username = appwrite.username ?? 'no username';
 
     // Check if user is connected via OAuth
-    isOAuthUser = false; //TODO appwrite.isOAuthUser();
-
-    // Fetch and update user preferences (e.g., bio)
-    appwrite.getUserPreferences().then((value) {
-      if (value.data.isNotEmpty) {
-        setState(() {
-          bioTextController.text = value.data['bio'];
-        });
-      }
-    });
+    isOAuthUser = false; //TODO  appwrite.isOAuthUser();
   }
 
   // Method to show dialog for updating name
@@ -62,6 +49,9 @@ class _AccountPageState extends State<AccountPage> {
               setState(() {
                 username = nameController.text;
               });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Name updated successfully!"))
+              );
             },
             child: Text('Save'),
           ),
@@ -107,6 +97,9 @@ class _AccountPageState extends State<AccountPage> {
               setState(() {
                 email = emailController.text;
               });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Email updated successfully!"))
+              );
             },
             child: Text('Save'),
           ),
@@ -149,36 +142,9 @@ class _AccountPageState extends State<AccountPage> {
               await context.read<AuthAPI>().updatePassword(
                   currentPasswordController.text, newPasswordController.text);
               Navigator.of(context).pop();
-            },
-            child: Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Method to show dialog for updating bio
-  void showUpdateBioDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Update Bio'),
-        content: TextField(
-          controller: bioTextController,
-          decoration: const InputDecoration(labelText: 'Bio'),
-          maxLines: 3,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              context
-                  .read<AuthAPI>()
-                  .updatePreferences(bio: bioTextController.text);
-              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Password updated successfully!"))
+              );
             },
             child: Text('Save'),
           ),
@@ -205,87 +171,83 @@ class _AccountPageState extends State<AccountPage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Welcome back, $username!',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            Text(
-              '$email',
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 30),
-
-            // Change Name Button
-            ElevatedButton(
-              onPressed: showUpdateNameDialog,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                foregroundColor: Colors.black,
-                minimumSize: Size(double.infinity, defaultButtonHeight),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(defaultCornerRadius),
-                ),
-              ),
-              child: const Text("Change Name"),
-            ),
-            const SizedBox(height: 20),
-
-            // Change Email Button (Only if not OAuth)
-            if (!isOAuthUser)
-              ElevatedButton(
-                onPressed: showUpdateEmailDialog,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentColor,
-                  foregroundColor: Colors.black,
-                  minimumSize: Size(double.infinity, defaultButtonHeight),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+      body: FutureBuilder<void>(
+        future: initializeUserData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error loading user data.'));
+          } else {
+            return Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Welcome back, $username!',
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
-                ),
-                child: const Text("Change Email"),
-              ),
-            if (isOAuthUser)
-              const Text(
-                "Email updates are managed through your OAuth provider.",
-                style: TextStyle(color: Colors.grey),
-              ),
-            const SizedBox(height: 20),
+                  Text(
+                    '$email',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 30),
 
-            // Change Password Button
-            ElevatedButton(
-              onPressed: showUpdatePasswordDialog,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                foregroundColor: Colors.black,
-                minimumSize: Size(double.infinity, defaultButtonHeight),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(defaultCornerRadius),
-                ),
-              ),
-              child: const Text("Change Password"),
-            ),
-            const SizedBox(height: 20),
+                  // Change Name Button
+                  ElevatedButton(
+                    onPressed: showUpdateNameDialog,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accentColor,
+                      foregroundColor: Colors.black,
+                      minimumSize: Size(double.infinity, defaultButtonHeight),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(defaultCornerRadius),
+                      ),
+                    ),
+                    child: const Text("Change Name"),
+                  ),
+                  const SizedBox(height: 20),
 
-            // Change Bio Button
-            ElevatedButton(
-              onPressed: showUpdateBioDialog,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                foregroundColor: Colors.black,
-                minimumSize: Size(double.infinity, defaultButtonHeight),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(defaultCornerRadius),
-                ),
+                  // Change Email Button (Only if not OAuth)
+                  if (!isOAuthUser)
+                    ElevatedButton(
+                      onPressed: showUpdateEmailDialog,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accentColor,
+                        foregroundColor: Colors.black,
+                        minimumSize: Size(double.infinity, defaultButtonHeight),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(defaultCornerRadius),
+                        ),
+                      ),
+                      child: const Text("Change Email"),
+                    ),
+                  if (isOAuthUser)
+                    const Text(
+                      "Email updates are managed through your OAuth provider.",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  const SizedBox(height: 20),
+
+                  // Change Password Button
+                  ElevatedButton(
+                    onPressed: showUpdatePasswordDialog,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accentColor,
+                      foregroundColor: Colors.black,
+                      minimumSize: Size(double.infinity, defaultButtonHeight),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(defaultCornerRadius),
+                      ),
+                    ),
+                    child: const Text("Change Password"),
+                  ),
+                ],
               ),
-              child: const Text("Change Bio"),
-            ),
-          ],
-        ),
+            );
+          }
+        },
       ),
       backgroundColor: secondaryAccentColor,
     );
