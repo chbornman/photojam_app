@@ -55,19 +55,29 @@ class AuthAPI extends ChangeNotifier {
     return userid;
   }
 
-  Future<User> createUser(
-      {required String name,
-      required String email,
-      required String password}) async {
-    try {
-      final user = await account.create(
-          userId: ID.unique(), email: email, password: password, name: name);
-      return user;
-    } finally {
-      notifyListeners();
-    }
-  }
+Future<User> createUser({
+  required String name,
+  required String email,
+  required String password,
+  required String role,  // Add the role parameter
+}) async {
+  try {
+    // Create the user with the basic account information
+    final user = await account.create(
+      userId: ID.unique(),
+      email: email,
+      password: password,
+      name: name,
+    );
 
+    // Option 1: Store role as a preference
+    await account.updatePrefs(prefs: {'role': role});
+
+    return user;
+  } finally {
+    notifyListeners();
+  }
+}
   Future<Session?> createEmailPasswordSession({
     required String email,
     required String password,

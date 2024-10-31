@@ -25,7 +25,7 @@ void initState() {
   username = appwrite.username; // Accessing through the username getter
 
   // Check if user is OAuth connected
-  isOAuthUser = appwrite.isOAuthUser();
+  isOAuthUser = false; //TODO appwrite.isOAuthUser();
 
   appwrite.getUserPreferences().then((value) {
     if (value.data.isNotEmpty) {

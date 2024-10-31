@@ -45,7 +45,6 @@ Future<void> _scrollToInitialPosition() async {
   }
 
   // Accumulate the heights within the target section up to the selected photo index
-  final targetPhotos = widget.allSubmissions[widget.initialSubmissionIndex]['photos'] as List<Uint8List?>;
   for (int k = 0; k < widget.initialPhotoIndex; k++) {
     final key = _photoKeys[widget.initialSubmissionIndex * 100 + k];
     if (key != null && key.currentContext != null) {

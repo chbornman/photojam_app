@@ -12,30 +12,25 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  final nameTextController = TextEditingController();  // Controller for name
+  final nameTextController = TextEditingController();
   final emailTextController = TextEditingController();
   final passwordTextController = TextEditingController();
 
-  createAccount() async {
-    showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: const [
-                  CircularProgressIndicator(),
-                ]),
-          );
-        });
+  // Add a controller to store the selected role
+  String? selectedRole;
+
+  // Role options for the dropdown
+  final List<String> roles = ['nonmember', 'member', 'facilitator', 'admin'];
+
+  createAccount(String selectedRole) async {
+    // Use selectedRole directly as it is now non-nullable
     try {
       final AuthAPI appwrite = context.read<AuthAPI>();
       await appwrite.createUser(
-        name: nameTextController.text,  // Pass the name to createUser
+        name: nameTextController.text,
         email: emailTextController.text,
         password: passwordTextController.text,
+        role: selectedRole, // Directly passing selectedRole
       );
       Navigator.pop(context);
       const snackbar = SnackBar(content: Text('Account created!'));
@@ -87,7 +82,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     borderRadius: BorderRadius.circular(defaultCornerRadius),
                   ),
                   filled: true,
-                  fillColor: secondaryAccentColor, 
+                  fillColor: secondaryAccentColor,
                 ),
               ),
               const SizedBox(height: 16),
@@ -116,18 +111,50 @@ class _RegisterPageState extends State<RegisterPage> {
                 obscureText: true,
               ),
               const SizedBox(height: 16),
+              // Dropdown for user role selection
+              DropdownButtonFormField<String>(
+                decoration: InputDecoration(
+                  labelText: 'Select Role',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+                  ),
+                  filled: true,
+                  fillColor: secondaryAccentColor,
+                ),
+                value: selectedRole,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    selectedRole = newValue;
+                  });
+                },
+                items: roles.map((role) {
+                  return DropdownMenuItem(
+                    value: role,
+                    child: Text(role),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () {
-                  createAccount();
+                  if (selectedRole == null) {
+                    // Prompt the user to select a role if none is chosen
+                    showAlert(
+                        title: 'Select Role',
+                        text: 'Please select a role before signing up.');
+                  } else {
+                    // Pass selectedRole as non-nullable using `!`
+                    createAccount(selectedRole!);
+                  }
                 },
                 icon: const Icon(Icons.app_registration),
                 label: const Text('Sign up'),
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.black,  
-                  backgroundColor: accentColor,  
-                  minimumSize: Size(double.infinity, defaultButtonHeight),  
+                  foregroundColor: Colors.black,
+                  backgroundColor: accentColor,
+                  minimumSize: Size(double.infinity, defaultButtonHeight),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(defaultCornerRadius),  
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),
                   ),
                 ),
               ),

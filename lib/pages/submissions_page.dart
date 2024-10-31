@@ -2,7 +2,6 @@ import 'dart:typed_data';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
@@ -14,25 +13,15 @@ class SubmissionsPage extends StatefulWidget {
   _SubmissionsPageState createState() => _SubmissionsPageState();
 }
 
-class _SubmissionsPageState extends State<SubmissionsPage>
-    with WidgetsBindingObserver {
+class _SubmissionsPageState extends State<SubmissionsPage> with WidgetsBindingObserver {
   List<Map<String, dynamic>> allSubmissions = [];
   bool isLoading = true;
-  bool _dataLoaded = false;
-  late Box submissionsBox;
-  late Directory cacheDir;
-  final Duration cacheTimeout = Duration(minutes: 10);
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initializeCache();
-  }
-
-  Future<void> _initializeCache() async {
-    cacheDir = await getTemporaryDirectory();
-    await _initializeHiveBox();
+    _fetchAllSubmissions();  // Fetch fresh data on initialization
   }
 
   @override
@@ -41,87 +30,18 @@ class _SubmissionsPageState extends State<SubmissionsPage>
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _checkForDataRefresh();
-    }
-  }
-
-  Future<void> _initializeHiveBox() async {
-    if (!Hive.isBoxOpen('submissionsCache')) {
-      submissionsBox = await Hive.openBox('submissionsCache');
-    } else {
-      submissionsBox = Hive.box('submissionsCache');
-    }
-    await _loadCachedSubmissions();
-  }
-
-  Future<void> _loadCachedSubmissions() async {
-    final cachedData = submissionsBox.get('submissions');
-    final lastFetchTime = submissionsBox.get('lastFetchTime');
-
-    if (cachedData != null &&
-        lastFetchTime != null &&
-        DateTime.now().difference(lastFetchTime) < cacheTimeout) {
-      setState(() {
-        allSubmissions = List<Map<String, dynamic>>.from(
-          (cachedData as List).map((item) {
-            final photos = List<Uint8List?>.from(
-                (item['photos'] as List).map((photo) => photo as Uint8List?));
-            return {
-              'date': item['date'] as String,
-              'jamTitle': item['jamTitle'] as String,
-              'photos': photos,
-            };
-          }),
-        );
-        isLoading = false;
-        _dataLoaded = true;
-      });
-    }
-
-    if (!_dataLoaded) {
-      await _fetchAllSubmissions();
-    }
-  }
-
-  Future<Uint8List?> _fetchAndCacheImage(
-      String photoId, String authToken, StorageAPI storageApi) async {
-    // Generate a cache file path using only the photo ID
-    final cacheFile = await _getImageCacheFile(photoId);
-
-    if (await cacheFile.exists()) {
-      // If the cached file exists, load the image from disk
-      print("Loading image from cache: $photoId");
-      return await cacheFile.readAsBytes();
-    } else {
-      // If not cached, fetch the image from the network and save it
-      print("Fetching image from network: $photoId");
-      final imageData =
-          await storageApi.fetchAuthenticatedImage(photoId, authToken);
-      if (imageData != null) {
-        await cacheFile.writeAsBytes(imageData); // Cache the image data locally
-      }
-      return imageData;
-    }
-  }
-
-Future<File> _getImageCacheFile(String photoId) async {
-  // Encode photoId to remove any special characters in the path
-  final sanitizedPhotoId = Uri.encodeComponent(photoId);
-  // Use the verified cache directory path
-  return File('${cacheDir.path}/$sanitizedPhotoId.jpg');
-}
-
+  // Fetch all submissions metadata and check if images need to be updated
   Future<void> _fetchAllSubmissions() async {
     try {
+      setState(() => isLoading = true);  // Show loading indicator
+
       final auth = Provider.of<AuthAPI>(context, listen: false);
       final userId = auth.userid;
       final authToken = await auth.getToken();
 
-      if (userId == null || userId.isEmpty || authToken == null)
+      if (userId == null || userId.isEmpty || authToken == null) {
         throw Exception("User ID or auth token is not available.");
+      }
 
       final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
       final storageApi = Provider.of<StorageAPI>(context, listen: false);
@@ -130,18 +50,17 @@ Future<File> _getImageCacheFile(String photoId) async {
       List<Map<String, dynamic>> submissions = [];
       for (var doc in response) {
         final date = doc.data['date'] ?? 'Unknown Date';
-        final photoIds =
-            List<String>.from(doc.data['photos'] ?? []).take(3).toList();
+        final photoIds = List<String>.from(doc.data['photos'] ?? []).take(3).toList();
 
         String jamTitle = 'Untitled';
         final jamData = doc.data['jam'];
-        if (jamData is Map && jamData.containsKey('title'))
+        if (jamData is Map && jamData.containsKey('title')) {
           jamTitle = jamData['title'] ?? 'Untitled';
+        }
 
         List<Uint8List?> photos = [];
         for (var photoId in photoIds) {
-          final imageData =
-              await _fetchAndCacheImage(photoId, authToken, storageApi);
+          final imageData = await _fetchAndCacheImage(photoId, authToken, storageApi);
           photos.add(imageData);
         }
 
@@ -157,24 +76,46 @@ Future<File> _getImageCacheFile(String photoId) async {
       setState(() {
         allSubmissions = submissions;
         isLoading = false;
-        _dataLoaded = true;
       });
 
-      await submissionsBox.put('submissions', submissions);
-      await submissionsBox.put('lastFetchTime', DateTime.now());
     } catch (e) {
       print('Error fetching submissions: $e');
       setState(() => isLoading = false);
     }
   }
 
-  Future<void> _checkForDataRefresh() async {
-    final lastFetchTime = submissionsBox.get('lastFetchTime');
-    if (lastFetchTime == null ||
-        DateTime.now().difference(lastFetchTime) >= cacheTimeout) {
-      setState(() => isLoading = true);
-      await _fetchAllSubmissions();
+Future<Uint8List?> _fetchAndCacheImage(
+    String photoId, String authToken, StorageAPI storageApi) async {
+  final cacheFile = await _getImageCacheFile(photoId);
+
+  // Check if the cached image exists
+  if (await cacheFile.exists()) {
+    final cachedTime = cacheFile.lastModifiedSync();
+    final serverLastModified = await storageApi.getFileLastModified(photoId);
+
+    // Check that both dates are non-null and that server time is more recent
+    if (serverLastModified != null) {
+      if (!serverLastModified.isAfter(cachedTime)) {
+        print("Loading image from cache: $photoId");
+        return await cacheFile.readAsBytes();
+      }
     }
+  }
+
+  // If cache is outdated or unavailable, fetch updated image from the server
+  print("Fetching image from network: $photoId");
+  final imageData = await storageApi.fetchAuthenticatedImage(photoId, authToken);
+  if (imageData != null) {
+    await cacheFile.writeAsBytes(imageData); // Cache the new/updated image data locally
+  }
+  return imageData;
+}
+
+  // Helper to get the cache file path based on photoId
+  Future<File> _getImageCacheFile(String photoId) async {
+    final cacheDir = await getTemporaryDirectory();
+    final sanitizedPhotoId = Uri.encodeComponent(photoId);
+    return File('${cacheDir.path}/$sanitizedPhotoId.jpg');
   }
 
   @override
@@ -184,11 +125,23 @@ Future<File> _getImageCacheFile(String photoId) async {
         title: const Text("All Submissions"),
       ),
       body: RefreshIndicator(
-        onRefresh: _fetchAllSubmissions,
+        onRefresh: _fetchAllSubmissions,  // Pull-to-refresh always fetches new data
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : allSubmissions.isEmpty
-                ? Center(child: Text("No submissions yet"))
+                ? ListView(
+                    children: [
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Text(
+                            "No submissions yet",
+                            style: TextStyle(fontSize: 18, color: Colors.grey),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
                 : ListView.builder(
                     itemCount: allSubmissions.length,
                     itemBuilder: (context, index) {
@@ -202,9 +155,13 @@ Future<File> _getImageCacheFile(String photoId) async {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(jamTitle,
-                                style: const TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold)),
+                            Text(
+                              jamTitle,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             Wrap(
                               spacing: 8.0,
@@ -226,12 +183,12 @@ Future<File> _getImageCacheFile(String photoId) async {
                                     );
                                   },
                                   child: photoData != null
-                                      ? Image.memory(photoData,
-                                          width: 100, height: 100)
+                                      ? Image.memory(photoData, width: 100, height: 100)
                                       : Container(
                                           width: 100,
                                           height: 100,
-                                          color: Colors.grey),
+                                          color: Colors.grey,
+                                        ),
                                 );
                               }).toList(),
                             ),

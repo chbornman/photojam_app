@@ -74,6 +74,7 @@ class StorageAPI {
     }
   }
 
+  /// Deletes a photo by its file ID
   Future<void> deletePhoto(String fileId) async {
     try {
       await storage.deleteFile(
@@ -84,6 +85,21 @@ class StorageAPI {
       print('Error deleting photo: $e');
     }
   }
+
+  /// Fetches the last modified date of a file
+  Future<DateTime?> getFileLastModified(String fileId) async {
+    try {
+      final file = await storage.getFile(
+        bucketId: BUCKET_PHOTOS_ID,
+        fileId: fileId,
+      );
+      return DateTime.parse(file.$updatedAt); // Parse updated timestamp
+    } catch (e) {
+      print('Error fetching last modified date: $e');
+      return null; // Return null if the date cannot be retrieved
+    }
+  }
+
   ////////////// Lessons API /////////////
 
   /// Uploads a lesson (markdown file) and returns the storage item ID.
@@ -102,10 +118,8 @@ class StorageAPI {
   }
 
   /// Retrieves a lesson (markdown file) directly by its URL.
-  // Direct URL retrieval using `http` package
   Future<Uint8List> getLessonByURL(String fileUrl) async {
     try {
-      // Make a GET request directly to the provided URL
       final response = await http.get(Uri.parse(fileUrl));
 
       if (response.statusCode == 200) {
