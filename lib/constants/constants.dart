@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 
 //Appwrite Project
-const String APPWRITE_URL = "http://192.168.0.51/v1";
+const String APPWRITE_ENDPOINT_ID = "http://192.168.0.51/v1";
 const String APPWRITE_PROJECT_ID = "6720f5ca0032a3b05710";
 
 //Database

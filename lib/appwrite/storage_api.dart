@@ -102,20 +102,24 @@ class StorageAPI {
 
   ////////////// Lessons API /////////////
 
-  /// Uploads a lesson (markdown file) and returns the storage item ID.
-  Future<String> uploadLesson(Uint8List data, String fileName) async {
-    try {
-      final result = await storage.createFile(
-        bucketId: BUCKET_LESSONS_ID,
-        fileId: 'unique()', // Generates a unique ID
-        file: InputFile(bytes: data, filename: fileName),
-      );
-      return result.$id;
-    } catch (e) {
-      print('Error uploading lesson: $e');
-      rethrow;
-    }
+/// Uploads a lesson (markdown file) and returns the URL to access the file.
+Future<String> uploadLesson(Uint8List data, String fileName) async {
+  try {
+    final result = await storage.createFile(
+      bucketId: BUCKET_LESSONS_ID,
+      fileId: 'unique()', // Generates a unique ID
+      file: InputFile(bytes: data, filename: fileName),
+    );
+
+    // Construct the URL for the uploaded file
+    final fileUrl = "$APPWRITE_ENDPOINT_ID/v1/storage/buckets/$BUCKET_LESSONS_ID/files/${result.$id}/view?project=$APPWRITE_PROJECT_ID";
+
+    return fileUrl;
+  } catch (e) {
+    print('Error uploading lesson: $e');
+    rethrow;
   }
+}
 
   /// Retrieves a lesson (markdown file) directly by its URL.
   Future<Uint8List> getLessonByURL(String fileUrl) async {

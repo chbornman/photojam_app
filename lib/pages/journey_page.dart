@@ -116,6 +116,78 @@ class _JourneyPageState extends State<JourneyPage> {
     }
   }
 
+  Future<void> _openSignUpForJourneyDialog() async {
+    try {
+      final auth = Provider.of<AuthAPI>(context, listen: false);
+      final userId = auth.userid;
+      final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
+
+      // Fetch all active journeys the user is not signed up for
+      final allJourneys = await databaseApi.getAllActiveJourneys(); // Assume this returns active journeys
+      final userJourneys = await databaseApi.getJourneysByUser(userId!);
+
+      final userJourneyIds = userJourneys.documents.map((doc) => doc.$id).toSet();
+      final availableJourneys = allJourneys.documents
+          .where((journey) => !userJourneyIds.contains(journey.$id))
+          .toList();
+
+      if (availableJourneys.isEmpty) {
+        _showMessage("No available journeys to sign up for.");
+        return;
+      }
+
+      String? selectedJourneyId = availableJourneys.first.$id;
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text("Sign Up for a Journey"),
+            content: StatefulBuilder(
+              builder: (context, setState) {
+                return DropdownButtonFormField<String>(
+                  value: selectedJourneyId,
+                  items: availableJourneys.map((journey) {
+                    return DropdownMenuItem(
+                      value: journey.$id,
+                      child: Text(journey.data['title'] ?? "Untitled Journey"),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedJourneyId = value;
+                    });
+                  },
+                  decoration: InputDecoration(labelText: "Select Journey"),
+                );
+              },
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (selectedJourneyId != null) {
+                    await databaseApi.addUserToJourney(selectedJourneyId!, userId);
+                    _showMessage("Successfully signed up for the journey!");
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: Text("Sign Up"),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      print('Error fetching available journeys: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -150,10 +222,27 @@ class _JourneyPageState extends State<JourneyPage> {
               ),
               child: const Text("View All Journeys"),
             ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _openSignUpForJourneyDialog,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentColor,
+                foregroundColor: Colors.black,
+                minimumSize: Size(double.infinity, defaultButtonHeight),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(defaultCornerRadius),
+                ),
+              ),
+              child: const Text("Sign Up for a Journey"),
+            ),
           ],
         ),
       ),
       backgroundColor: secondaryAccentColor,
     );
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }

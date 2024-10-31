@@ -51,6 +51,20 @@ class DatabaseAPI {
     }
   }
 
+  /// Retrieves a list of all active journeys
+  Future<DocumentList> getAllActiveJourneys() async {
+    try {
+      return await databases.listDocuments(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JOURNEYS,
+        queries: [Query.equal('active', true)],
+      );
+    } catch (e) {
+      print('Error fetching active journeys: $e');
+      rethrow;
+    }
+  }
+
   /// Get all journeys and filter by participant_ids in code
   Future<DocumentList> getJourneysByUser(String userId) async {
     try {
@@ -67,24 +81,6 @@ class DatabaseAPI {
       );
     } catch (e) {
       print('Error fetching journeys for user $userId: $e');
-      rethrow;
-    }
-  }
-
-  /// Updates a journey with a new lesson
-  Future<void> addLessonToJourney(String journeyId, String lessonUrl) async {
-    try {
-      final journey = await getJourneyById(journeyId);
-      List lessons = journey.data['lessons'] ?? [];
-      lessons.add(lessonUrl);
-      await databases.updateDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
-        documentId: journeyId,
-        data: {'lessons': lessons},
-      );
-    } catch (e) {
-      print('Error adding lesson to journey: $e');
       rethrow;
     }
   }
@@ -317,6 +313,32 @@ class DatabaseAPI {
     }
   }
 
+  /// Retrieves a list of all jams
+  Future<DocumentList> listJams() async {
+    try {
+      return await databases.listDocuments(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JAMS,
+      );
+    } catch (e) {
+      print('Error fetching all jams: $e');
+      rethrow;
+    }
+  }
+
+  /// Retrieves a list of all journeys
+  Future<DocumentList> listJourneys() async {
+    try {
+      return await databases.listDocuments(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JOURNEYS,
+      );
+    } catch (e) {
+      print('Error fetching all journeys: $e');
+      rethrow;
+    }
+  }
+
   /// Updates a specific journey by its ID
   Future<void> updateJourney(Map<String, dynamic> data) async {
     try {
@@ -346,24 +368,35 @@ class DatabaseAPI {
     }
   }
 
-  /// Uploads a lesson to a journey
-  Future<void> uploadLessonToJourney(Map<String, dynamic> data) async {
+  /// Adds a lesson URL to a specified journey
+  Future<void> addLessonToJourney(String journeyId, String lessonURL) async {
     try {
+      // Fetch the current journey document to get all existing attributes
       final journey = await databases.getDocument(
         databaseId: APPWRITE_DATABASE_ID,
         collectionId: COLLECTION_JOURNEYS,
-        documentId: data['journeyId'],
+        documentId: journeyId,
       );
-      List lessons = journey.data['lessons'] ?? [];
-      lessons.add(data['lessonUrl']);
+
+      // Get the current list of lessons, or initialize it if it's null
+      List<dynamic> lessons = journey.data['lessons'] ?? [];
+      lessons.add(lessonURL);
+
+      // Retrieve the 'active' attribute (or any other required attributes) from the existing journey
+      bool isActive = journey.data['active'];
+
+      // Update the journey document, including the required 'active' attribute
       await databases.updateDocument(
         databaseId: APPWRITE_DATABASE_ID,
         collectionId: COLLECTION_JOURNEYS,
-        documentId: data['journeyId'],
-        data: {'lessons': lessons},
+        documentId: journeyId,
+        data: {
+          'lessons': lessons,
+          'active': isActive, // Include the required 'active' attribute
+        },
       );
     } catch (e) {
-      print('Error uploading lesson to journey: $e');
+      print('Error adding lesson to journey: $e');
       rethrow;
     }
   }

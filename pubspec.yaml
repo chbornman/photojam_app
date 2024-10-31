@@ -21,6 +21,7 @@ dependencies:
   hive_flutter: ^1.1.0
   path_provider: ^2.0.11 
   url_launcher: ^6.1.7 
+  file_picker: ^8.0.7
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.1
