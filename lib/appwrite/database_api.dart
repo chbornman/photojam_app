@@ -163,23 +163,23 @@ class DatabaseAPI {
     }
   }
 
-Future<List<Document>> getUserJamsWithSubmissions(String userId) async {
-  try {
-    // Step 1: Retrieve all submissions made by the user
-    final userSubmissions = await databases.listDocuments(
-      databaseId: APPWRITE_DATABASE_ID,
-      collectionId: COLLECTION_SUBMISSIONS,
-      queries: [
-        Query.equal('user_id', userId), // Filter by userId in submissions
-      ],
-    );
+  Future<List<Document>> getUserJamsWithSubmissions(String userId) async {
+    try {
+      // Step 1: Retrieve all submissions made by the user
+      final userSubmissions = await databases.listDocuments(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_SUBMISSIONS,
+        queries: [
+          Query.equal('user_id', userId), // Filter by userId in submissions
+        ],
+      );
 
-    return userSubmissions.documents;
-  } catch (e) {
-    print("Error fetching jams with submissions for user $userId: $e");
-    return []; // Return an empty list if the query fails
+      return userSubmissions.documents;
+    } catch (e) {
+      print("Error fetching jams with submissions for user $userId: $e");
+      return []; // Return an empty list if the query fails
+    }
   }
-}
 
 /////////////// Submission API calls ////////////////
 
@@ -199,6 +199,21 @@ Future<List<Document>> getUserJamsWithSubmissions(String userId) async {
       return submissionsResult.documents;
     } catch (e) {
       print('Error fetching all submissions: $e');
+      rethrow;
+    }
+  }
+
+  /// Deletes a submission by its ID
+  Future<void> deleteSubmission(String submissionId) async {
+    try {
+      await databases.deleteDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_SUBMISSIONS,
+        documentId: submissionId,
+      );
+      print("Submission with ID $submissionId deleted successfully.");
+    } catch (e) {
+      print("Error deleting submission with ID $submissionId: $e");
       rethrow;
     }
   }

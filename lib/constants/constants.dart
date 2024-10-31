@@ -20,3 +20,7 @@ const Color accentColor = Colors.amber; // Main accent color
 const Color secondaryAccentColor = Color(0xFFF5F5F5); // Very light grey
 const double defaultCornerRadius = 16;
 const double defaultButtonHeight = 50;
+
+
+// Zoom link
+const String ZOOM_LINK_URL = "https://us02web.zoom.us/j/86356738535";

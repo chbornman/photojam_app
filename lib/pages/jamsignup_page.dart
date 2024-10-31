@@ -108,29 +108,38 @@ class _JamSignupPageState extends State<JamSignupPage> {
   }
 
   Future<void> _submitPhotos() async {
+    // Step 1: Ensure a Jam is selected
     if (selectedJamId == null || selectedJamName == null) {
-      print("Please select a Jam event");
+      await _showSelectJamWarningDialog();
       return;
     }
 
+    // Step 2: Check if any photos are selected
+    bool noPhotosSelected = photos.every((photo) => photo == null);
+    if (noPhotosSelected) {
+      bool shouldDelete = await _showDeleteWarningDialog();
+      if (shouldDelete) {
+        await _deleteExistingSubmission();
+      }
+      return;
+    }
+
+    // Step 3: Proceed with photo upload and submission
     final database = Provider.of<DatabaseAPI>(context, listen: false);
     final storage = Provider.of<StorageAPI>(context, listen: false);
     final auth = Provider.of<AuthAPI>(context, listen: false);
 
-    final userId = await auth.fetchUserId(); // Fetch user ID
-
+    final userId = await auth.fetchUserId();
     if (userId == null) {
       print("User ID not found. Please log in.");
       return;
     }
 
     List<String> photoUrls = [];
-
     for (int i = 0; i < photos.length; i++) {
       final photo = photos[i];
       if (photo != null) {
         String fileName = formatFileName(i, selectedJamName!, userId);
-
         try {
           final photoId =
               await storage.uploadPhoto(await photo.readAsBytes(), fileName);
@@ -142,17 +151,15 @@ class _JamSignupPageState extends State<JamSignupPage> {
         }
       }
     }
-// Check for existing submission by user ID for the selected jam
+
     final existingSubmission =
         await database.getUserSubmissionForJam(selectedJamId!, userId);
-
     if (existingSubmission != null) {
       // Delete existing photos
       for (String url in existingSubmission.data['photos']) {
-        // Extract file ID from URL if needed, then delete
-        final fileId = extractFileIdFromUrl(
-            url); // Implement a helper to parse file ID from URL
+        final fileId = extractFileIdFromUrl(url);
         await storage.deletePhoto(fileId);
+        print("Deleted existing photo with file ID: $fileId");
       }
 
       // Update submission with new photos
@@ -166,8 +173,81 @@ class _JamSignupPageState extends State<JamSignupPage> {
       await database.createSubmission(selectedJamId!, photoUrls, userId);
       print("Submission created successfully for Jam: $selectedJamId");
     }
-    // Show confirmation dialog and navigate to the home page after confirmation
+
     _showConfirmationDialog();
+  }
+
+// Helper function to show a dialog if no Jam is selected
+  Future<void> _showSelectJamWarningDialog() async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Select a Jam"),
+          content: Text("Please select a Jam event before submitting photos."),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+              },
+              child: Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+// Helper function to show delete warning dialog if no photos are selected
+  Future<bool> _showDeleteWarningDialog() async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("No Photos Selected"),
+          content: Text(
+              "You have not selected any photos. Submitting will delete your existing submission and its photos. Do you want to proceed?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false), // Cancel
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true), // Confirm deletion
+              child: Text("Delete Submission"),
+            ),
+          ],
+        );
+      },
+    ).then((value) => value ?? false);
+  }
+
+// Helper function to delete the existing submission and its associated photos
+  Future<void> _deleteExistingSubmission() async {
+    final database = Provider.of<DatabaseAPI>(context, listen: false);
+    final storage = Provider.of<StorageAPI>(context, listen: false);
+    final auth = Provider.of<AuthAPI>(context, listen: false);
+    final userId = await auth.fetchUserId();
+
+    if (userId != null) {
+      final existingSubmission =
+          await database.getUserSubmissionForJam(selectedJamId!, userId);
+      if (existingSubmission != null) {
+        // Delete associated photos
+        for (String url in existingSubmission.data['photos']) {
+          final fileId = extractFileIdFromUrl(url);
+          await storage.deletePhoto(fileId);
+          print("Deleted photo with file ID: $fileId");
+        }
+
+        // Delete the submission itself
+        await database.deleteSubmission(existingSubmission.$id);
+        print("Existing submission deleted for Jam: $selectedJamId");
+      }
+    }
+
+    // Navigate back to the home page after deletion
+    Navigator.pop(context);
   }
 
   String extractFileIdFromUrl(String url) {
