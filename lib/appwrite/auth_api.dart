@@ -21,6 +21,7 @@ class AuthAPI extends ChangeNotifier {
   AuthAPI(this.client) : account = Account(client) {
     loadUser().then((_) {
       print('Authenticated user ID: $userid');
+      print('username: $username');
     }).catchError((error) {
       print('Error loading user: $error');
     });
@@ -32,19 +33,17 @@ class AuthAPI extends ChangeNotifier {
   String? get username => _currentUser?.name;
   AuthStatus get status => _status;
 
-  /// Fetch user information and set authentication status
-  Future<User?> loadUser() async {
+  /// Fetch user information with retry logic and set authentication status
+  loadUser() async {
     try {
       final user = await account.get();
       _status = AuthStatus.authenticated;
       _currentUser = user;
     } catch (e) {
       _status = AuthStatus.unauthenticated;
-      _currentUser = null;
     } finally {
       notifyListeners();
     }
-    return _currentUser;
   }
 
   /// Ensures that the user ID is available by loading the user if necessary
@@ -59,10 +58,11 @@ Future<User> createUser({
   required String name,
   required String email,
   required String password,
-  required String role,  // Add the role parameter
 }) async {
   try {
-    // Create the user with the basic account information
+    print("Attempting to create user with email: $email");
+
+    // Create the user with email, password, and name only
     final user = await account.create(
       userId: ID.unique(),
       email: email,
@@ -70,14 +70,34 @@ Future<User> createUser({
       name: name,
     );
 
-    // Option 1: Store role as a preference
-    await account.updatePrefs(prefs: {'role': role});
+    print("User created successfully with ID: ${user.$id}");
 
+    // Return the created user without setting a role
     return user;
-  } finally {
-    notifyListeners();
+  } on AppwriteException catch (e) {
+    // Log specific details about the exception
+    print("AppwriteException: ${e.message}");
+    print("Status Code: ${e.code}");
+    print("Response: ${e.response}");
+
+    // Propagate the exception after logging
+    rethrow;
+  } catch (e) {
+    print("Unexpected error: $e");
+    rethrow;
   }
 }
+
+  Future<String?> getUserRole() async {
+    try {
+      final prefs = await account.getPrefs();
+      return prefs.data['role'] as String?;
+    } catch (e) {
+      print("Error retrieving user role: $e");
+      return null;
+    }
+  }
+
   Future<Session?> createEmailPasswordSession({
     required String email,
     required String password,
@@ -193,7 +213,7 @@ Future<User> createUser({
     }
   }
 
-   /// Retrieves the current session token or creates a new session if needed
+  /// Retrieves the current session token or creates a new session if needed
   Future<String?> getToken() async {
     if (_authToken != null) {
       return _authToken; // Return the cached token if it exists
@@ -207,7 +227,7 @@ Future<User> createUser({
       // If there is no active session, create a new session here
       // Ensure credentials are provided, for example:
       final email = "user@example.com"; // Replace with user's email
-      final password = "user_password";  // Replace with user's password
+      final password = "user_password"; // Replace with user's password
 
       try {
         final session = await account.createEmailPasswordSession(

@@ -22,22 +22,47 @@ class _RegisterPageState extends State<RegisterPage> {
   // Role options for the dropdown
   final List<String> roles = ['nonmember', 'member', 'facilitator', 'admin'];
 
-  createAccount(String selectedRole) async {
-    // Use selectedRole directly as it is now non-nullable
+  createAccount() async {
     try {
+      // Step 1: Obtain the AuthAPI instance to interact with Appwrite authentication
       final AuthAPI appwrite = context.read<AuthAPI>();
+      print("AuthAPI instance acquired.");
+
+      // Step 2: Log the input data for debugging
+      print("Starting account creation with details:");
+      print("Name: ${nameTextController.text}");
+      print("Email: ${emailTextController.text}");
+
+      // Step 3: Attempt to create the user account in Appwrite
       await appwrite.createUser(
         name: nameTextController.text,
         email: emailTextController.text,
         password: passwordTextController.text,
-        role: selectedRole, // Directly passing selectedRole
       );
+      print("Account creation successful!");
+
+      // Step 4: Notify user of success and return to the previous screen
       Navigator.pop(context);
       const snackbar = SnackBar(content: Text('Account created!'));
       ScaffoldMessenger.of(context).showSnackBar(snackbar);
     } on AppwriteException catch (e) {
+      // Step 5: Catch any Appwrite-specific exceptions and log them
+      print("Account creation failed with error code: ${e.code}");
+      print("Error message: ${e.message}");
+
+      // Step 6: Display the error message to the user in a dialog
       Navigator.pop(context);
-      showAlert(title: 'Account creation failed', text: e.message.toString());
+      showAlert(
+        title: 'Account creation failed',
+        text: e.message.toString(),
+      );
+    } catch (e) {
+      // Step 7: Catch any unexpected errors that aren't Appwrite exceptions
+      print("An unexpected error occurred: $e");
+      showAlert(
+        title: 'Unexpected Error',
+        text: 'An unexpected error occurred. Please try again.',
+      );
     }
   }
 
@@ -111,41 +136,9 @@ class _RegisterPageState extends State<RegisterPage> {
                 obscureText: true,
               ),
               const SizedBox(height: 16),
-              // Dropdown for user role selection
-              DropdownButtonFormField<String>(
-                decoration: InputDecoration(
-                  labelText: 'Select Role',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(defaultCornerRadius),
-                  ),
-                  filled: true,
-                  fillColor: secondaryAccentColor,
-                ),
-                value: selectedRole,
-                onChanged: (String? newValue) {
-                  setState(() {
-                    selectedRole = newValue;
-                  });
-                },
-                items: roles.map((role) {
-                  return DropdownMenuItem(
-                    value: role,
-                    child: Text(role),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () {
-                  if (selectedRole == null) {
-                    // Prompt the user to select a role if none is chosen
-                    showAlert(
-                        title: 'Select Role',
-                        text: 'Please select a role before signing up.');
-                  } else {
-                    // Pass selectedRole as non-nullable using `!`
-                    createAccount(selectedRole!);
-                  }
+                  createAccount();
                 },
                 icon: const Icon(Icons.app_registration),
                 label: const Text('Sign up'),

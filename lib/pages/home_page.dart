@@ -21,7 +21,14 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _fetchUserJams(); // Fetch jams the user has submitted for
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userId = Provider.of<AuthAPI>(context, listen: false).userid;
+      if (userId != null) {
+        _fetchUserJams();
+      } else {
+        print("User ID is null, delaying fetch until user is authenticated.");
+      }
+    });
   }
 
   // Fetch jams from the database where the user has submissions
@@ -44,13 +51,24 @@ class _HomePageState extends State<HomePage> {
       try {
         // Find the first upcoming jam by date
         nextJam = userJams.firstWhere(
-          (cal) => DateTime.parse(cal.data['jam']['date']).isAfter(DateTime.now()),
+          (cal) =>
+              DateTime.parse(cal.data['jam']['date']).isAfter(DateTime.now()),
         );
       } catch (e) {
         // If no upcoming jam is found, set nextJam to null
         nextJam = null;
       }
     });
+  }
+
+  // Function to launch the Zoom link
+  void _goToZoomCall(String url) {
+    final Uri zoomUri = Uri.parse(url);
+    if (zoomUri.hasScheme) {
+      launchUrl(zoomUri);
+    } else {
+      print("Invalid Zoom URL");
+    }
   }
 
   @override
@@ -101,10 +119,10 @@ class _HomePageState extends State<HomePage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed:
-                    (nextJam != null && nextJam!.data['jam']['zoom_link'] != null)
-                        ? () => _goToZoomCall(nextJam!.data['jam']['zoom_link'])
-                        : null,
+                onPressed: (nextJam != null &&
+                        nextJam!.data['jam']['zoom_link'] != null)
+                    ? () => _goToZoomCall(nextJam!.data['jam']['zoom_link'])
+                    : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accentColor,
                   foregroundColor: Colors.black,
@@ -204,20 +222,43 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
+            SizedBox(height: 30),
+
+            // Conditionally render buttons for admin
+            FutureBuilder<String?>(
+              future:
+                  Provider.of<AuthAPI>(context, listen: false).getUserRole(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return CircularProgressIndicator();
+                } else if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                } else if (snapshot.hasData && snapshot.data == 'admin') {
+                  return Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          // Navigate to Add Jam page
+                        },
+                        child: Text('Add a Jam'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Navigate to Add Journey page
+                        },
+                        child: Text('Add a Journey'),
+                      ),
+                    ],
+                  );
+                } else {
+                  return SizedBox.shrink();
+                }
+              },
+            ),
           ],
         ),
       ),
       backgroundColor: secondaryAccentColor,
     );
-  }
-
-  // Function to launch the Zoom link
-  void _goToZoomCall(String url) {
-    final Uri zoomUri = Uri.parse(url);
-    if (zoomUri.hasScheme) {
-      launchUrl(zoomUri);
-    } else {
-      print("Invalid Zoom URL");
-    }
   }
 }
