@@ -3,6 +3,7 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/pages/tabs_page.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
@@ -50,10 +51,40 @@ class _JamSignupPageState extends State<JamSignupPage> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      final fileSize = await file.length();
+
+      if (fileSize > 10 * 1024 * 1024) {
+        // Check if file is greater than 10MB
+        _showSizeWarningDialog();
+        return;
+      }
+
       setState(() {
-        photos[index] = File(pickedFile.path);
+        photos[index] = file;
       });
     }
+  }
+
+  Future<void> _showSizeWarningDialog() async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("File Size Warning"),
+          content: Text(
+              "Selected photo exceeds the 10MB size limit. Please choose a smaller photo."),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+              },
+              child: Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _onJamSelected(String? jamId) async {
@@ -86,16 +117,10 @@ class _JamSignupPageState extends State<JamSignupPage> {
     final storage = Provider.of<StorageAPI>(context, listen: false);
     final auth = Provider.of<AuthAPI>(context, listen: false);
 
-    final username = await auth.getUsername();
     final userId = await auth.fetchUserId(); // Fetch user ID
 
-    if (username == null) {
-      print("Username not found. Please log in.");
-      return;
-    }
-
     if (userId == null) {
-      print("userId not found. Please log in.");
+      print("User ID not found. Please log in.");
       return;
     }
 
@@ -104,7 +129,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
     for (int i = 0; i < photos.length; i++) {
       final photo = photos[i];
       if (photo != null) {
-        String fileName = formatFileName(i, selectedJamName!, username);
+        String fileName = formatFileName(i, selectedJamName!, userId);
 
         try {
           final photoId =
@@ -118,12 +143,16 @@ class _JamSignupPageState extends State<JamSignupPage> {
       }
     }
 
+    // Check for existing submission by user ID for the selected jam
     final existingSubmission =
-        await database.getUserSubmissionForJam(selectedJamId!, username);
+        await database.getUserSubmissionForJam(selectedJamId!, userId);
 
     if (existingSubmission != null) {
       await database.updateSubmission(
-          existingSubmission.$id, photoUrls, DateTime.now().toIso8601String());
+        existingSubmission.$id,
+        photoUrls,
+        DateTime.now().toIso8601String(),
+      );
       print("Submission updated successfully for Jam: $selectedJamId");
     } else {
       await database.createSubmission(selectedJamId!, photoUrls, userId);
@@ -170,46 +199,77 @@ class _JamSignupPageState extends State<JamSignupPage> {
       appBar: AppBar(
         title: const Text("Jam Signup"),
       ),
-      body: Column(
-        children: [
-          DropdownButton<String>(
-            hint: Text("Select Jam Event"),
-            value: selectedJamId,
-            onChanged: (String? newValue) async {
-              await _onJamSelected(newValue);
-            },
-            items: jamEvents,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(3, (index) {
-              return InkWell(
-                onTap: () => _selectPhoto(index),
-                child: Container(
-                  width: 100.0,
-                  height: 100.0,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8.0),
-                    border: Border.all(color: Colors.grey),
-                    image: photos[index] != null
-                        ? DecorationImage(
-                            image: FileImage(photos[index]!),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Flexible(
+              child: DropdownButtonFormField<String>(
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16.0),
                   ),
-                  child: photos[index] == null
-                      ? Icon(Icons.photo, size: 48.0, color: Colors.grey)
-                      : null,
                 ),
-              );
-            }),
-          ),
-          ElevatedButton(
-            onPressed: _submitPhotos,
-            child: Text("Submit Photos"),
-          ),
-        ],
+                hint: Text("Select Jam Event"),
+                value: selectedJamId,
+                onChanged: (String? newValue) async {
+                  await _onJamSelected(newValue);
+                },
+                items: jamEvents,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Flexible(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(3, (index) {
+                  return Flexible(
+                    child: InkWell(
+                      onTap: () => _selectPhoto(index),
+                      child: Container(
+                        width: 100.0,
+                        height: 100.0,
+                        margin: EdgeInsets.symmetric(horizontal: 8.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16.0),
+                          border: Border.all(color: Colors.grey),
+                          image: photos[index] != null
+                              ? DecorationImage(
+                                  image: FileImage(photos[index]!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: photos[index] == null
+                            ? Icon(Icons.photo, size: 50.0, color: Colors.grey)
+                            : null,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentColor,
+                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: _submitPhotos,
+              child: Text(
+                "Submit Photos",
+                style: TextStyle(color: Colors.black, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
