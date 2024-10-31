@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/constants/constants.dart';
 import 'package:provider/provider.dart';
 
 class SubmissionsPage extends StatefulWidget {
@@ -10,7 +11,7 @@ class SubmissionsPage extends StatefulWidget {
 
 class _SubmissionsPageState extends State<SubmissionsPage> {
   List<Map<String, dynamic>> allSubmissions = [];
-  bool isLoading = true; // To manage loading state
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -18,55 +19,88 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
     _fetchAllSubmissions();
   }
 
-
   Future<void> _fetchAllSubmissions() async {
     try {
-      // Access AuthAPI through Provider to get the user ID
       final auth = Provider.of<AuthAPI>(context, listen: false);
       final userId = auth.userid;
 
-      if (userId == null || userId.isEmpty) {
-        print('User ID is not available.');
-        throw Exception("User ID is not available.");
-      }
+      if (userId == null || userId.isEmpty) throw Exception("User ID is not available.");
 
-      // Access DatabaseAPI through Provider to get the submissions
       final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
       final response = await databaseApi.getSubmissionsByUser(userId: userId);
 
+      List<Map<String, dynamic>> submissions = [];
+      for (var doc in response) {
+        final date = doc.data['date'] ?? 'Unknown Date';
+        final photos = List<String>.from(doc.data['photos'] ?? []).take(3).toList();
+
+        String jamTitle = 'Untitled';
+        final jamData = doc.data['jam'];
+        if (jamData is Map && jamData.containsKey('title')) jamTitle = jamData['title'] ?? 'Untitled';
+
+        submissions.add({
+          'date': date,
+          'jamTitle': jamTitle,
+          'photos': photos,
+        });
+      }
+
+      submissions.sort((a, b) => b['date'].compareTo(a['date']));
+
       setState(() {
-        allSubmissions = response
-            .map((doc) => doc.data)
-            .toList()
-            .cast<Map<String, dynamic>>();
+        allSubmissions = submissions;
         isLoading = false;
       });
     } catch (e) {
       print('Error fetching submissions: $e');
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Submissions'),
+        title: const Text("All Submissions"),
+        backgroundColor: accentColor,
+        foregroundColor: Colors.black,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : allSubmissions.isEmpty
-              ? const Center(child: Text('No submissions found.'))
+              ? Center(child: Text("No submissions yet", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)))
               : ListView.builder(
                   itemCount: allSubmissions.length,
                   itemBuilder: (context, index) {
                     final submission = allSubmissions[index];
-                    return ListTile(
-                      title: Text(submission['title'] ?? 'Untitled Submission'),
-                      subtitle: Text(submission['date'] ?? 'No date'),
+                    final jamTitle = submission['jamTitle'];
+                    final photos = submission['photos'] as List<String>;
+
+                    final backgroundColor = index % 2 == 0 ? Colors.white : Theme.of(context).secondaryHeaderColor;
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: backgroundColor,
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      padding: const EdgeInsets.all(16.0),
+                      margin: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(jamTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8.0,
+                            runSpacing: 8.0,
+                            children: photos.map((photoUrl) => ClipRRect(
+                                borderRadius: BorderRadius.circular(12.0),
+                                child: Image.network(photoUrl, fit: BoxFit.cover, width: 100, height: 100),
+                              )
+                            ).toList(),
+                          ),
+                        ],
+                      ),
                     );
                   },
                 ),
