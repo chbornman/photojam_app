@@ -1,6 +1,7 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/constants/constants.dart';
 import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 
 class StorageAPI {
   final Client client;
@@ -56,16 +57,21 @@ class StorageAPI {
     }
   }
 
-  /// Retrieves a lesson (markdown file) by its storage item ID.
-  Future<Uint8List> getLesson(String fileId) async {
+
+  /// Retrieves a lesson (markdown file) directly by its URL.
+  // Direct URL retrieval using `http` package
+  Future<Uint8List> getLessonByURL(String fileUrl) async {
     try {
-      final result = await storage.getFileDownload(
-        bucketId: BUCKET_LESSONS_ID,
-        fileId: fileId,
-      );
-      return result;
+      // Make a GET request directly to the provided URL
+      final response = await http.get(Uri.parse(fileUrl));
+
+      if (response.statusCode == 200) {
+        return response.bodyBytes; // Return the file as Uint8List
+      } else {
+        throw Exception('Failed to load lesson from URL');
+      }
     } catch (e) {
-      print('Error retrieving lesson: $e');
+      print('Error retrieving lesson by URL: $e');
       rethrow;
     }
   }
