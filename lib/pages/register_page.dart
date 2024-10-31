@@ -15,49 +15,46 @@ class _RegisterPageState extends State<RegisterPage> {
   final nameTextController = TextEditingController();
   final emailTextController = TextEditingController();
   final passwordTextController = TextEditingController();
-
-  // Add a controller to store the selected role
-  String? selectedRole;
+  String? selectedRole = 'nonmember';
 
   // Role options for the dropdown
   final List<String> roles = ['nonmember', 'member', 'facilitator', 'admin'];
 
   createAccount() async {
     try {
-      // Step 1: Obtain the AuthAPI instance to interact with Appwrite authentication
-      final AuthAPI appwrite = context.read<AuthAPI>();
+      final authAPI = context.read<AuthAPI>();
       print("AuthAPI instance acquired.");
 
-      // Step 2: Log the input data for debugging
-      print("Starting account creation with details:");
-      print("Name: ${nameTextController.text}");
-      print("Email: ${emailTextController.text}");
-
-      // Step 3: Attempt to create the user account in Appwrite
-      await appwrite.createUser(
+      // Attempt to create the user account in Appwrite
+      await authAPI.createUser(
         name: nameTextController.text,
         email: emailTextController.text,
         password: passwordTextController.text,
       );
       print("Account creation successful!");
 
-      // Step 4: Notify user of success and return to the previous screen
-      Navigator.pop(context);
-      const snackbar = SnackBar(content: Text('Account created!'));
-      ScaffoldMessenger.of(context).showSnackBar(snackbar);
-    } on AppwriteException catch (e) {
-      // Step 5: Catch any Appwrite-specific exceptions and log them
-      print("Account creation failed with error code: ${e.code}");
-      print("Error message: ${e.message}");
+      // Authenticate and set role once the user is logged in
+      await authAPI.createEmailPasswordSession(
+        email: emailTextController.text,
+        password: passwordTextController.text,
+      );
 
-      // Step 6: Display the error message to the user in a dialog
+      // Set role if login is successful
+      if (selectedRole != null) {
+        await authAPI.setRole(selectedRole!);
+        print("Role ${selectedRole!} set successfully.");
+      }
+
       Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account created and role set!')));
+    } on AppwriteException catch (e) {
+      print("Account creation failed with error code: ${e.code}");
       showAlert(
         title: 'Account creation failed',
         text: e.message.toString(),
       );
     } catch (e) {
-      // Step 7: Catch any unexpected errors that aren't Appwrite exceptions
       print("An unexpected error occurred: $e");
       showAlert(
         title: 'Unexpected Error',

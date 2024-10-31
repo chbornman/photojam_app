@@ -54,39 +54,39 @@ class AuthAPI extends ChangeNotifier {
     return userid;
   }
 
-Future<User> createUser({
-  required String name,
-  required String email,
-  required String password,
-}) async {
-  try {
-    print("Attempting to create user with email: $email");
+  Future<User> createUser({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      print("Attempting to create user with email: $email");
 
-    // Create the user with email, password, and name only
-    final user = await account.create(
-      userId: ID.unique(),
-      email: email,
-      password: password,
-      name: name,
-    );
+      // Create the user with email, password, and name only
+      final user = await account.create(
+        userId: ID.unique(),
+        email: email,
+        password: password,
+        name: name,
+      );
 
-    print("User created successfully with ID: ${user.$id}");
+      print("User created successfully with ID: ${user.$id}");
 
-    // Return the created user without setting a role
-    return user;
-  } on AppwriteException catch (e) {
-    // Log specific details about the exception
-    print("AppwriteException: ${e.message}");
-    print("Status Code: ${e.code}");
-    print("Response: ${e.response}");
+      // Return the created user without setting a role
+      return user;
+    } on AppwriteException catch (e) {
+      // Log specific details about the exception
+      print("AppwriteException: ${e.message}");
+      print("Status Code: ${e.code}");
+      print("Response: ${e.response}");
 
-    // Propagate the exception after logging
-    rethrow;
-  } catch (e) {
-    print("Unexpected error: $e");
-    rethrow;
+      // Propagate the exception after logging
+      rethrow;
+    } catch (e) {
+      print("Unexpected error: $e");
+      rethrow;
+    }
   }
-}
 
   Future<String?> getUserRole() async {
     try {
@@ -95,6 +95,43 @@ Future<User> createUser({
     } catch (e) {
       print("Error retrieving user role: $e");
       return null;
+    }
+  }
+
+  Future<void> setRole(String role) async {
+    // Check if the user is logged in
+    if (_status != AuthStatus.authenticated) {
+      print("User is not logged in. Unable to set role.");
+      throw Exception("User must be logged in to set a role.");
+    }
+
+    try {
+      print("Setting user role to: $role");
+
+      // Update the role in user preferences
+      await account.updatePrefs(prefs: {'role': role});
+
+      // Verify that the role was saved correctly
+      final prefs = await account.getPrefs();
+      if (prefs.data['role'] == role) {
+        print("Role set successfully: ${prefs.data['role']}");
+      } else {
+        print(
+            "Role verification failed. Expected: $role, Found: ${prefs.data['role']}");
+        throw Exception("Role verification failed after setting.");
+      }
+    } on AppwriteException catch (e) {
+      // Log detailed Appwrite-related errors for troubleshooting
+      print("AppwriteException: ${e.message}");
+      print("Status Code: ${e.code}");
+      print("Response: ${e.response}");
+
+      // Re-throw the exception for further handling
+      rethrow;
+    } catch (e) {
+      // Handle any unexpected errors
+      print("Unexpected error in setRole: $e");
+      rethrow;
     }
   }
 

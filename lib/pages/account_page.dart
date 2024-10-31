@@ -11,30 +11,33 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-  late String? email;
-  late String? username;
+  String? email;
+  String? username;
   bool isOAuthUser = false;
 
   TextEditingController bioTextController = TextEditingController();
 
-@override
-void initState() {
-  super.initState();
-  final AuthAPI appwrite = context.read<AuthAPI>();
-  email = appwrite.email; // Accessing through the email getter
-  username = appwrite.username; // Accessing through the username getter
+  @override
+  void initState() {
+    super.initState();
+    final AuthAPI appwrite = context.read<AuthAPI>();
 
-  // Check if user is OAuth connected
-  isOAuthUser = false; //TODO appwrite.isOAuthUser();
+    // Set class-level variables for email and username
+    email = appwrite.email ?? 'no email';
+    username = appwrite.username ?? 'no username';
 
-  appwrite.getUserPreferences().then((value) {
-    if (value.data.isNotEmpty) {
-      setState(() {
-        bioTextController.text = value.data['bio'];
-      });
-    }
-  });
-}
+    // Check if user is connected via OAuth
+    isOAuthUser = false; //TODO appwrite.isOAuthUser();
+
+    // Fetch and update user preferences (e.g., bio)
+    appwrite.getUserPreferences().then((value) {
+      if (value.data.isNotEmpty) {
+        setState(() {
+          bioTextController.text = value.data['bio'];
+        });
+      }
+    });
+  }
 
   // Method to show dialog for updating name
   void showUpdateNameDialog() {
