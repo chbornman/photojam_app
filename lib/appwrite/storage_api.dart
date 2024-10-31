@@ -112,7 +112,7 @@ Future<String> uploadLesson(Uint8List data, String fileName) async {
     );
 
     // Construct the URL for the uploaded file
-    final fileUrl = "$APPWRITE_ENDPOINT_ID/v1/storage/buckets/$BUCKET_LESSONS_ID/files/${result.$id}/view?project=$APPWRITE_PROJECT_ID";
+    final fileUrl = "$APPWRITE_ENDPOINT_ID/storage/buckets/$BUCKET_LESSONS_ID/files/${result.$id}/view?project=$APPWRITE_PROJECT_ID";
 
     return fileUrl;
   } catch (e) {
