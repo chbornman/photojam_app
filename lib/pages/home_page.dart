@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/constants/constants.dart';
-import 'signup_page.dart'; // Placeholder for the sign-up page
+import 'package:photojam_app/pages/jamsignup_page.dart';
 import 'master_of_the_month_page.dart'; // Placeholder for Master of the Month page
 
 class HomePage extends StatelessWidget {
@@ -29,7 +29,7 @@ class HomePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => SignupPage()),
+                    MaterialPageRoute(builder: (context) => JamSignupPage()),
                   );
                 },
                 style: ElevatedButton.styleFrom(

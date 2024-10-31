@@ -17,24 +17,24 @@ class _AccountPageState extends State<AccountPage> {
 
   TextEditingController bioTextController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    final AuthAPI appwrite = context.read<AuthAPI>();
-    email = appwrite.email;
-    username = appwrite.username;
+@override
+void initState() {
+  super.initState();
+  final AuthAPI appwrite = context.read<AuthAPI>();
+  email = appwrite.email; // Accessing through the email getter
+  username = appwrite.username; // Accessing through the username getter
 
-    // Check if user is OAuth connected
-    isOAuthUser = false; // TODO: Use appwrite.isOAuthUser() once implemented
+  // Check if user is OAuth connected
+  isOAuthUser = appwrite.isOAuthUser();
 
-    appwrite.getUserPreferences().then((value) {
-      if (value.data.isNotEmpty) {
-        setState(() {
-          bioTextController.text = value.data['bio'];
-        });
-      }
-    });
-  }
+  appwrite.getUserPreferences().then((value) {
+    if (value.data.isNotEmpty) {
+      setState(() {
+        bioTextController.text = value.data['bio'];
+      });
+    }
+  });
+}
 
   // Method to show dialog for updating name
   void showUpdateNameDialog() {

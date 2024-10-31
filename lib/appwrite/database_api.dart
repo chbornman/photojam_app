@@ -1,28 +1,12 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
-import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/constants/constants.dart';
 
 class DatabaseAPI {
-  Client client = Client();
-  late final Account account;
-  late final Databases databases;
-  late final Storage storage;
-  final AuthAPI auth = AuthAPI();
+  final Client client;
+  final Databases databases;
 
-  DatabaseAPI() {
-    init();
-  }
-
-  init() {
-    client
-        .setEndpoint(APPWRITE_URL)
-        .setProject(APPWRITE_PROJECT_ID)
-        .setSelfSigned();
-    account = Account(client);
-    databases = Databases(client);
-    storage = Storage(client);
-  }
+  DatabaseAPI(this.client) : databases = Databases(client);
 
 /////////////// Journey API calls ////////////////
   /// Creates a new journey

@@ -1,161 +1,72 @@
 import 'package:appwrite/appwrite.dart';
-import 'package:photojam_app/appwrite/auth_api.dart';
-import 'package:photojam_app/appwrite/database_api.dart'; // Import DatabaseAPI
 import 'package:photojam_app/constants/constants.dart';
+import 'dart:typed_data';
 
 class StorageAPI {
-  Client client = Client();
-  late final Account account;
-  late final Storage storage;
-  final DatabaseAPI databaseApi = DatabaseAPI(); // Use DatabaseAPI instance
-  final AuthAPI auth = AuthAPI();
+  final Client client;
+  final Storage storage;
 
-  StorageAPI() {
-    init();
-  }
+  StorageAPI(this.client) : storage = Storage(client);
 
-  init() {
-    client
-        .setEndpoint(APPWRITE_URL)
-        .setProject(APPWRITE_PROJECT_ID)
-        .setSelfSigned();
-    account = Account(client);
-    storage = Storage(client);
-  }
+  ////////////// Photos API /////////////
 
-  /// Uploads a photo for a specific jam. Returns the file ID on success.
-  Future<String?> uploadPhoto(String jamId, String filePath) async {
+  /// Uploads a photo and returns the storage item ID.
+  Future<String> uploadPhoto(Uint8List data, String fileName) async {
     try {
-      final response = await storage.createFile(
-        bucketId: BUCKET_PHOTOS_ID, // Replace with your actual bucket ID
-        fileId: 'unique()', // Generates a unique file ID
-        file: InputFile(path: filePath),
+      final result = await storage.createFile(
+        bucketId: BUCKET_PHOTOS_ID,
+        fileId: 'unique()', // Generates a unique ID
+        file: InputFile(bytes: data, filename: fileName),
       );
-
-      // Store file ID in the jam document after successful upload
-      await addPhotoToJam(jamId, response.$id);
-      return response.$id;
+      return result.$id;
     } catch (e) {
       print('Error uploading photo: $e');
-      return null;
+      rethrow;
     }
   }
 
-  /// Adds the uploaded photo's file ID to the jam document.
-  Future<void> addPhotoToJam(String jamId, String fileId) async {
+  /// Retrieves a photo by its storage item ID.
+  Future<Uint8List> getPhoto(String fileId) async {
     try {
-      // Fetch the list of jams to find the specific jam document
-      final jams = await databaseApi.getJams();
-      final jamDocument = jams.documents.firstWhere(
-        (doc) => doc.$id == jamId,
-        orElse: () => throw Exception('Jam not found'),
-      );
-
-      // Update the jam document with the new photo ID
-      List<String> photoIds = List<String>.from(jamDocument.data['photoIds'] ?? []);
-      if (photoIds.length < 3) {
-        photoIds.add(fileId);
-        await databaseApi.databases.updateDocument(
-          databaseId: APPWRITE_DATABASE_ID,
-          collectionId: COLLECTION_JAMS,
-          documentId: jamId,
-          data: {'photoIds': photoIds},
-        );
-      } else {
-        print('Error: Maximum number of photos already uploaded for this jam.');
-      }
-    } catch (e) {
-      print('Error adding photo to jam: $e');
-    }
-  }
-
-  /// Downloads a photo from storage given its file ID.
-  Future<void> downloadPhoto(String fileId, String destinationPath) async {
-    try {
-      await storage.getFileDownload(
+      final result = await storage.getFileDownload(
         bucketId: BUCKET_PHOTOS_ID,
         fileId: fileId,
-      ).then((response) {
-        // Save file to destinationPath
-        // Use a package like `dio` to handle saving the file locally.
-        print('Photo downloaded successfully to $destinationPath');
-      });
+      );
+      return result;
     } catch (e) {
-      print('Error downloading photo: $e');
+      print('Error retrieving photo: $e');
+      rethrow;
     }
   }
 
-  /// Lists all photo file IDs associated with a specific jam.
-  Future<List<String>?> listPhotosForJam(String jamId) async {
+  ////////////// Lessons API /////////////
+
+  /// Uploads a lesson (markdown file) and returns the storage item ID.
+  Future<String> uploadLesson(Uint8List data, String fileName) async {
     try {
-      final jams = await databaseApi.getJams();
-      final jamDocument = jams.documents.firstWhere(
-        (doc) => doc.$id == jamId,
-        orElse: () => throw Exception('Jam not found'),
+      final result = await storage.createFile(
+        bucketId: BUCKET_LESSONS_ID,
+        fileId: 'unique()', // Generates a unique ID
+        file: InputFile(bytes: data, filename: fileName),
       );
-
-      return List<String>.from(jamDocument.data['photoIds'] ?? []);
-    } catch (e) {
-      print('Error listing photos for jam: $e');
-      return null;
-    }
-  }
-
-  /// Uploads a lesson (markdown file) for a specific journey. Returns the file ID on success.
-  Future<String?> uploadLesson(String journeyId, String filePath) async {
-    try {
-      final response = await storage.createFile(
-        bucketId: BUCKET_LESSONS_ID, // Define a specific bucket for lessons
-        fileId: 'unique()', // Generates a unique file ID
-        file: InputFile(path: filePath),
-      );
-
-      // Store file ID in the journey document for future retrieval
-      await addLessonToJourney(journeyId, response.$id);
-      return response.$id;
+      return result.$id;
     } catch (e) {
       print('Error uploading lesson: $e');
-      return null;
+      rethrow;
     }
   }
 
-  /// Adds the uploaded lesson's file ID to the journey document.
-  Future<void> addLessonToJourney(String journeyId, String fileId) async {
+  /// Retrieves a lesson (markdown file) by its storage item ID.
+  Future<Uint8List> getLesson(String fileId) async {
     try {
-      // Fetch the journey document to update with new lesson file ID
-      final journeyDocument = await databaseApi.databases.getDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS, // Collection for journeys
-        documentId: journeyId,
-      );
-
-      // Update the journey document with the new lesson file ID
-      List<String> lessonIds = List<String>.from(journeyDocument.data['lessonIds'] ?? []);
-      lessonIds.add(fileId);
-      await databaseApi.databases.updateDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
-        documentId: journeyId,
-        data: {'lessonIds': lessonIds},
-      );
-    } catch (e) {
-      print('Error adding lesson to journey: $e');
-    }
-  }
-
-  /// Downloads a lesson from storage given its file ID.
-  Future<void> downloadLesson(String fileId, String destinationPath) async {
-    try {
-      await storage.getFileDownload(
-        bucketId: BUCKET_LESSONS_ID, // Use the specific lessons bucket ID
+      final result = await storage.getFileDownload(
+        bucketId: BUCKET_LESSONS_ID,
         fileId: fileId,
-      ).then((response) {
-        // Save file to destinationPath
-        // Use a package like `dio` to handle saving the file locally.
-        print('Lesson downloaded successfully to $destinationPath');
-      });
+      );
+      return result;
     } catch (e) {
-      print('Error downloading lesson: $e');
+      print('Error retrieving lesson: $e');
+      rethrow;
     }
   }
 }

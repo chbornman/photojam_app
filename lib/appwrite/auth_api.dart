@@ -1,7 +1,6 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart';
-import 'package:photojam_app/constants/constants.dart';
 import 'package:flutter/widgets.dart';
 
 enum AuthStatus {
@@ -11,35 +10,25 @@ enum AuthStatus {
 }
 
 class AuthAPI extends ChangeNotifier {
-  Client client = Client();
-  late final Account account;
+  final Client client;
+  final Account account;
 
   User? _currentUser;
   AuthStatus _status = AuthStatus.uninitialized;
 
-  // Getter methods
-  User? get currentUser => _currentUser;
-  AuthStatus get status => _status;
-  String? get username => _currentUser?.name;
-  String? get email => _currentUser?.email;
-  String? get userid => _currentUser?.$id;
-
-  // Constructor
-  AuthAPI() {
-    init();
+  // Constructor with injected client
+  AuthAPI(this.client) : account = Account(client) {
     loadUser().then((_) {
-      print('Authenticated user ID: $userid'); // Debug print
+      print('Authenticated user ID: $userid');
+    }).catchError((error) {
+      print('Error loading user: $error');
     });
   }
 
-  // Initialize the Appwrite client
-  void init() {
-    client
-        .setEndpoint(APPWRITE_URL)
-        .setProject(APPWRITE_PROJECT_ID)
-        .setSelfSigned();
-    account = Account(client);
-  }
+  // getters
+  String? get userid => _currentUser?.$id;
+  String? get email => _currentUser?.email;
+  String? get username => _currentUser?.name;
 
   /// Fetch user information and set authentication status
   Future<User?> loadUser() async {
@@ -75,18 +64,25 @@ class AuthAPI extends ChangeNotifier {
     }
   }
 
-  Future<Session> createEmailPasswordSession(
-      {required String email, required String password}) async {
+  Future<Session> createEmailPasswordSession({
+    required String email,
+    required String password,
+  }) async {
     try {
+      // Create a new session without deleting the existing one
       final session = await account.createEmailPasswordSession(
           email: email, password: password);
       _currentUser = await account.get();
       _status = AuthStatus.authenticated;
       return session;
+    } on AppwriteException catch (e) {
+      print("Login failed: ${e.message}");
+      rethrow;
     } finally {
       notifyListeners();
     }
   }
+
 
   signInWithProvider({required OAuthProvider provider}) async {
     try {

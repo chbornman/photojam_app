@@ -1,29 +1,33 @@
+
 import 'package:flutter/material.dart';
 import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/appwrite/database_api.dart';
+import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/pages/login_page.dart';
 import 'package:photojam_app/pages/tabs_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  Client client = Client()
+
+  // Initialize and configure Appwrite Client
+  final Client client = Client()
       .setEndpoint(APPWRITE_URL)
-      .setProject(APPWRITE_PROJECT_ID);
+      .setProject(APPWRITE_PROJECT_ID)
+      .setSelfSigned(); // Include only if necessary
 
-  final realtime = Realtime(client);
-
-  final subscription = realtime.subscribe(['account']);
-
-  subscription.stream.listen((response) {
-      // Callback will be executed on all account events.
-      print(response);
-  });
-  
-  // runApp(const MyApp());
-  runApp(ChangeNotifierProvider(
-      create: ((context) => AuthAPI()), child: const MyApp()));
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthAPI>(create: (_) => AuthAPI(client)),
+        Provider<DatabaseAPI>(create: (_) => DatabaseAPI(client)),
+        Provider<StorageAPI>(create: (_) => StorageAPI(client)),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -31,23 +35,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final value = context.watch<AuthAPI>().status;
-    print('TOP CHANGE Value changed to: $value!');
-
     return MaterialApp(
-        title: 'PhotoJam',
-        debugShowCheckedModeBanner: false,
-        home: value == AuthStatus.uninitialized
-            ? const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              )
-            : value == AuthStatus.authenticated
-                ? const TabsPage()
-                : const LoginPage(),
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSwatch().copyWith(
-            primary: const Color(0xFFE91052),
-          ),
-        ));
+      title: 'PhotoJam App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const LoginPage(), // Or TabsPage, depending on your logic
+    );
   }
 }

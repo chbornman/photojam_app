@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
-import 'package:photojam_app/appwrite/storage_api.dart'; // Import StorageAPI
+import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'dart:io';
 
 class JamSignupPage extends StatefulWidget {
@@ -12,8 +13,6 @@ class JamSignupPage extends StatefulWidget {
 }
 
 class _JamSignupPageState extends State<JamSignupPage> {
-  final database = DatabaseAPI();
-  final storageApi = StorageAPI(); // Initialize StorageAPI instance
   String? selectedJamId;
   List<DropdownMenuItem<String>> jamEvents = [];
   List<File?> photos = [null, null, null];
@@ -26,25 +25,27 @@ class _JamSignupPageState extends State<JamSignupPage> {
 
   Future<void> _fetchJamEvents() async {
     try {
-      final response = await database.getJams(); // Use getJams from DatabaseAPI
+      // Access DatabaseAPI through Provider
+      final database = Provider.of<DatabaseAPI>(context, listen: false);
+      final response = await database.getJams();
 
       setState(() {
         jamEvents = response.documents
-            .map((doc) => DropdownMenuItem(
+            .map((doc) => DropdownMenuItem<String>(
                   value: doc.$id,
-                  child: Text(doc.data['title'] ?? 'Unnamed Event'),
+                  child: Text(doc.data['title']),
                 ))
             .toList();
       });
     } catch (e) {
-      print('Error fetching events: $e');
+      print('Error fetching jam events: $e');
     }
   }
 
   Future<void> _selectPhoto(int index) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
+    
     if (pickedFile != null) {
       setState(() {
         photos[index] = File(pickedFile.path);
@@ -52,21 +53,18 @@ class _JamSignupPageState extends State<JamSignupPage> {
     }
   }
 
-  Future<void> _submitPhotos() async {
-    if (selectedJamId == null) {
-      print('Error: No Jam selected.');
-      return;
-    }
-
+  Future<void> _uploadPhotos() async {
     try {
-      for (var photo in photos.where((p) => p != null)) {
-        // Upload photo using StorageAPI
-        final fileId = await storageApi.uploadPhoto(selectedJamId!, photo!.path);
-        if (fileId != null) {
-          print('Photo uploaded with file ID: $fileId');
+      // Access StorageAPI through Provider
+      final storageApi = Provider.of<StorageAPI>(context, listen: false);
+      for (var photo in photos) {
+        if (photo != null) {
+          final fileBytes = await photo.readAsBytes();
+          final fileName = photo.path.split('/').last;
+          await storageApi.uploadPhoto(fileBytes, fileName);
         }
       }
-      print('Photos uploaded successfully!');
+      print('Photos uploaded successfully');
     } catch (e) {
       print('Error uploading photos: $e');
     }
@@ -75,47 +73,44 @@ class _JamSignupPageState extends State<JamSignupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Sign Up for Jam")),
+      appBar: AppBar(
+        title: const Text('Sign Up for a Jam'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             DropdownButton<String>(
-              hint: Text("Select a Jam Event"),
               value: selectedJamId,
-              onChanged: (value) => setState(() => selectedJamId = value),
               items: jamEvents,
+              onChanged: (value) {
+                setState(() {
+                  selectedJamId = value;
+                });
+              },
+              hint: const Text('Select a Jam Event'),
             ),
-            SizedBox(height: 20),
-            Text("Upload Photos (1-3)"),
+            const SizedBox(height: 20),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: List.generate(3, (index) {
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => _selectPhoto(index),
-                    child: Container(
-                      height: 100,
-                      margin: EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(10),
-                        color: Colors.grey[200],
-                      ),
-                      child: photos[index] == null
-                          ? Icon(Icons.add_a_photo)
-                          : Image.file(photos[index]!, fit: BoxFit.cover),
-                    ),
+                return GestureDetector(
+                  onTap: () => _selectPhoto(index),
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    color: Colors.grey[300],
+                    child: photos[index] != null
+                        ? Image.file(photos[index]!, fit: BoxFit.cover)
+                        : const Icon(Icons.add_a_photo),
                   ),
                 );
               }),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: selectedJamId != null && photos.any((p) => p != null)
-                  ? _submitPhotos
-                  : null,
-              child: Text("Submit"),
+              onPressed: selectedJamId != null ? _uploadPhotos : null,
+              child: const Text('Submit Photos'),
             ),
           ],
         ),
