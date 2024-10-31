@@ -11,6 +11,14 @@ class StorageAPI {
 
   ////////////// Photos API /////////////
 
+  // Simplified getPhotoUrl without appending /v1
+  Future<String> getPhotoUrl(String fileId) async {
+    final endpoint = client.endPoint;  // Base endpoint from client
+    print("Appwrite endpoint: $endpoint");  // Print endpoint for debugging
+
+    // Construct the URL without manually adding /v1
+    return "$endpoint/storage/buckets/$BUCKET_PHOTOS_ID/files/$fileId/view";
+  }
   /// Uploads a photo and returns the storage item ID.
   Future<String> uploadPhoto(Uint8List data, String fileName) async {
     try {
@@ -56,7 +64,6 @@ class StorageAPI {
       rethrow;
     }
   }
-
 
   /// Retrieves a lesson (markdown file) directly by its URL.
   // Direct URL retrieval using `http` package

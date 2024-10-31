@@ -164,20 +164,6 @@ class DatabaseAPI {
   }
 
 /////////////// Submission API calls ////////////////
-  /// Create new submission
-  Future<Document> createSubmission(Map<String, dynamic> data) async {
-    try {
-      return await databases.createDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_SUBMISSIONS,
-        documentId: 'unique()',
-        data: data,
-      );
-    } catch (e) {
-      print('Error creating submission: $e');
-      rethrow;
-    }
-  }
 
   /// Retrieve a List of submissions by a user_id in order of date
   Future<List<Document>> getSubmissionsByUser({required String userId}) async {
@@ -210,6 +196,62 @@ class DatabaseAPI {
     } catch (e) {
       print('Error fetching submissions for jam $jamId: $e');
       rethrow;
+    }
+  }
+
+  // Updates an existing submission with new photos and date
+  Future<void> updateSubmission(
+      String submissionId, List<String> photoUrls, String date) async {
+    try {
+      await databases.updateDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_SUBMISSIONS,
+        documentId: submissionId,
+        data: {'photos': photoUrls, 'date': date},
+      );
+    } catch (e) {
+      print("Error updating submission: $e");
+      rethrow;
+    }
+  }
+
+// Updated createSubmission to include user_id
+  Future<Document> createSubmission(
+      String jam, List<String> photos, String userId) async {
+    try {
+      return await databases.createDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_SUBMISSIONS,
+        documentId: 'unique()',
+        data: {
+          'user_id': userId, // Ensure user_id matches your schema
+          'jam': jam, // Make sure jam matches the schema field
+          'photos': photos,
+          'date': DateTime.now().toIso8601String()
+        },
+      );
+    } catch (e) {
+      print('Error creating submission: $e');
+      rethrow;
+    }
+  }
+
+// Updated getUserSubmissionForJam to query based on jam and user_id
+  Future<Document?> getUserSubmissionForJam(String jam, String userId) async {
+    try {
+      final response = await databases.listDocuments(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_SUBMISSIONS,
+        queries: [
+          Query.equal('jam', jam), // Correct field name as per schema
+          Query.equal(
+              'user_id', userId) // Check submission by both jam and user
+        ],
+      );
+      return response.documents.isNotEmpty ? response.documents.first : null;
+    } catch (e) {
+      print("Error fetching submission: $e");
+      return null;
     }
   }
 }
