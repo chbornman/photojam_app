@@ -166,4 +166,19 @@ class AuthAPI extends ChangeNotifier {
       rethrow;
     }
   }
+
+  // Method to retrieve the current user's username
+  Future<String?> getUsername() async {
+    try {
+      // Retrieve the user's account details
+      User user = await account.get();
+
+      // Assuming "name" is used as the username
+      return user
+          .name; // Replace 'name' with 'username' if you use a custom field
+    } catch (e) {
+      print("Error retrieving username: $e");
+      return null;
+    }
+  }
 }
