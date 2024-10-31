@@ -123,6 +123,35 @@ class DatabaseAPI {
     }
   }
 
+  /// Updates a specific jam by its ID
+  Future<void> updateJam(Map<String, dynamic> data) async {
+    try {
+      await databases.updateDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JAMS,
+        documentId: data['jamId'],
+        data: {'title': data['title']}, // Update fields as necessary
+      );
+    } catch (e) {
+      print('Error updating jam: $e');
+      rethrow;
+    }
+  }
+
+  /// Deletes a specific jam by ID
+  Future<void> deleteJam(Map<String, dynamic> data) async {
+    try {
+      await databases.deleteDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JAMS,
+        documentId: data['jamId'],
+      );
+    } catch (e) {
+      print('Error deleting jam: $e');
+      rethrow;
+    }
+  }
+
   /// Retrieve a List of all jams
   Future<DocumentList> getJams() {
     return databases.listDocuments(
@@ -285,6 +314,57 @@ class DatabaseAPI {
     } catch (e) {
       print("Error fetching submission: $e");
       return null;
+    }
+  }
+
+  /// Updates a specific journey by its ID
+  Future<void> updateJourney(Map<String, dynamic> data) async {
+    try {
+      await databases.updateDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JOURNEYS,
+        documentId: data['journeyId'],
+        data: {'name': data['name']}, // Update fields as necessary
+      );
+    } catch (e) {
+      print('Error updating journey: $e');
+      rethrow;
+    }
+  }
+
+  /// Deletes a specific journey by ID
+  Future<void> deleteJourney(Map<String, dynamic> data) async {
+    try {
+      await databases.deleteDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JOURNEYS,
+        documentId: data['journeyId'],
+      );
+    } catch (e) {
+      print('Error deleting journey: $e');
+      rethrow;
+    }
+  }
+
+  /// Uploads a lesson to a journey
+  Future<void> uploadLessonToJourney(Map<String, dynamic> data) async {
+    try {
+      final journey = await databases.getDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JOURNEYS,
+        documentId: data['journeyId'],
+      );
+      List lessons = journey.data['lessons'] ?? [];
+      lessons.add(data['lessonUrl']);
+      await databases.updateDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JOURNEYS,
+        documentId: data['journeyId'],
+        data: {'lessons': lessons},
+      );
+    } catch (e) {
+      print('Error uploading lesson to journey: $e');
+      rethrow;
     }
   }
 }

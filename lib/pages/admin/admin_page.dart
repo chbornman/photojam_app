@@ -1,5 +1,6 @@
-
 import 'package:flutter/material.dart';
+import 'package:photojam_app/pages/admin/contentmanagement_page.dart';
+import 'package:photojam_app/pages/admin/usermanagement_page.dart';
 
 class AdminPage extends StatelessWidget {
   const AdminPage({Key? key}) : super(key: key);
@@ -7,10 +8,6 @@ class AdminPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Admin Dashboard'),
-        backgroundColor: Colors.blueGrey,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -25,8 +22,10 @@ class AdminPage extends StatelessWidget {
                 title: Text('User Management'),
                 subtitle: Text('View and manage users'),
                 onTap: () {
-                  // Navigate to User Management Page (placeholder)
-                },
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => UserManagementPage()),
+                  );                },
               ),
             ),
             SizedBox(height: 10),
@@ -37,7 +36,10 @@ class AdminPage extends StatelessWidget {
                 title: Text('Content Management'),
                 subtitle: Text('Manage photos and submissions'),
                 onTap: () {
-                  // Navigate to Content Management Page (placeholder)
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ContentManagementPage()),
+                  );
                 },
               ),
             ),

@@ -1,7 +1,7 @@
 import 'package:photojam_app/pages/account_page.dart';
 import 'package:photojam_app/pages/home_page.dart';
 import 'package:photojam_app/pages/journey_page.dart';
-import 'package:photojam_app/pages/admin_page.dart'; // Importing Admin Page
+import 'package:photojam_app/pages/admin/admin_page.dart'; // Importing Admin Page
 import 'package:flutter/material.dart';
 import 'package:photojam_app/pages/submissions_page.dart';
 import 'package:photojam_app/constants/constants.dart';
