@@ -87,9 +87,15 @@ class _JamSignupPageState extends State<JamSignupPage> {
     final auth = Provider.of<AuthAPI>(context, listen: false);
 
     final username = await auth.getUsername();
+    final userId = await auth.fetchUserId(); // Fetch user ID
 
     if (username == null) {
       print("Username not found. Please log in.");
+      return;
+    }
+
+    if (userId == null) {
+      print("userId not found. Please log in.");
       return;
     }
 
@@ -101,7 +107,8 @@ class _JamSignupPageState extends State<JamSignupPage> {
         String fileName = formatFileName(i, selectedJamName!, username);
 
         try {
-          final photoId = await storage.uploadPhoto(await photo.readAsBytes(), fileName);
+          final photoId =
+              await storage.uploadPhoto(await photo.readAsBytes(), fileName);
           final photoUrl = await storage.getPhotoUrl(photoId);
           photoUrls.add(photoUrl);
           print("Uploaded photo $i with name $fileName");
@@ -111,13 +118,15 @@ class _JamSignupPageState extends State<JamSignupPage> {
       }
     }
 
-    final existingSubmission = await database.getUserSubmissionForJam(selectedJamId!, username);
+    final existingSubmission =
+        await database.getUserSubmissionForJam(selectedJamId!, username);
 
     if (existingSubmission != null) {
-      await database.updateSubmission(existingSubmission.$id, photoUrls, DateTime.now().toIso8601String());
+      await database.updateSubmission(
+          existingSubmission.$id, photoUrls, DateTime.now().toIso8601String());
       print("Submission updated successfully for Jam: $selectedJamId");
     } else {
-      await database.createSubmission(selectedJamId!, photoUrls, username);
+      await database.createSubmission(selectedJamId!, photoUrls, userId);
       print("Submission created successfully for Jam: $selectedJamId");
     }
 
@@ -125,32 +134,35 @@ class _JamSignupPageState extends State<JamSignupPage> {
     _showConfirmationDialog();
   }
 
-Future<void> _showConfirmationDialog() async {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text("Submission Successful"),
-        content: Text("Your photos have been submitted successfully."),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close the dialog
+  Future<void> _showConfirmationDialog() async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Submission Successful"),
+          content: Text("Your photos have been submitted successfully."),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
 
-              // Navigate directly to the home page
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => TabsPage()), // Change to TabsPage or HomePage widget as needed
-                (route) => false, // This removes all routes until the specified route
-              );
-            },
-            child: Text("OK"),
-          ),
-        ],
-      );
-    },
-  );
-}
+                // Navigate directly to the home page
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          TabsPage()), // Change to TabsPage or HomePage widget as needed
+                  (route) =>
+                      false, // This removes all routes until the specified route
+                );
+              },
+              child: Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

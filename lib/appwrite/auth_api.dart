@@ -15,6 +15,7 @@ class AuthAPI extends ChangeNotifier {
 
   User? _currentUser;
   AuthStatus _status = AuthStatus.uninitialized;
+  String? _authToken; // Add a field to store the token
 
   // Constructor with injected client
   AuthAPI(this.client) : account = Account(client) {
@@ -180,5 +181,39 @@ class AuthAPI extends ChangeNotifier {
       print("Error retrieving username: $e");
       return null;
     }
+  }
+
+   /// Retrieves the current session token or creates a new session if needed
+  Future<String?> getToken() async {
+    if (_authToken != null) {
+      return _authToken; // Return the cached token if it exists
+    }
+
+    try {
+      final session = await account.getSession(sessionId: 'current');
+      _authToken = session.$id; // Use the session ID as token
+    } catch (e) {
+      print('No active session found, creating a new one.');
+      // If there is no active session, create a new session here
+      // Ensure credentials are provided, for example:
+      final email = "user@example.com"; // Replace with user's email
+      final password = "user_password";  // Replace with user's password
+
+      try {
+        final session = await account.createEmailPasswordSession(
+          email: email,
+          password: password,
+        );
+        _authToken = session.$id;
+        _currentUser = await account.get(); // Refresh user data
+        _status = AuthStatus.authenticated;
+      } catch (e) {
+        print("Failed to create session: $e");
+        _status = AuthStatus.unauthenticated;
+      }
+    }
+
+    notifyListeners();
+    return _authToken;
   }
 }

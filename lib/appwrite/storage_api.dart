@@ -10,15 +10,38 @@ class StorageAPI {
   StorageAPI(this.client) : storage = Storage(client);
 
   ////////////// Photos API /////////////
+Future<Uint8List?> fetchAuthenticatedImage(String imageUrl, String authToken) async {
+  try {
+    print("Fetching image from: $imageUrl");
 
+    final response = await http.get(
+      Uri.parse(imageUrl),
+      headers: {
+        'Authorization': 'Bearer $authToken',
+        'X-Appwrite-Project': APPWRITE_PROJECT_ID, // Ensure project ID is correct
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      print('Failed to load image. Status code: ${response.statusCode}, Reason: ${response.reasonPhrase}');
+      throw Exception('Failed to load image');
+    }
+  } catch (e) {
+    print('Error fetching authenticated image: $e');
+    return null;
+  }
+}
   // Simplified getPhotoUrl without appending /v1
   Future<String> getPhotoUrl(String fileId) async {
-    final endpoint = client.endPoint;  // Base endpoint from client
-    print("Appwrite endpoint: $endpoint");  // Print endpoint for debugging
+    final endpoint = client.endPoint; // Base endpoint from client
+    print("Appwrite endpoint: $endpoint"); // Print endpoint for debugging
 
     // Construct the URL without manually adding /v1
     return "$endpoint/storage/buckets/$BUCKET_PHOTOS_ID/files/$fileId/view";
   }
+
   /// Uploads a photo and returns the storage item ID.
   Future<String> uploadPhoto(Uint8List data, String fileName) async {
     try {
