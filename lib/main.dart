@@ -37,9 +37,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'PhotoJam',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
       home: FutureBuilder<String?>(
         future: Provider.of<AuthAPI>(context, listen: false).getUserRole(),
         builder: (context, snapshot) {

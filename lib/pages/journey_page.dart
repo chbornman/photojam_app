@@ -121,7 +121,6 @@ class _JourneyPageState extends State<JourneyPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(journeyTitle),
-        backgroundColor: accentColor,
         foregroundColor: Colors.black,
       ),
       body: Padding(

@@ -33,43 +33,38 @@ class _TabsPageState extends State<TabsPage> {
       _screens.add(AdminPage());
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Photo Jam'),
-        backgroundColor: accentColor, // Top bar color
-        leading: GestureDetector(
-          onTap: () {
-            setState(() {
-              _currentIndex = 0; // Navigate to the Home Page (index 0)
-            });
-          },
-          child: Icon(Icons.home),
-        ),
-      ),
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        backgroundColor: accentColor, // Set bottom bar color to accentColor
-        selectedItemColor: Colors.black, // Optional: selected icon/text color
-        unselectedItemColor:
-            Colors.grey, // Optional: unselected icon/text color
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Journey'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.subscriptions), label: 'Submissions'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.account_circle), label: 'Account'),
-          if (widget.userRole == "admin")
-            BottomNavigationBarItem(
-                icon: Icon(Icons.admin_panel_settings), label: 'Admin'),
-        ],
-      ),
-    );
+return Scaffold(
+  appBar: AppBar(
+    title: Text('Photo Jam'),
+    backgroundColor: accentColor, // Top bar color
+    leading: GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentIndex = 0; // Navigate to the Home Page (index 0)
+        });
+      },
+      child: Icon(Icons.home),
+    ),
+  ),
+  body: _screens[_currentIndex],
+  bottomNavigationBar: BottomNavigationBar(
+    currentIndex: _currentIndex,
+    selectedItemColor: Colors.black, // Optional: selected icon/text color
+    unselectedItemColor: accentColor, // Optional: unselected icon/text color
+    onTap: (index) {
+      setState(() {
+        _currentIndex = index;
+      });
+    },
+    items: [
+      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+      BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Journey'),
+      BottomNavigationBarItem(icon: Icon(Icons.subscriptions), label: 'Submissions'),
+      BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Account'),
+      if (widget.userRole == "admin")
+        BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings), label: 'Admin'),
+    ],
+  ),
+);
   }
 }
