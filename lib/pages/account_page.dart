@@ -1,34 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/constants/constants.dart';
+import 'package:photojam_app/userdataprovider.dart';
 import 'package:provider/provider.dart';
 
 class AccountPage extends StatefulWidget {
-  const AccountPage({Key? key}) : super(key: key);
-
   @override
   _AccountPageState createState() => _AccountPageState();
 }
 
 class _AccountPageState extends State<AccountPage> {
-  String? email;
-  String? username;
-  bool isOAuthUser = false;
-
-  Future<void> initializeUserData() async {
-    final AuthAPI appwrite = context.read<AuthAPI>();
-
-    // Set class-level variables for email and username
-    email = appwrite.email ?? 'no email';
-    username = appwrite.username ?? 'no username';
-
-    // Check if user is connected via OAuth
-    isOAuthUser = false; //TODO  appwrite.isOAuthUser();
+  @override
+  void initState() {
+    super.initState();
+    final authAPI = context.read<AuthAPI>();
+    context.read<UserDataProvider>().initializeUserData(authAPI);
   }
 
   // Method to show dialog for updating name
   void showUpdateNameDialog() {
-    final nameController = TextEditingController(text: username);
+    final userData = context.read<UserDataProvider>(); 
+    final nameController = TextEditingController(text: userData.username);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -47,11 +39,10 @@ class _AccountPageState extends State<AccountPage> {
               await context.read<AuthAPI>().updateName(nameController.text);
               Navigator.of(context).pop();
               setState(() {
-                username = nameController.text;
+                userData.username = nameController.text;
               });
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Name updated successfully!"))
-              );
+                  SnackBar(content: Text("Name updated successfully!")));
             },
             child: Text('Save'),
           ),
@@ -62,7 +53,8 @@ class _AccountPageState extends State<AccountPage> {
 
   // Method to show dialog for updating email
   void showUpdateEmailDialog() {
-    final emailController = TextEditingController(text: email);
+    final userData = context.read<UserDataProvider>(); 
+    final emailController = TextEditingController(text: userData.email);
     final passwordController = TextEditingController();
     showDialog(
       context: context,
@@ -95,11 +87,10 @@ class _AccountPageState extends State<AccountPage> {
                   .updateEmail(emailController.text, passwordController.text);
               Navigator.of(context).pop();
               setState(() {
-                email = emailController.text;
+                userData.email = emailController.text;
               });
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Email updated successfully!"))
-              );
+                  SnackBar(content: Text("Email updated successfully!")));
             },
             child: Text('Save'),
           ),
@@ -143,8 +134,7 @@ class _AccountPageState extends State<AccountPage> {
                   currentPasswordController.text, newPasswordController.text);
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Password updated successfully!"))
-              );
+                  SnackBar(content: Text("Password updated successfully!")));
             },
             child: Text('Save'),
           ),
@@ -159,6 +149,8 @@ class _AccountPageState extends State<AccountPage> {
 
   @override
   Widget build(BuildContext context) {
+    final userData = context.watch<UserDataProvider>();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Account'),
@@ -171,83 +163,66 @@ class _AccountPageState extends State<AccountPage> {
           ),
         ],
       ),
-      body: FutureBuilder<void>(
-        future: initializeUserData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error loading user data.'));
-          } else {
-            return Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Welcome back, $username!',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  Text(
-                    '$email',
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 30),
-
-                  // Change Name Button
-                  ElevatedButton(
-                    onPressed: showUpdateNameDialog,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accentColor,
-                      foregroundColor: Colors.black,
-                      minimumSize: Size(double.infinity, defaultButtonHeight),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(defaultCornerRadius),
-                      ),
-                    ),
-                    child: const Text("Change Name"),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Change Email Button (Only if not OAuth)
-                  if (!isOAuthUser)
-                    ElevatedButton(
-                      onPressed: showUpdateEmailDialog,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: accentColor,
-                        foregroundColor: Colors.black,
-                        minimumSize: Size(double.infinity, defaultButtonHeight),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(defaultCornerRadius),
-                        ),
-                      ),
-                      child: const Text("Change Email"),
-                    ),
-                  if (isOAuthUser)
-                    const Text(
-                      "Email updates are managed through your OAuth provider.",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  const SizedBox(height: 20),
-
-                  // Change Password Button
-                  ElevatedButton(
-                    onPressed: showUpdatePasswordDialog,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accentColor,
-                      foregroundColor: Colors.black,
-                      minimumSize: Size(double.infinity, defaultButtonHeight),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(defaultCornerRadius),
-                      ),
-                    ),
-                    child: const Text("Change Password"),
-                  ),
-                ],
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Welcome back, ${userData.username}!',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            Text(
+              '${userData.email}',
+              style: const TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: showUpdateNameDialog,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentColor,
+                foregroundColor: Colors.black,
+                minimumSize: Size(double.infinity, defaultButtonHeight),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(defaultCornerRadius),
+                ),
               ),
-            );
-          }
-        },
+              child: const Text("Change Name"),
+            ),
+            const SizedBox(height: 20),
+            if (!userData.isOAuthUser)
+              ElevatedButton(
+                onPressed: showUpdateEmailDialog,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentColor,
+                  foregroundColor: Colors.black,
+                  minimumSize: Size(double.infinity, defaultButtonHeight),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+                  ),
+                ),
+                child: const Text("Change Email"),
+              ),
+            if (userData.isOAuthUser)
+              const Text(
+                "Email updates are managed through your OAuth provider.",
+                style: TextStyle(color: Colors.grey),
+              ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: showUpdatePasswordDialog,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentColor,
+                foregroundColor: Colors.black,
+                minimumSize: Size(double.infinity, defaultButtonHeight),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(defaultCornerRadius),
+                ),
+              ),
+              child: const Text("Change Password"),
+            ),
+          ],
+        ),
       ),
       backgroundColor: secondaryAccentColor,
     );

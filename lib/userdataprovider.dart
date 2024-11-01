@@ -1,0 +1,19 @@
+import 'package:flutter/material.dart';
+import 'package:photojam_app/appwrite/auth_api.dart';
+
+class UserDataProvider extends ChangeNotifier {
+  String? username;
+  String? email;
+  bool isOAuthUser = false;
+
+  Future<void> initializeUserData(AuthAPI authAPI) async {
+    try {
+      email = authAPI.email ?? 'no email';
+      username = authAPI.username ?? 'no username';
+      isOAuthUser = authAPI.isOAuthUser();
+      notifyListeners();
+    } catch (e) {
+      print("Error loading user data: $e");
+    }
+  }
+}
