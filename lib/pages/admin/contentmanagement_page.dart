@@ -7,7 +7,6 @@ import 'package:photojam_app/constants/constants.dart';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 
-
 class ContentManagementPage extends StatefulWidget {
   @override
   _ContentManagementPageState createState() => _ContentManagementPageState();
@@ -209,98 +208,104 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     }
   }
 
-void _openAddLessonDialog(Map<String, String> journeyMap) {
-  String selectedTitle = journeyMap.keys.first;
-  Uint8List? selectedFileBytes;
-  String? selectedFileName;
+  void _openAddLessonDialog(Map<String, String> journeyMap) {
+    String selectedTitle = journeyMap.keys.first;
+    Uint8List? selectedFileBytes;
+    String? selectedFileName;
 
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text("Upload Lesson to Journey"),
-        content: StatefulBuilder(
-          builder: (context, setState) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<String>(
-                  value: selectedTitle,
-                  items: journeyMap.keys.map((title) {
-                    return DropdownMenuItem(
-                      value: title,
-                      child: Text(title),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedTitle = value!;
-                    });
-                  },
-                  decoration: InputDecoration(labelText: "Select Journey"),
-                ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () async {
-                    FilePickerResult? result = await FilePicker.platform.pickFiles(
-                      type: FileType.custom,
-                      allowedExtensions: ['md'], // Allow only markdown files
-                      withData: true, // Load file data directly into memory
-                    );
-
-                    if (result != null && result.files.single.bytes != null) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Upload Lesson to Journey"),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: selectedTitle,
+                    items: journeyMap.keys.map((title) {
+                      return DropdownMenuItem(
+                        value: title,
+                        child: Text(title),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
                       setState(() {
-                        selectedFileName = result.files.single.name;
-                        selectedFileBytes = result.files.single.bytes;
+                        selectedTitle = value!;
                       });
-                      print("File selected: $selectedFileName - ${selectedFileBytes?.lengthInBytes ?? 0} bytes");
-                    } else {
-                      print("No file selected or file has no bytes.");
-                    }
-                  },
-                  child: Text(selectedFileName ?? "Select Lesson File"),
-                ),
-              ],
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
+                    },
+                    decoration: InputDecoration(labelText: "Select Journey"),
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () async {
+                      FilePickerResult? result =
+                          await FilePicker.platform.pickFiles(
+                        type: FileType.custom,
+                        allowedExtensions: ['md'], // Allow only markdown files
+                        withData: true, // Load file data directly into memory
+                      );
+
+                      if (result != null && result.files.single.bytes != null) {
+                        setState(() {
+                          selectedFileName = result.files.single.name;
+                          selectedFileBytes = result.files.single.bytes;
+                        });
+                        print(
+                            "File selected: $selectedFileName - ${selectedFileBytes?.lengthInBytes ?? 0} bytes");
+                      } else {
+                        print("No file selected or file has no bytes.");
+                      }
+                    },
+                    child: Text(selectedFileName ?? "Select Lesson File"),
+                  ),
+                ],
+              );
             },
-            child: Text("Cancel"),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              if (selectedFileBytes == null) {
-                _showMessage("Please select a lesson file.", isError: true);
-                return;
-              }
-
-              try {
-                // Step 1: Upload file using the Storage API
-                print("Uploading file: $selectedFileName with ${selectedFileBytes!.lengthInBytes} bytes");
-                final fileUrl = await storage.uploadLesson(selectedFileBytes!, selectedFileName!);
-
-                // Step 2: Add the uploaded file URL to the journey
-                print("File uploaded. URL: $fileUrl");
-                await database.addLessonToJourney(journeyMap[selectedTitle]!, fileUrl);
-
+          actions: [
+            TextButton(
+              onPressed: () {
                 Navigator.of(context).pop();
-                _showMessage("Lesson uploaded successfully");
-              } catch (e) {
-                print("Error uploading lesson: $e");
-                _showMessage("Error uploading lesson: $e", isError: true);
-              }
-            },
-            child: Text("Upload"),
-          ),
-        ],
-      );
-    },
-  );
-}
+              },
+              child: Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (selectedFileBytes == null) {
+                  _showMessage("Please select a lesson file.", isError: true);
+                  return;
+                }
+
+                try {
+                  // Step 1: Upload file using the Storage API
+                  print(
+                      "Uploading file: $selectedFileName with ${selectedFileBytes!.lengthInBytes} bytes");
+                  final fileUrl = await storage.uploadLesson(
+                      selectedFileBytes!, selectedFileName!);
+
+                  // Step 2: Add the uploaded file URL to the journey
+                  print("File uploaded. URL: $fileUrl");
+                  await database.addLessonToJourney(
+                      journeyMap[selectedTitle]!, fileUrl);
+
+                  Navigator.of(context).pop();
+                  _showMessage("Lesson uploaded successfully");
+                } catch (e) {
+                  print("Error uploading lesson: $e");
+                  _showMessage("Error uploading lesson: $e", isError: true);
+                }
+              },
+              child: Text("Upload"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _openUpdateJamDialog(Map<String, String> jamMap) {
     String selectedTitle = jamMap.keys.first;
     final TextEditingController titleController = TextEditingController();
@@ -648,6 +653,8 @@ void _openAddLessonDialog(Map<String, String> journeyMap) {
                   "Delete Jam", _fetchAndOpenDeleteJamDialog),
               _buildManagementButton(
                   "Add Lesson to Journey", _fetchAndOpenAddLessonDialog),
+              // _buildManagementButton(
+              //     "Remove Lesson to Journey", _fetchAndOpenRemoveLessonDialog),
             ],
           ],
         ),
