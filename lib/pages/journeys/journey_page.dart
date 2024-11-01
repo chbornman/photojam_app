@@ -194,6 +194,7 @@ class _JourneyPageState extends State<JourneyPage> {
       appBar: AppBar(
         title: Text(journeyTitle),
         foregroundColor: Colors.black,
+        backgroundColor: Colors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

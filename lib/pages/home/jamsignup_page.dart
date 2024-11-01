@@ -46,7 +46,6 @@ class _JamSignupPageState extends State<JamSignupPage> {
 
   Future<void> _fetchJamEvents() async {
     try {
-
       @override
       void didChangeDependencies() {
         super.didChangeDependencies();
@@ -251,7 +250,6 @@ class _JamSignupPageState extends State<JamSignupPage> {
 
 // Helper function to delete the existing submission and its associated photos
   Future<void> _deleteExistingSubmission() async {
-
     @override
     void didChangeDependencies() {
       super.didChangeDependencies();
@@ -295,43 +293,41 @@ class _JamSignupPageState extends State<JamSignupPage> {
     }
   }
 
-Future<void> _showConfirmationDialog() async {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text("Submission Successful"),
-        content: Text("Your photos have been submitted successfully."),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context); // Close the dialog
-
-              // Retrieve user role before navigating
-              String? userRole = await Provider.of<AuthAPI>(context, listen: false).getUserRole();
-
-              // Navigate to TabsPage with the resolved user role
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => TabsPage(),
-                ),
-                (route) => false, // This removes all routes until the specified route
-              );
-            },
-            child: Text("OK"),
-          ),
-        ],
-      );
-    },
-  );
-}
+  Future<void> _showConfirmationDialog() async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Submission Successful"),
+          content: Text("Your photos have been submitted successfully."),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context); // Close the dialog
+                // Navigate to TabsPage with the resolved user role
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TabsPage(),
+                  ),
+                  (route) =>
+                      false, // This removes all routes until the specified route
+                );
+              },
+              child: Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Jam Signup"),
+        backgroundColor: Colors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -406,6 +402,7 @@ Future<void> _showConfirmationDialog() async {
           ],
         ),
       ),
+      backgroundColor: Colors.white,
     );
   }
 }

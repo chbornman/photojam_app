@@ -5,15 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
-import 'package:photojam_app/pages/submissions/photoscroll_page.dart';
+import 'package:photojam_app/pages/photos_tab/photoscroll_page.dart';
 import 'package:provider/provider.dart';
 
-class SubmissionsPage extends StatefulWidget {
+class PhotosPage extends StatefulWidget {
   @override
-  _SubmissionsPageState createState() => _SubmissionsPageState();
+  _PhotosPageState createState() => _PhotosPageState();
 }
 
-class _SubmissionsPageState extends State<SubmissionsPage> with WidgetsBindingObserver {
+class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
   List<Map<String, dynamic>> allSubmissions = [];
   bool isLoading = true;
 
@@ -122,7 +122,7 @@ Future<Uint8List?> _fetchAndCacheImage(
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("All Submissions"),
+        title: const Text("All Photos"),
       ),
       body: RefreshIndicator(
         onRefresh: _fetchAllSubmissions,  // Pull-to-refresh always fetches new data

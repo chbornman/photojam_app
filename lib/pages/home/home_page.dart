@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/pages/home/jamsignup_page.dart';
@@ -6,8 +7,8 @@ import 'package:provider/provider.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:appwrite/models.dart'; // Import for Appwrite Document model
-import 'package:intl/intl.dart'; // Import for date formatting
+import 'package:appwrite/models.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -17,10 +18,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<Document> userJams = []; // List to hold user jams as Documents
   Document? nextJam; // Holds the next upcoming jam
+  String? userRole;  // State variable for storing user role
 
   @override
   void initState() {
     super.initState();
+    _fetchUserRole();  // Retrieve user role
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userId = Provider.of<AuthAPI>(context, listen: false).userid;
       if (userId != null) {
@@ -31,15 +34,25 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // Fetch jams from the database where the user has submissions
+  void _fetchUserRole() async {
+    final authAPI = Provider.of<AuthAPI>(context, listen: false);
+    try {
+      final role = await authAPI.getUserRole();
+      setState(() {
+        userRole = role;  // Update state with the retrieved user role
+      });
+    } catch (e) {
+      setState(() {
+        userRole = null;  // Handle error if user role is not available
+      });
+    }
+  }
+
   Future<void> _fetchUserJams() async {
     final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
     final userId = Provider.of<AuthAPI>(context, listen: false).userid;
 
-    // Fetch jams associated with the user's submissions
     final jams = await databaseApi.getUserJamsWithSubmissions(userId!);
-
-    // Sort jams by date and find the next upcoming one
     jams.sort((a, b) {
       DateTime dateA = DateTime.parse(a.data['jam']['date']);
       DateTime dateB = DateTime.parse(b.data['jam']['date']);
@@ -49,19 +62,15 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       userJams = jams;
       try {
-        // Find the first upcoming jam by date
         nextJam = userJams.firstWhere(
-          (cal) =>
-              DateTime.parse(cal.data['jam']['date']).isAfter(DateTime.now()),
+          (cal) => DateTime.parse(cal.data['jam']['date']).isAfter(DateTime.now()),
         );
       } catch (e) {
-        // If no upcoming jam is found, set nextJam to null
         nextJam = null;
       }
     });
   }
 
-  // Function to launch the Zoom link
   void _goToZoomCall(String url) {
     final Uri zoomUri = Uri.parse(url);
     if (zoomUri.hasScheme) {
@@ -75,19 +84,15 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
-        // Enable scrolling
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Join the Jam section
             Text(
               'Join the Jam',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
-
-            // Sign Up Now button at the top of Join the Jam section
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -109,13 +114,10 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             SizedBox(height: 10),
-
-            // Join next upcoming jam button with date
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: (nextJam != null &&
-                        nextJam!.data['jam']['zoom_link'] != null)
+                onPressed: (nextJam != null && nextJam!.data['jam']['zoom_link'] != null)
                     ? () => _goToZoomCall(nextJam!.data['jam']['zoom_link'])
                     : null,
                 style: ElevatedButton.styleFrom(
@@ -134,15 +136,11 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             SizedBox(height: 20),
-
-            // Master of the Month section with a light grey background
             GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          MasterOfTheMonthPage()), // Navigate to Master of the Month Page
+                  MaterialPageRoute(builder: (context) => MasterOfTheMonthPage()),
                 );
               },
               child: Container(
@@ -150,21 +148,18 @@ class _HomePageState extends State<HomePage> {
                   color: secondaryAccentColor,
                   borderRadius: BorderRadius.circular(defaultCornerRadius),
                 ),
-                padding:
-                    const EdgeInsets.all(16.0), // Padding inside the container
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Master of the Month',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 10),
                     Text(
                       'Sebastiano Salgado',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                     SizedBox(height: 10),
                     Container(
@@ -200,8 +195,6 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             SizedBox(height: 30),
-
-            // Share the Jam section
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -210,8 +203,8 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 Image.asset(
-                  'assets/images/qrcode.png', // Replace with the actual QR code image
-                  width: 150, // Adjust the size of the QR code
+                  'assets/images/qrcode.png',
+                  width: 150,
                   height: 150,
                   fit: BoxFit.cover,
                 ),
@@ -220,36 +213,20 @@ class _HomePageState extends State<HomePage> {
             SizedBox(height: 30),
 
             // Conditionally render buttons for admin
-            FutureBuilder<String?>(
-              future:
-                  Provider.of<AuthAPI>(context, listen: false).getUserRole(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
-                } else if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
-                } else if (snapshot.hasData && snapshot.data == 'admin') {
-                  return Column(
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          // Navigate to Add Jam page
-                        },
-                        child: Text('Add a Jam'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Navigate to Add Journey page
-                        },
-                        child: Text('Add a Journey'),
-                      ),
-                    ],
-                  );
-                } else {
-                  return SizedBox.shrink();
-                }
-              },
-            ),
+            if (userRole == 'admin') ...[
+              ElevatedButton(
+                onPressed: () {
+                  // Navigate to Add Jam page
+                },
+                child: Text('Add a Jam'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // Navigate to Add Journey page
+                },
+                child: Text('Add a Journey'),
+              ),
+            ],
           ],
         ),
       ),

@@ -3,18 +3,18 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/userdataprovider.dart';
 import 'package:provider/provider.dart';
-
 class AccountPage extends StatefulWidget {
   @override
   _AccountPageState createState() => _AccountPageState();
 }
 
 class _AccountPageState extends State<AccountPage> {
+  String? userRole;
+
   @override
   void initState() {
     super.initState();
-    final authAPI = context.read<AuthAPI>();
-    context.read<UserDataProvider>().initializeUserData(authAPI);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchUserRole());
   }
 
   // Method to show dialog for updating name
@@ -145,6 +145,26 @@ class _AccountPageState extends State<AccountPage> {
 
   signOut() {
     context.read<AuthAPI>().signOut();
+  }
+
+
+
+  void _fetchUserRole() async {
+    final authAPI = Provider.of<AuthAPI>(context, listen: false);
+    try {
+      final role = await authAPI.getUserRole();
+      if (mounted) {
+        setState(() {
+          userRole = role;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          userRole = null;
+        });
+      }
+    }
   }
 
   @override

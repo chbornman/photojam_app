@@ -10,7 +10,7 @@ class UserDataProvider extends ChangeNotifier {
     try {
       email = authAPI.email ?? 'no email';
       username = authAPI.username ?? 'no username';
-      isOAuthUser = authAPI.isOAuthUser();
+      isOAuthUser = false; //TODO authAPI.isOAuthUser();
       notifyListeners();
     } catch (e) {
       print("Error loading user data: $e");

@@ -16,8 +16,8 @@ const String BUCKET_PHOTOS_ID = "6723271b0013f22521d0";
 const String BUCKET_LESSONS_ID = "672139d200007a432b87";
 
 // Colors and Styling
-const Color accentColor = Colors.amber; // Main accent color
-const Color secondaryAccentColor = Color(0xFFF5F5F5); // Very light grey
+const Color accentColor = Colors.amber;
+const Color secondaryAccentColor = Colors.white;
 const double defaultCornerRadius = 16;
 const double defaultButtonHeight = 50;
 
