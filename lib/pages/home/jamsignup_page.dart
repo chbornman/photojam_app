@@ -77,8 +77,8 @@ class _JamSignupPageState extends State<JamSignupPage> {
       final file = File(pickedFile.path);
       final fileSize = await file.length();
 
-      if (fileSize > 10 * 1024 * 1024) {
-        // Check if file is greater than 10MB
+      if (fileSize > 50 * 1024 * 1024) {
+        // Check if file is greater than 50MB
         _showSizeWarningDialog();
         return;
       }
@@ -96,7 +96,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
         return AlertDialog(
           title: Text("File Size Warning"),
           content: Text(
-              "Selected photo exceeds the 10MB size limit. Please choose a smaller photo."),
+              "Selected photo exceeds the 50MB size limit. Please choose a smaller photo."),
           actions: [
             TextButton(
               onPressed: () {

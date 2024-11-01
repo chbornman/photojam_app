@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 
 
 //Appwrite Project
-const String APPWRITE_ENDPOINT_ID = "http://192.168.0.51/v1";
-const String APPWRITE_PROJECT_ID = "6720f5ca0032a3b05710";
+const String APPWRITE_ENDPOINT_ID = "https://cloud.appwrite.io/v1";
+const String APPWRITE_PROJECT_ID = "67252f310033542bb23f";
 
 //Database
-const String APPWRITE_DATABASE_ID = "6721029a00358cf34dda";
-const String COLLECTION_JAMS = "67213c840009970c41b4";
-const String COLLECTION_JOURNEYS = "67213b090020e5283610";
-const String COLLECTION_SUBMISSIONS = "67213cde000525ad9f2d";
+const String APPWRITE_DATABASE_ID = "photojam-database";
+const String COLLECTION_JAMS = "photojam-collection-jam";
+const String COLLECTION_JOURNEYS = "photojam-collection-journey";
+const String COLLECTION_SUBMISSIONS = "photojam-collection-submission";
 
 //Storage
-const String BUCKET_PHOTOS_ID = "6723271b0013f22521d0";
-const String BUCKET_LESSONS_ID = "672139d200007a432b87";
+const String BUCKET_PHOTOS_ID = "photojam-bucket-photos";
+const String BUCKET_LESSONS_ID = "photojam-bucket-lessons";
 
 // Colors and Styling
 const Color accentColor = Colors.amber;

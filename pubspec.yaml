@@ -1,7 +1,7 @@
 name: photojam_app
 description: "A new Flutter project."
 publish_to: 'none'
-version: 1.0.1+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.5.3
@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  appwrite: ^12.0.3
+  appwrite: ^13.0.0
   flutter_svg: ^2.0.10+1
   provider: ^6.1.2
   image_picker: ^1.1.2
