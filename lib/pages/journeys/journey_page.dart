@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
-import 'package:photojam_app/pages/markdownviewer_page.dart';
-import 'package:photojam_app/pages/alljourneys_page.dart';
+import 'package:photojam_app/pages/journeys/markdownviewer_page.dart';
+import 'package:photojam_app/pages/journeys/alljourneys_page.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/constants/constants.dart';
 

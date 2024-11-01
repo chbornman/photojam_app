@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/constants/constants.dart';
-import 'package:photojam_app/pages/jamsignup_page.dart';
-import 'package:photojam_app/pages/master_of_the_month_page.dart';
+import 'package:photojam_app/pages/home/jamsignup_page.dart';
+import 'package:photojam_app/pages/home/master_of_the_month_page.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';

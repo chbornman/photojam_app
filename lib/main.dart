@@ -5,7 +5,7 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:provider/provider.dart';
-import 'package:photojam_app/pages/login_page.dart';
+import 'package:photojam_app/pages/login_register/login_page.dart';
 import 'package:photojam_app/pages/tabs_page.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -43,8 +43,7 @@ class MyApp extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return CircularProgressIndicator();
           } else if (snapshot.hasData && snapshot.data != null) {
-            final userRole = snapshot.data!;
-            return TabsPage(userRole: userRole);
+            return TabsPage(); 
           } else {
             return LoginPage();
           }

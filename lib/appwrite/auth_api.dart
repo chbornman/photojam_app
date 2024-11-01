@@ -91,15 +91,18 @@ class AuthAPI extends ChangeNotifier {
   Future<String?> getUserRole() async {
     try {
       final prefs = await account.getPrefs();
-      return prefs.data['role'] as String?;
+      // Additional Debug: Print retrieved role
+      final role = prefs.data['role'] as String?;
+      print("Retrieved user role: $role");
+      return role;
     } catch (e) {
-      print("Error retrieving user role: $e");
+      // Debug: Role retrieval failed or not set
+      print("Error retrieving user role or role not set in preferences.");
       return null;
     }
   }
 
   Future<void> setRole(String role) async {
-    // Check if the user is logged in
     if (_status != AuthStatus.authenticated) {
       print("User is not logged in. Unable to set role.");
       throw Exception("User must be logged in to set a role.");
@@ -116,20 +119,15 @@ class AuthAPI extends ChangeNotifier {
       if (prefs.data['role'] == role) {
         print("Role set successfully: ${prefs.data['role']}");
       } else {
-        print(
-            "Role verification failed. Expected: $role, Found: ${prefs.data['role']}");
+        print("Role verification failed. Expected: $role, Found: ${prefs.data['role']}");
         throw Exception("Role verification failed after setting.");
       }
     } on AppwriteException catch (e) {
-      // Log detailed Appwrite-related errors for troubleshooting
       print("AppwriteException: ${e.message}");
       print("Status Code: ${e.code}");
       print("Response: ${e.response}");
-
-      // Re-throw the exception for further handling
       rethrow;
     } catch (e) {
-      // Handle any unexpected errors
       print("Unexpected error in setRole: $e");
       rethrow;
     }
@@ -153,9 +151,12 @@ class AuthAPI extends ChangeNotifier {
         email: email,
         password: password,
       );
-      _currentUser =
-          await account.get(); // Get user details for the new session
+      
+      // Additional Debug: Print session details to verify session creation
+      print("Session created successfully: Session ID: ${session.$id}");
+      _currentUser = await account.get(); // Get user details for the new session
       _status = AuthStatus.authenticated;
+      print("User authenticated successfully. User ID: ${_currentUser?.$id}, Status: $_status");
       return session;
     } on AppwriteException catch (e) {
       print("Login failed: ${e.message}");
@@ -193,7 +194,6 @@ class AuthAPI extends ChangeNotifier {
     return account.updatePrefs(prefs: {'bio': bio});
   }
 
-  // Method to update the user's name
   Future<void> updateName(String newName) async {
     try {
       await account.updateName(name: newName);
@@ -205,25 +205,22 @@ class AuthAPI extends ChangeNotifier {
     }
   }
 
-  // Method to update the user's password
   Future<void> updatePassword(
       String currentPassword, String newPassword) async {
     try {
       await account.updatePassword(
           password: newPassword, oldPassword: currentPassword);
-      notifyListeners(); // Notify listeners if there's any UI dependency
+      notifyListeners(); // Notify listeners if there’s any UI dependency
     } catch (e) {
       print("Error updating password: $e");
       rethrow;
     }
   }
 
-  // Method to check if the user is connected via OAuth
   bool isOAuthUser() {
     return _currentUser != null && _currentUser!.emailVerification == false;
   }
 
-  // Method to update the user's email
   Future<void> updateEmail(String newEmail, String currentPassword) async {
     try {
       await account.updateEmail(email: newEmail, password: currentPassword);
@@ -235,36 +232,28 @@ class AuthAPI extends ChangeNotifier {
     }
   }
 
-  // Method to retrieve the current user's username
   Future<String?> getUsername() async {
     try {
-      // Retrieve the user's account details
       User user = await account.get();
-
-      // Assuming "name" is used as the username
-      return user
-          .name; // Replace 'name' with 'username' if you use a custom field
+      return user.name; 
     } catch (e) {
       print("Error retrieving username: $e");
       return null;
     }
   }
 
-  /// Retrieves the current session token or creates a new session if needed
   Future<String?> getToken() async {
     if (_authToken != null) {
-      return _authToken; // Return the cached token if it exists
+      return _authToken;
     }
 
     try {
       final session = await account.getSession(sessionId: 'current');
-      _authToken = session.$id; // Use the session ID as token
+      _authToken = session.$id;
     } catch (e) {
       print('No active session found, creating a new one.');
-      // If there is no active session, create a new session here
-      // Ensure credentials are provided, for example:
-      final email = "user@example.com"; // Replace with user's email
-      final password = "user_password"; // Replace with user's password
+      final email = "user@example.com";
+      final password = "user_password";
 
       try {
         final session = await account.createEmailPasswordSession(
@@ -272,7 +261,7 @@ class AuthAPI extends ChangeNotifier {
           password: password,
         );
         _authToken = session.$id;
-        _currentUser = await account.get(); // Refresh user data
+        _currentUser = await account.get();
         _status = AuthStatus.authenticated;
       } catch (e) {
         print("Failed to create session: $e");

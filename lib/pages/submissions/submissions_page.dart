@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
-import 'package:photojam_app/pages/photoscroll_page.dart';
+import 'package:photojam_app/pages/submissions/photoscroll_page.dart';
 import 'package:provider/provider.dart';
 
 class SubmissionsPage extends StatefulWidget {

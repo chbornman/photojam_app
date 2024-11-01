@@ -314,7 +314,7 @@ Future<void> _showConfirmationDialog() async {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => TabsPage(userRole: userRole ?? 'UnknownRole'),
+                  builder: (context) => TabsPage(),
                 ),
                 (route) => false, // This removes all routes until the specified route
               );
