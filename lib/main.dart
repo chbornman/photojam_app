@@ -37,15 +37,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'PhotoJam',
-      home: FutureBuilder<String?>(
-        future: Provider.of<AuthAPI>(context, listen: false).getUserRole(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return CircularProgressIndicator();
-          } else if (snapshot.hasData && snapshot.data != null) {
-            return TabsPage(); 
-          } else {
+      home: Consumer<AuthAPI>(
+        builder: (context, authAPI, child) {
+          if (authAPI.status == AuthStatus.authenticated) {
+            return TabsPage();
+          } else if (authAPI.status == AuthStatus.unauthenticated) {
             return LoginPage();
+          } else {
+            return Center(child: CircularProgressIndicator());
           }
         },
       ),
