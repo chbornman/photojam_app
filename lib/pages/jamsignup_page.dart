@@ -46,7 +46,6 @@ class _JamSignupPageState extends State<JamSignupPage> {
 
   Future<void> _fetchJamEvents() async {
     try {
-      late DatabaseAPI database;
 
       @override
       void didChangeDependencies() {
@@ -118,10 +117,6 @@ class _JamSignupPageState extends State<JamSignupPage> {
     setState(() {
       selectedJamId = jamId;
     });
-
-    // Get the selected Jam name from the database
-
-    late DatabaseAPI database;
 
     @override
     void didChangeDependencies() {
@@ -256,9 +251,6 @@ class _JamSignupPageState extends State<JamSignupPage> {
 
 // Helper function to delete the existing submission and its associated photos
   Future<void> _deleteExistingSubmission() async {
-    late DatabaseAPI database;
-    late StorageAPI storage;
-    late AuthAPI auth;
 
     @override
     void didChangeDependencies() {
