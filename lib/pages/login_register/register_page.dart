@@ -2,6 +2,8 @@ import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/constants/constants.dart';
+import 'package:photojam_app/standard_button.dart';
+import 'package:photojam_app/standard_dialog.dart';
 import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -73,8 +75,8 @@ class _RegisterPageState extends State<RegisterPage> {
             actions: [
               ElevatedButton(
                   onPressed: () {
-                    Navigator.pop(context);
-                  },
+              Navigator.pop(context);
+            },
                   child: const Text('Ok'))
             ],
           );
@@ -133,20 +135,12 @@ class _RegisterPageState extends State<RegisterPage> {
                 obscureText: true,
               ),
               const SizedBox(height: 16),
-              ElevatedButton.icon(
+              StandardButton(
+                label: const Text('Sign up'),
+                icon: const Icon(Icons.app_registration),
                 onPressed: () {
                   createAccount();
                 },
-                icon: const Icon(Icons.app_registration),
-                label: const Text('Sign up'),
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.black,
-                  backgroundColor: accentColor,
-                  minimumSize: Size(double.infinity, defaultButtonHeight),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(defaultCornerRadius),
-                  ),
-                ),
               ),
             ],
           ),

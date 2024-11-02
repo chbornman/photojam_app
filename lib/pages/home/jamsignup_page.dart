@@ -4,6 +4,7 @@ import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photojam_app/constants/constants.dart';
+import 'package:photojam_app/standard_dialog.dart';
 import 'package:photojam_app/pages/tabs_page.dart';
 import 'package:photojam_app/standard_button.dart';
 import 'package:provider/provider.dart';
@@ -230,20 +231,14 @@ class _JamSignupPageState extends State<JamSignupPage> {
     return showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("No Photos Selected"),
+        return StandardDialog(
+          title: "No Photos Selected",
           content: Text(
               "You have not selected any photos. Submitting will delete your existing submission and its photos. Do you want to proceed?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false), // Cancel
-              child: Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true), // Confirm deletion
-              child: Text("Delete Submission"),
-            ),
-          ],
+          submitButtonLabel: "Delete Submission",
+          submitButtonOnPressed: () {
+            Navigator.pop(context, true); // Confirm deletion
+          },
         );
       },
     ).then((value) => value ?? false);
@@ -298,26 +293,22 @@ class _JamSignupPageState extends State<JamSignupPage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Submission Successful"),
+        return StandardDialog(
+          title: "Submission Successful",
           content: Text("Your photos have been submitted successfully."),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context); // Close the dialog
-                // Navigate to TabsPage with the resolved user role
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TabsPage(),
-                  ),
-                  (route) =>
-                      false, // This removes all routes until the specified route
-                );
-              },
-              child: Text("OK"),
-            ),
-          ],
+          submitButtonLabel: "OK",
+          submitButtonOnPressed: () async {
+            Navigator.pop(context); // Close the dialog
+            // Navigate to TabsPage with the resolved user role
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TabsPage(),
+              ),
+              (route) =>
+                  false, // This removes all routes until the specified route
+            );
+          },
         );
       },
     );
@@ -386,7 +377,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
               ),
             ),
             const SizedBox(height: 20),
-            standardButton(label: "Submit Photos", onPressed: _submitPhotos),
+            StandardButton(label: Text("Submit Photos"), onPressed: _submitPhotos),
           ],
         ),
       ),

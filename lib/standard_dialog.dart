@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:photojam_app/standard_button.dart';
 
 class StandardDialog extends StatelessWidget {
   final String title;
   final Widget content;
-  final List<Widget> actions;
+  final String submitButtonLabel;
+  final VoidCallback submitButtonOnPressed;
 
   const StandardDialog({
     Key? key,
     required this.title,
     required this.content,
-    this.actions = const [],
+    required this.submitButtonLabel,
+    required this.submitButtonOnPressed,
   }) : super(key: key);
 
   @override
@@ -23,12 +26,17 @@ class StandardDialog extends StatelessWidget {
       actions: [
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
-          children: actions.map((action) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: action,
-            );
-          }).toList(),
+          children: [
+            StandardButton(
+              label: Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(width: 8), // Add some space between the buttons
+            StandardButton(
+              label: Text(submitButtonLabel),
+              onPressed: submitButtonOnPressed,
+            ),
+          ],
         ),
       ],
       shape: RoundedRectangleBorder(

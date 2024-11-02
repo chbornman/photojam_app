@@ -4,6 +4,8 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/login_register/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:photojam_app/standard_button.dart';
+import 'package:photojam_app/standard_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/constants/constants.dart';
 
@@ -26,11 +28,9 @@ class _LoginPageState extends State<LoginPage> {
         builder: (BuildContext context) {
           return Dialog(
             backgroundColor: Colors.transparent,
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: const [
-                  CircularProgressIndicator(),
-                ]),
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
           );
         });
 
@@ -57,8 +57,8 @@ class _LoginPageState extends State<LoginPage> {
             actions: [
               ElevatedButton(
                   onPressed: () {
-                    Navigator.pop(context);
-                  },
+              Navigator.pop(context);
+            },
                   child: const Text('Ok'))
             ],
           );
@@ -98,12 +98,10 @@ class _LoginPageState extends State<LoginPage> {
                 decoration: InputDecoration(
                   labelText: 'Email',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                        defaultCornerRadius), 
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),
                   ),
                   filled: true,
-                  fillColor:
-                      secondaryAccentColor, 
+                  fillColor: secondaryAccentColor,
                 ),
               ),
               const SizedBox(height: 16),
@@ -112,8 +110,7 @@ class _LoginPageState extends State<LoginPage> {
                 decoration: InputDecoration(
                   labelText: 'Password',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                        defaultCornerRadius),
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),
                   ),
                   filled: true,
                   fillColor: secondaryAccentColor,
@@ -121,81 +118,37 @@ class _LoginPageState extends State<LoginPage> {
                 obscureText: true,
               ),
               const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () {
-                  signIn();
-                },
-                icon: const Icon(Icons.login),
-                label: const Text("Sign in"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      accentColor, 
-                  foregroundColor: Colors.black, 
-                  minimumSize: const Size(double.infinity,
-                      defaultButtonHeight), 
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                        defaultCornerRadius), 
-                  ),
-                ),
-              ),
+              StandardButton(
+                  label: Text("Sign in"),
+                  onPressed: signIn,
+                  icon: Icon(Icons.login)),
               const SizedBox(height: 16),
-              TextButton(
+              StandardButton(
+                label: Text("Create Account"),
+                icon: Icon(Icons.app_registration),
                 onPressed: () {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (context) => const RegisterPage()));
                 },
-                child: const Text('Create Account'),
-                style: TextButton.styleFrom(
-                  backgroundColor: accentColor,
-                  foregroundColor: Colors.black, // Black text color
-                  minimumSize: const Size(double.infinity,
-                      defaultButtonHeight), // Full-width button with fixed height
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                        defaultCornerRadius), // Consistent corner radius
-                  ),
-                ),
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => signInWithProvider(OAuthProvider.google),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: accentColor,
-                        foregroundColor:
-                            Colors.black, // Black text color for OAuth buttons
-                        minimumSize: const Size(double.infinity,
-                            defaultButtonHeight), // Half-width button with fixed height
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                              defaultCornerRadius), // Consistent corner radius
-                        ),
-                      ),
-                      child:
+                    child: StandardButton(
+                      label:
                           SvgPicture.asset('assets/google_icon.svg', width: 20),
+                      onPressed: () => signInWithProvider(OAuthProvider.google),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => signInWithProvider(OAuthProvider.apple),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: accentColor,
-                        foregroundColor: Colors.black,
-                        minimumSize: const Size(double.infinity,
-                            defaultButtonHeight), // Half-width button with fixed height
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                              defaultCornerRadius), // Consistent corner radius
-                        ),
-                      ),
-                      child:
+                    child: StandardButton(
+                      label:
                           SvgPicture.asset('assets/apple_icon.svg', width: 20),
+                      onPressed: () => signInWithProvider(OAuthProvider.apple),
                     ),
                   ),
                 ],

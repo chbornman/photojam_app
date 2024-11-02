@@ -94,8 +94,8 @@ class _HomePageState extends State<HomePage> {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
-            standardButton(
-              label: 'Sign Up Now',
+            StandardButton(
+              label: Text('Sign Up Now'),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -103,10 +103,10 @@ class _HomePageState extends State<HomePage> {
                 );
               },
             ),
-            standardButton(
-              label: nextJam != null
+            StandardButton(
+              label: Text(nextJam != null
                   ? 'Join: ${DateFormat('MMM dd, yyyy').format(DateTime.parse(nextJam!.data['jam']['date']))}'
-                  : 'No upcoming jams available',
+                  : 'No upcoming jams available'),
               onPressed:
                   (nextJam != null && nextJam!.data['jam']['zoom_link'] != null)
                       ? () => _goToZoomCall(nextJam!.data['jam']['zoom_link'])

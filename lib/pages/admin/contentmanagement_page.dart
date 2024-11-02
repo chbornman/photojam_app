@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/standard_button.dart';
+import 'package:photojam_app/standard_dialog.dart';
 import 'package:provider/provider.dart';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
@@ -56,8 +57,8 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text("Create Journey"),
+        return StandardDialog(
+          title: "Create Journey",
           content: StatefulBuilder(
             builder: (context, setState) {
               return Column(
@@ -102,32 +103,22 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
               );
             },
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (titleController.text.isEmpty || startDate == null) {
-                  _showMessage("Please enter a title and select a start date.",
-                      isError: true);
-                  return;
-                }
-                Map<String, dynamic> journeyData = {
-                  "title": titleController.text,
-                  "start_date": startDate!.toIso8601String(),
-                  "active": isActive,
-                };
-                Navigator.of(context).pop();
-                _executeAction(database.createJourney, journeyData,
-                    "Journey created successfully");
-              },
-              child: Text("Create"),
-            ),
-          ],
+          submitButtonLabel: "Create",
+          submitButtonOnPressed: () {
+            if (titleController.text.isEmpty || startDate == null) {
+              _showMessage("Please enter a title and select a start date.",
+                  isError: true);
+              return;
+            }
+            Map<String, dynamic> journeyData = {
+              "title": titleController.text,
+              "start_date": startDate!.toIso8601String(),
+              "active": isActive,
+            };
+            Navigator.of(context).pop();
+            _executeAction(database.createJourney, journeyData,
+                "Journey created successfully");
+          },
         );
       },
     );
@@ -216,8 +207,8 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text("Upload Lesson to Journey"),
+        return StandardDialog(
+          title: "Add Lesson to Journey",
           content: StatefulBuilder(
             builder: (context, setState) {
               return Column(
@@ -239,7 +230,8 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                     decoration: InputDecoration(labelText: "Select Journey"),
                   ),
                   SizedBox(height: 16),
-                  ElevatedButton(
+                  StandardButton(
+                    label: Text(selectedFileName ?? "Select Lesson File"),
                     onPressed: () async {
                       FilePickerResult? result =
                           await FilePicker.platform.pickFiles(
@@ -259,48 +251,37 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                         print("No file selected or file has no bytes.");
                       }
                     },
-                    child: Text(selectedFileName ?? "Select Lesson File"),
                   ),
                 ],
               );
             },
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (selectedFileBytes == null) {
-                  _showMessage("Please select a lesson file.", isError: true);
-                  return;
-                }
+          submitButtonLabel: "Upload",
+          submitButtonOnPressed: () async {
+            if (selectedFileBytes == null) {
+              _showMessage("Please select a lesson file.", isError: true);
+              return;
+            }
 
-                try {
-                  // Step 1: Upload file using the Storage API
-                  print(
-                      "Uploading file: $selectedFileName with ${selectedFileBytes!.lengthInBytes} bytes");
-                  final fileUrl = await storage.uploadLesson(
-                      selectedFileBytes!, selectedFileName!);
+            try {
+              // Step 1: Upload file using the Storage API
+              print(
+                  "Uploading file: $selectedFileName with ${selectedFileBytes!.lengthInBytes} bytes");
+              final fileUrl = await storage.uploadLesson(
+                  selectedFileBytes!, selectedFileName!);
 
-                  // Step 2: Add the uploaded file URL to the journey
-                  print("File uploaded. URL: $fileUrl");
-                  await database.addLessonToJourney(
-                      journeyMap[selectedTitle]!, fileUrl);
+              // Step 2: Add the uploaded file URL to the journey
+              print("File uploaded. URL: $fileUrl");
+              await database.addLessonToJourney(
+                  journeyMap[selectedTitle]!, fileUrl);
 
-                  Navigator.of(context).pop();
-                  _showMessage("Lesson uploaded successfully");
-                } catch (e) {
-                  print("Error uploading lesson: $e");
-                  _showMessage("Error uploading lesson: $e", isError: true);
-                }
-              },
-              child: Text("Upload"),
-            ),
-          ],
+              Navigator.of(context).pop();
+              _showMessage("Lesson uploaded successfully");
+            } catch (e) {
+              print("Error uploading lesson: $e");
+              _showMessage("Error uploading lesson: $e", isError: true);
+            }
+          },
         );
       },
     );
@@ -313,8 +294,8 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text("Update Jam"),
+        return StandardDialog(
+          title: "Update Jam",
           content: StatefulBuilder(
             builder: (context, setState) {
               return Column(
@@ -343,30 +324,20 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
               );
             },
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (titleController.text.isEmpty) {
-                  _showMessage("Please enter all fields.", isError: true);
-                  return;
-                }
-                Map<String, dynamic> jamData = {
-                  "jamId": jamMap[selectedTitle]!,
-                  "title": titleController.text,
-                };
-                Navigator.of(context).pop();
-                _executeAction(
-                    database.updateJam, jamData, "Jam updated successfully");
-              },
-              child: Text("Update"),
-            ),
-          ],
+          submitButtonLabel: "Update",
+          submitButtonOnPressed: () {
+            if (titleController.text.isEmpty) {
+              _showMessage("Please enter all fields.", isError: true);
+              return;
+            }
+            Map<String, dynamic> jamData = {
+              "jamId": jamMap[selectedTitle]!,
+              "title": titleController.text,
+            };
+            Navigator.of(context).pop();
+            _executeAction(
+                database.updateJam, jamData, "Jam updated successfully");
+          },
         );
       },
     );
@@ -378,8 +349,8 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text("Delete Jam"),
+        return StandardDialog(
+          title: "Delete Jam",
           content: DropdownButtonFormField<String>(
             value: selectedTitle,
             items: jamMap.keys.map((title) {
@@ -395,25 +366,15 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
             },
             decoration: InputDecoration(labelText: "Select Jam"),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Map<String, dynamic> jamData = {
-                  "jamId": jamMap[selectedTitle]!,
-                };
-                Navigator.of(context).pop();
-                _executeAction(
-                    database.deleteJam, jamData, "Jam deleted successfully");
-              },
-              child: Text("Delete"),
-            ),
-          ],
+          submitButtonLabel: "Delete",
+          submitButtonOnPressed: () {
+            Map<String, dynamic> jamData = {
+              "jamId": jamMap[selectedTitle]!,
+            };
+            Navigator.of(context).pop();
+            _executeAction(
+                database.deleteJam, jamData, "Jam deleted successfully");
+          },
         );
       },
     );
@@ -427,8 +388,8 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text("Update Journey"),
+        return StandardDialog(
+          title: "Update Journey",
           content: StatefulBuilder(
             builder: (context, setState) {
               return Column(
@@ -466,31 +427,21 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
               );
             },
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (titleController.text.isEmpty) {
-                  _showMessage("Please enter all fields.", isError: true);
-                  return;
-                }
-                Map<String, dynamic> journeyData = {
-                  "journeyId": journeyMap[selectedTitle]!,
-                  "title": titleController.text,
-                  "active": isActive,
-                };
-                Navigator.of(context).pop();
-                _executeAction(database.updateJourney, journeyData,
-                    "Journey updated successfully");
-              },
-              child: Text("Update"),
-            ),
-          ],
+          submitButtonLabel: "Update",
+          submitButtonOnPressed: () {
+            if (titleController.text.isEmpty) {
+              _showMessage("Please enter all fields.", isError: true);
+              return;
+            }
+            Map<String, dynamic> journeyData = {
+              "journeyId": journeyMap[selectedTitle]!,
+              "title": titleController.text,
+              "active": isActive,
+            };
+            Navigator.of(context).pop();
+            _executeAction(database.updateJourney, journeyData,
+                "Journey updated successfully");
+          },
         );
       },
     );
@@ -502,8 +453,8 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text("Delete Journey"),
+        return StandardDialog(
+          title: "Delete Journey",
           content: DropdownButtonFormField<String>(
             value: selectedTitle,
             items: journeyMap.keys.map((title) {
@@ -519,25 +470,15 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
             },
             decoration: InputDecoration(labelText: "Select Journey"),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Map<String, dynamic> journeyData = {
-                  "journeyId": journeyMap[selectedTitle]!,
-                };
-                Navigator.of(context).pop();
-                _executeAction(database.deleteJourney, journeyData,
-                    "Journey deleted successfully");
-              },
-              child: Text("Delete"),
-            ),
-          ],
+          submitButtonLabel: "Delete",
+          submitButtonOnPressed: () {
+            Map<String, dynamic> journeyData = {
+              "journeyId": journeyMap[selectedTitle]!,
+            };
+            Navigator.of(context).pop();
+            _executeAction(database.deleteJourney, journeyData,
+                "Journey deleted successfully");
+          },
         );
       },
     );
@@ -551,8 +492,8 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text("Create Jam"),
+        return StandardDialog(
+          title: "Create Jam",
           content: StatefulBuilder(
             builder: (context, setState) {
               return Column(
@@ -592,35 +533,25 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
               );
             },
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (titleController.text.isEmpty ||
-                    jamDate == null ||
-                    zoomLinkController.text.isEmpty) {
-                  _showMessage(
-                      "Please enter all required fields, including the Zoom link.",
-                      isError: true);
-                  return;
-                }
-                Map<String, dynamic> jamData = {
-                  "title": titleController.text,
-                  "date": jamDate!.toIso8601String(),
-                  "zoom_link": zoomLinkController.text,
-                };
-                Navigator.of(context).pop();
-                _executeAction(
-                    database.createJam, jamData, "Jam created successfully");
-              },
-              child: Text("Create"),
-            ),
-          ],
+          submitButtonLabel: "Create",
+          submitButtonOnPressed: () {
+            if (titleController.text.isEmpty ||
+                jamDate == null ||
+                zoomLinkController.text.isEmpty) {
+              _showMessage(
+                  "Please enter all required fields, including the Zoom link.",
+                  isError: true);
+              return;
+            }
+            Map<String, dynamic> jamData = {
+              "title": titleController.text,
+              "date": jamDate!.toIso8601String(),
+              "zoom_link": zoomLinkController.text,
+            };
+            Navigator.of(context).pop();
+            _executeAction(
+                database.createJam, jamData, "Jam created successfully");
+          },
         );
       },
     );
@@ -634,42 +565,41 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: GridView.count(
+          crossAxisCount: 2, // Set to 2 columns
+          crossAxisSpacing: 8.0, // Space between columns
+          mainAxisSpacing: 8.0, // Space between rows
+          childAspectRatio: 3, // Adjust height of buttons
+          shrinkWrap: true, // Makes GridView take only as much space as needed
           children: [
-            if (isLoading)
-              Center(child: CircularProgressIndicator())
-            else ...[
-              standardButton(
-                  label: "Create Journey", onPressed: _openCreateJourneyDialog),
-              standardButton(
-                label: "Update Journey",
-                onPressed: _fetchAndOpenUpdateJourneyDialog,
-              ),
-              standardButton(
-                label: "Delete Journey",
-                onPressed: _fetchAndOpenDeleteJourneyDialog,
-              ),
-              standardButton(
-                label: "Create Jam",
-                onPressed: _openCreateJamDialog,
-              ),
-              standardButton(
-                label: "Update Jam",
-                onPressed: _fetchAndOpenUpdateJamDialog,
-              ),
-              standardButton(
-                label: "Delete Jam",
-                onPressed: _fetchAndOpenDeleteJamDialog,
-              ),
-              standardButton(
-                label: "Add Lesson to Journey",
-                onPressed: _fetchAndOpenAddLessonDialog,
-              ),
-
-              // standardButton(
-              //     "Remove Lesson to Journey", _fetchAndOpenRemoveLessonDialog),
-            ],
+            StandardButton(
+              label: Text("Create Journey"),
+              onPressed: _openCreateJourneyDialog,
+            ),
+            StandardButton(
+              label: Text("Update Journey"),
+              onPressed: _fetchAndOpenUpdateJourneyDialog,
+            ),
+            StandardButton(
+              label: Text("Delete Journey"),
+              onPressed: _fetchAndOpenDeleteJourneyDialog,
+            ),
+            StandardButton(
+              label: Text("Create Jam"),
+              onPressed: _openCreateJamDialog,
+            ),
+            StandardButton(
+              label: Text("Update Jam"),
+              onPressed: _fetchAndOpenUpdateJamDialog,
+            ),
+            StandardButton(
+              label: Text("Delete Jam"),
+              onPressed: _fetchAndOpenDeleteJamDialog,
+            ),
+            StandardButton(
+              label: Text("Add Lesson to Journey"),
+              onPressed: _fetchAndOpenAddLessonDialog,
+            ),
           ],
         ),
       ),

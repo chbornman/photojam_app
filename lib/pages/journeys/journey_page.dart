@@ -8,6 +8,7 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/journeys/markdownviewer.dart';
 import 'package:photojam_app/pages/journeys/alljourneys_page.dart';
 import 'package:photojam_app/standard_button.dart';
+import 'package:photojam_app/standard_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/constants/constants.dart';
 
@@ -49,7 +50,8 @@ class _JourneyPageState extends State<JourneyPage> {
             journeyTitle = latestJourney.data['title'] ?? "Journey";
           });
 
-          final lessonUrls = latestJourney.data['lessons'] as List<dynamic>? ?? [];
+          final lessonUrls =
+              latestJourney.data['lessons'] as List<dynamic>? ?? [];
           _fetchLessonsByURLs(lessonUrls);
         } else {
           print("No journeys found for this user.");
@@ -66,7 +68,8 @@ class _JourneyPageState extends State<JourneyPage> {
 
     for (String url in lessonUrls) {
       try {
-        final lessonData = await storageApi.getLessonByURL(url); // Use URL directly
+        final lessonData =
+            await storageApi.getLessonByURL(url); // Use URL directly
         final title = _extractTitleFromMarkdown(lessonData);
         fetchedLessons.add({'url': url, 'title': title});
       } catch (e) {
@@ -83,13 +86,16 @@ class _JourneyPageState extends State<JourneyPage> {
   String _extractTitleFromMarkdown(Uint8List lessonData) {
     final content = utf8.decode(lessonData);
     final firstLine = content.split('\n').first.trim();
-    return firstLine.startsWith('#') ? firstLine.replaceFirst('#', '').trim() : 'Untitled Lesson';
+    return firstLine.startsWith('#')
+        ? firstLine.replaceFirst('#', '').trim()
+        : 'Untitled Lesson';
   }
 
   void _viewLesson(String lessonUrl) async {
     try {
       final storageApi = Provider.of<StorageAPI>(context, listen: false);
-      final lessonData = await storageApi.getLessonByURL(lessonUrl); // Use URL here
+      final lessonData =
+          await storageApi.getLessonByURL(lessonUrl); // Use URL here
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -124,10 +130,12 @@ class _JourneyPageState extends State<JourneyPage> {
       final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
 
       // Fetch all active journeys the user is not signed up for
-      final allJourneys = await databaseApi.getAllActiveJourneys(); // Assume this returns active journeys
+      final allJourneys = await databaseApi
+          .getAllActiveJourneys(); // Assume this returns active journeys
       final userJourneys = await databaseApi.getJourneysByUser(userId!);
 
-      final userJourneyIds = userJourneys.documents.map((doc) => doc.$id).toSet();
+      final userJourneyIds =
+          userJourneys.documents.map((doc) => doc.$id).toSet();
       final availableJourneys = allJourneys.documents
           .where((journey) => !userJourneyIds.contains(journey.$id))
           .toList();
@@ -142,8 +150,8 @@ class _JourneyPageState extends State<JourneyPage> {
       showDialog(
         context: context,
         builder: (context) {
-          return AlertDialog(
-            title: Text("Sign Up for a Journey"),
+          return StandardDialog(
+            title: "Sign Up for a Journey",
             content: StatefulBuilder(
               builder: (context, setState) {
                 return DropdownButtonFormField<String>(
@@ -163,18 +171,14 @@ class _JourneyPageState extends State<JourneyPage> {
                 );
               },
             ),
-            actions: [
-              standardButton(label: "Cancel", onPressed: () {
-                  Navigator.of(context).pop();
-                },),
-              standardButton(label: "Sign Up", onPressed: () async {
-                  if (selectedJourneyId != null) {
-                    await databaseApi.addUserToJourney(selectedJourneyId!, userId);
-                    _showMessage("Successfully signed up for the journey!");
-                    Navigator.of(context).pop();
-                  }
-                },),
-            ],
+            submitButtonLabel: "Sign Up",
+            submitButtonOnPressed: () async {
+              if (selectedJourneyId != null) {
+                await databaseApi.addUserToJourney(selectedJourneyId!, userId);
+                _showMessage("Successfully signed up for the journey!");
+                Navigator.of(context).pop();
+              }
+            },
           );
         },
       );
@@ -198,39 +202,21 @@ class _JourneyPageState extends State<JourneyPage> {
           children: [
             Expanded(
               child: ListView(
-                children: lessons.map((lesson) => ListTile(
-                  title: Text(lesson['title']),
-                  onTap: () => _viewLesson(lesson['url']),
-                  trailing: Icon(Icons.arrow_forward, color: Colors.black),
-                )).toList(),
+                children: lessons
+                    .map((lesson) => ListTile(
+                          title: Text(lesson['title']),
+                          onTap: () => _viewLesson(lesson['url']),
+                          trailing:
+                              Icon(Icons.arrow_forward, color: Colors.black),
+                        ))
+                    .toList(),
               ),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _goToAllJourneys,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                foregroundColor: Colors.black,
-                minimumSize: Size(double.infinity, defaultButtonHeight),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(defaultCornerRadius),
-                ),
-              ),
-              child: const Text("View All Journeys"),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _openSignUpForJourneyDialog,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                foregroundColor: Colors.black,
-                minimumSize: Size(double.infinity, defaultButtonHeight),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(defaultCornerRadius),
-                ),
-              ),
-              child: const Text("Sign Up for a Journey"),
-            ),
+            StandardButton(
+                label: Text("View All Journeys"), onPressed: _goToAllJourneys),
+            StandardButton(
+                label: Text("Sign Up for a Journey"),
+                onPressed: _openSignUpForJourneyDialog),
           ],
         ),
       ),
@@ -239,6 +225,7 @@ class _JourneyPageState extends State<JourneyPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }

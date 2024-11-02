@@ -33,23 +33,17 @@ class _AccountPageState extends State<AccountPage> {
           controller: nameController,
           decoration: const InputDecoration(labelText: 'New Name'),
         ),
-        actions: [
-          standardButton(
-              label: "Cancel", onPressed: () => Navigator.of(context).pop()),
-          standardButton(
-            label: "Submit",
-            onPressed: () async {
-              await context.read<AuthAPI>().updateName(nameController.text);
-              Navigator.of(context).pop();
-              setState(() {
-                userData.username = nameController.text;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Name updated successfully!")),
-              );
-            },
-          ),
-        ],
+        submitButtonLabel: "Save",
+        submitButtonOnPressed: () async {
+          await context.read<AuthAPI>().updateName(nameController.text);
+          Navigator.of(context).pop();
+          setState(() {
+            userData.username = nameController.text;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Name updated successfully!")),
+          );
+        },
       ),
     );
   }
@@ -61,8 +55,8 @@ class _AccountPageState extends State<AccountPage> {
     final passwordController = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Update Email'),
+      builder: (context) => StandardDialog(
+        title: 'Update Email',
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -78,26 +72,19 @@ class _AccountPageState extends State<AccountPage> {
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              await context
-                  .read<AuthAPI>()
-                  .updateEmail(emailController.text, passwordController.text);
-              Navigator.of(context).pop();
-              setState(() {
-                userData.email = emailController.text;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Email updated successfully!")));
-            },
-            child: Text('Save'),
-          ),
-        ],
+        submitButtonLabel: "Save",
+        submitButtonOnPressed: () async {
+          await context
+              .read<AuthAPI>()
+              .updateEmail(emailController.text, passwordController.text);
+          Navigator.of(context).pop();
+          setState(() {
+            userData.email = emailController.text;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Email updated successfully!")),
+          );
+        },
       ),
     );
   }
@@ -108,8 +95,8 @@ class _AccountPageState extends State<AccountPage> {
     final newPasswordController = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Update Password'),
+      builder: (context) => StandardDialog(
+        title: 'Update Password',
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -126,22 +113,14 @@ class _AccountPageState extends State<AccountPage> {
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              await context.read<AuthAPI>().updatePassword(
-                  currentPasswordController.text, newPasswordController.text);
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Password updated successfully!")));
-            },
-            child: Text('Save'),
-          ),
-        ],
+        submitButtonLabel: "Save",
+        submitButtonOnPressed: () async {
+          await context.read<AuthAPI>().updatePassword(
+              currentPasswordController.text, newPasswordController.text);
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Password updated successfully!")));
+        },
       ),
     );
   }
@@ -187,7 +166,8 @@ class _AccountPageState extends State<AccountPage> {
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               'Welcome back, ${userData.username}!',
@@ -198,17 +178,17 @@ class _AccountPageState extends State<AccountPage> {
               style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 30),
-            standardButton(
-                label: "Change Name", onPressed: showUpdateNameDialog),
+            StandardButton(
+                label: Text("Change Name"), onPressed: showUpdateNameDialog),
             userData.isOAuthUser
                 ? const Text(
                     "Email updates are managed through your OAuth provider.",
                     style: TextStyle(color: Colors.grey),
                   )
-                : standardButton(
-                    label: "Change Email", onPressed: showUpdateEmailDialog),
-            standardButton(
-                label: "Change Password", onPressed: showUpdatePasswordDialog),
+                : StandardButton(
+                    label: Text("Change Email"), onPressed: showUpdateEmailDialog),
+            StandardButton(
+                label: Text("Change Password"), onPressed: showUpdatePasswordDialog),
           ],
         ),
       ),
