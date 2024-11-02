@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/pages/jams/jams_page.dart';
+import 'package:photojam_app/standard_appbar.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/pages/account_page.dart';
 import 'package:photojam_app/pages/home/home_page.dart';
@@ -51,6 +53,7 @@ class _TabsPageState extends State<TabsPage> {
 
     List<Widget> _screens = [
       HomePage(),
+      JamPage(),
       JourneyPage(),
       PhotosPage(),
       AccountPage(),
@@ -61,17 +64,9 @@ class _TabsPageState extends State<TabsPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Photo Jam'),
+      appBar: StandardAppBar(
+        title: 'Photo Jam',
         backgroundColor: accentColor,
-        leading: GestureDetector(
-          onTap: () {
-            setState(() {
-              _currentIndex = 0;
-            });
-          },
-          child: Icon(Icons.home),
-        ),
       ),
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
@@ -87,7 +82,8 @@ class _TabsPageState extends State<TabsPage> {
         },
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Journey'),
+          BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: 'Jams'),
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Journeys'),
           BottomNavigationBarItem(
               icon: Icon(Icons.subscriptions), label: 'Photos'),
           BottomNavigationBarItem(

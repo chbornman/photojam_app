@@ -6,7 +6,7 @@ import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/journeys/markdownviewer.dart';
-import 'package:photojam_app/pages/journeys/alljourneys_page.dart';
+import 'package:photojam_app/pages/journeys/myjourneys_page.dart';
 import 'package:photojam_app/standard_button.dart';
 import 'package:photojam_app/standard_dialog.dart';
 import 'package:provider/provider.dart';
@@ -107,7 +107,7 @@ class _JourneyPageState extends State<JourneyPage> {
     }
   }
 
-  void _goToAllJourneys() {
+  void _goToMyJourneys() {
     final auth = Provider.of<AuthAPI>(context, listen: false);
     final userId = auth.userid;
 
@@ -115,7 +115,7 @@ class _JourneyPageState extends State<JourneyPage> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => AllJourneysPage(userId: userId),
+          builder: (context) => MyJourneysPage(userId: userId),
         ),
       );
     } else {
@@ -213,7 +213,7 @@ class _JourneyPageState extends State<JourneyPage> {
               ),
             ),
             StandardButton(
-                label: Text("View All Journeys"), onPressed: _goToAllJourneys),
+                label: Text("View My Journeys"), onPressed: _goToMyJourneys),
             StandardButton(
                 label: Text("Sign Up for a Journey"),
                 onPressed: _openSignUpForJourneyDialog),

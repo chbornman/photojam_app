@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/constants/constants.dart';
-import 'package:photojam_app/pages/home/jamsignup_page.dart';
+import 'package:photojam_app/pages/jams/jamsignup_page.dart';
 import 'package:photojam_app/pages/home/master_of_the_month_page.dart';
 import 'package:photojam_app/standard_button.dart';
 import 'package:provider/provider.dart';
@@ -120,57 +120,21 @@ class _HomePageState extends State<HomePage> {
                       builder: (context) => MasterOfTheMonthPage()),
                 );
               },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: secondaryAccentColor,
-                  borderRadius: BorderRadius.circular(defaultCornerRadius),
-                ),
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Master of the Month',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      'Sebastiano Salgado',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                    ),
-                    SizedBox(height: 10),
-                    Container(
-                      height: 150,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          Image.asset(
-                            'assets/images/photo1.jpeg',
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                          SizedBox(width: 10),
-                          Image.asset(
-                            'assets/images/photo2.jpeg',
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                          SizedBox(width: 10),
-                          Image.asset(
-                            'assets/images/photo3.jpeg',
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 30),
+                  Text(
+                    'Master of the Month',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Sebastiano Salgado',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  SizedBox(height: 10),
+                ],
               ),
             ),
             SizedBox(height: 30),

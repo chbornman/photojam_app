@@ -6,10 +6,10 @@ import 'package:provider/provider.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 
-class AllJourneysPage extends StatelessWidget {
+class MyJourneysPage extends StatelessWidget {
   final String userId;
 
-  AllJourneysPage({required this.userId});
+  MyJourneysPage({required this.userId});
 
   Future<List<Map<String, dynamic>>> _fetchUserJourneys(BuildContext context) async {
     try {
@@ -60,7 +60,7 @@ class AllJourneysPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("All Journeys")),
+      appBar: AppBar(title: Text("My Journeys")),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _fetchUserJourneys(context),
         builder: (context, snapshot) {

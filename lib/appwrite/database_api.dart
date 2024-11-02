@@ -156,6 +156,26 @@ class DatabaseAPI {
     );
   }
 
+  /// Get all jams and filter by participant_ids in code
+    Future<DocumentList> getJamsByUser(String userId) async {
+    try {
+      final response = await databases.listDocuments(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_JAMS,
+      );
+      final filteredDocuments = response.documents.where((doc) {
+        return (doc.data['participant_ids'] ?? []).contains(userId);
+      }).toList();
+      return DocumentList(
+        documents: filteredDocuments,
+        total: filteredDocuments.length,
+      );
+    } catch (e) {
+      print('Error fetching jams for user $userId: $e');
+      rethrow;
+    }
+  }
+
   /// Retrieve a specific jam by its ID.
   Future<Document> getJamById(String jamId) async {
     try {
