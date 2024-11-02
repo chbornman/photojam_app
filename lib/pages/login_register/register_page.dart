@@ -3,7 +3,6 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/standard_button.dart';
-import 'package:photojam_app/standard_dialog.dart';
 import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {

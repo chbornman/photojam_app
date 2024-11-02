@@ -5,7 +5,6 @@ import 'package:photojam_app/pages/login_register/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:photojam_app/standard_button.dart';
-import 'package:photojam_app/standard_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/constants/constants.dart';
 

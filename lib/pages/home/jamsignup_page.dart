@@ -3,7 +3,6 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/standard_dialog.dart';
 import 'package:photojam_app/pages/tabs_page.dart';
 import 'package:photojam_app/standard_button.dart';
