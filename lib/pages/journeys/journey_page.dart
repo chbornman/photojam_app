@@ -173,6 +173,7 @@ class _JourneyPageState extends State<JourneyPage> {
             ),
             submitButtonLabel: "Sign Up",
             submitButtonOnPressed: () async {
+              if (!mounted) return; // Ensure widget is still mounted
               if (selectedJourneyId != null) {
                 await databaseApi.addUserToJourney(selectedJourneyId!, userId);
                 _showMessage("Successfully signed up for the journey!");

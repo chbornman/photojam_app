@@ -36,6 +36,7 @@ class _AccountPageState extends State<AccountPage> {
         submitButtonLabel: "Save",
         submitButtonOnPressed: () async {
           await context.read<AuthAPI>().updateName(nameController.text);
+          if (!mounted) return; // Ensure widget is still mounted
           Navigator.of(context).pop();
           setState(() {
             userData.username = nameController.text;
@@ -77,6 +78,7 @@ class _AccountPageState extends State<AccountPage> {
           await context
               .read<AuthAPI>()
               .updateEmail(emailController.text, passwordController.text);
+          if (!mounted) return; // Ensure widget is still mounted
           Navigator.of(context).pop();
           setState(() {
             userData.email = emailController.text;
@@ -117,6 +119,7 @@ class _AccountPageState extends State<AccountPage> {
         submitButtonOnPressed: () async {
           await context.read<AuthAPI>().updatePassword(
               currentPasswordController.text, newPasswordController.text);
+          if (!mounted) return; // Ensure widget is still mounted
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text("Password updated successfully!")));
@@ -186,9 +189,11 @@ class _AccountPageState extends State<AccountPage> {
                     style: TextStyle(color: Colors.grey),
                   )
                 : StandardButton(
-                    label: Text("Change Email"), onPressed: showUpdateEmailDialog),
+                    label: Text("Change Email"),
+                    onPressed: showUpdateEmailDialog),
             StandardButton(
-                label: Text("Change Password"), onPressed: showUpdatePasswordDialog),
+                label: Text("Change Password"),
+                onPressed: showUpdatePasswordDialog),
           ],
         ),
       ),

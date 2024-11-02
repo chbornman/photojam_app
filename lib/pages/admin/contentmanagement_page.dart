@@ -105,6 +105,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
           ),
           submitButtonLabel: "Create",
           submitButtonOnPressed: () {
+            if (!mounted) return; // Ensure widget is still mounted
             if (titleController.text.isEmpty || startDate == null) {
               _showMessage("Please enter a title and select a start date.",
                   isError: true);
@@ -258,6 +259,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
           ),
           submitButtonLabel: "Upload",
           submitButtonOnPressed: () async {
+            if (!mounted) return; // Ensure widget is still mounted
             if (selectedFileBytes == null) {
               _showMessage("Please select a lesson file.", isError: true);
               return;
@@ -326,6 +328,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
           ),
           submitButtonLabel: "Update",
           submitButtonOnPressed: () {
+            if (!mounted) return; // Ensure widget is still mounted
             if (titleController.text.isEmpty) {
               _showMessage("Please enter all fields.", isError: true);
               return;
@@ -368,6 +371,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
           ),
           submitButtonLabel: "Delete",
           submitButtonOnPressed: () {
+            if (!mounted) return; // Ensure widget is still mounted
             Map<String, dynamic> jamData = {
               "jamId": jamMap[selectedTitle]!,
             };
@@ -429,6 +433,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
           ),
           submitButtonLabel: "Update",
           submitButtonOnPressed: () {
+            if (!mounted) return; // Ensure widget is still mounted
             if (titleController.text.isEmpty) {
               _showMessage("Please enter all fields.", isError: true);
               return;
@@ -472,6 +477,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
           ),
           submitButtonLabel: "Delete",
           submitButtonOnPressed: () {
+            if (!mounted) return; // Ensure widget is still mounted
             Map<String, dynamic> journeyData = {
               "journeyId": journeyMap[selectedTitle]!,
             };
@@ -535,6 +541,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
           ),
           submitButtonLabel: "Create",
           submitButtonOnPressed: () {
+            if (!mounted) return; // Ensure widget is still mounted
             if (titleController.text.isEmpty ||
                 jamDate == null ||
                 zoomLinkController.text.isEmpty) {

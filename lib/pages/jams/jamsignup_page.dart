@@ -236,6 +236,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
               "You have not selected any photos. Submitting will delete your existing submission and its photos. Do you want to proceed?"),
           submitButtonLabel: "Delete Submission",
           submitButtonOnPressed: () {
+            if (!mounted) return; // Ensure widget is still mounted
             Navigator.pop(context, true); // Confirm deletion
           },
         );
@@ -297,6 +298,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
           content: Text("Your photos have been submitted successfully."),
           submitButtonLabel: "OK",
           submitButtonOnPressed: () async {
+            if (!mounted) return; // Ensure widget is still mounted
             Navigator.pop(context); // Close the dialog
             // Navigate to TabsPage with the resolved user role
             Navigator.pushAndRemoveUntil(

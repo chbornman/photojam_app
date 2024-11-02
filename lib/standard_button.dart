@@ -14,19 +14,20 @@ Widget StandardButton({
         style: ElevatedButton.styleFrom(
           backgroundColor: accentColor,
           foregroundColor: Colors.black,
-          minimumSize: const Size(double.infinity, defaultButtonHeight),
+          minimumSize: Size(120,
+              defaultButtonHeight), // Set a more reasonable width here if needed
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(defaultCornerRadius),
           ),
         ),
         child: icon == null
-            ? label // If no icon, just show the label
+            ? label
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  icon, // Display the icon
-                  const SizedBox(width: 8), // Space between icon and label
+                  icon,
+                  const SizedBox(width: 8),
                   label,
                 ],
               ),

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
@@ -7,6 +8,8 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/pages/photos_tab/photoscroll_page.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
+import 'dart:typed_data';
 
 class PhotosPage extends StatefulWidget {
   @override
@@ -16,107 +19,117 @@ class PhotosPage extends StatefulWidget {
 class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
   List<Map<String, dynamic>> allSubmissions = [];
   bool isLoading = true;
+  bool _isDisposed = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _fetchAllSubmissions();  // Fetch fresh data on initialization
+    _fetchAllSubmissions(); // Fetch fresh data on initialization
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _isDisposed = true; // Set disposed flag to prevent further updates
     super.dispose();
   }
+// Updated _fetchAllSubmissions to use URLs directly
+Future<void> _fetchAllSubmissions() async {
+  try {
+    if (_isDisposed) return;
+    setState(() => isLoading = true); // Show loading indicator
 
-  // Fetch all submissions metadata and check if images need to be updated
-  Future<void> _fetchAllSubmissions() async {
-    try {
-      setState(() => isLoading = true);  // Show loading indicator
+    final auth = Provider.of<AuthAPI>(context, listen: false);
+    final userId = auth.userid;
 
-      final auth = Provider.of<AuthAPI>(context, listen: false);
-      final userId = auth.userid;
-      final authToken = await auth.getToken();
-
-      if (userId == null || userId.isEmpty || authToken == null) {
-        throw Exception("User ID or auth token is not available.");
-      }
-
-      final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
-      final storageApi = Provider.of<StorageAPI>(context, listen: false);
-      final response = await databaseApi.getSubmissionsByUser(userId: userId);
-
-      List<Map<String, dynamic>> submissions = [];
-      for (var doc in response) {
-        final date = doc.data['date'] ?? 'Unknown Date';
-        final photoIds = List<String>.from(doc.data['photos'] ?? []).take(3).toList();
-
-        String jamTitle = 'Untitled';
-        final jamData = doc.data['jam'];
-        if (jamData is Map && jamData.containsKey('title')) {
-          jamTitle = jamData['title'] ?? 'Untitled';
-        }
-
-        List<Uint8List?> photos = [];
-        for (var photoId in photoIds) {
-          final imageData = await _fetchAndCacheImage(photoId, authToken, storageApi);
-          photos.add(imageData);
-        }
-
-        submissions.add({
-          'date': date,
-          'jamTitle': jamTitle,
-          'photos': photos,
-        });
-      }
-
-      submissions.sort((a, b) => b['date'].compareTo(a['date']));
-
-      setState(() {
-        allSubmissions = submissions;
-        isLoading = false;
-      });
-
-    } catch (e) {
-      print('Error fetching submissions: $e');
-      setState(() => isLoading = false);
+    if (userId == null || userId.isEmpty) {
+      throw Exception("User ID is not available.");
     }
-  }
 
-Future<Uint8List?> _fetchAndCacheImage(
-    String photoId, String authToken, StorageAPI storageApi) async {
-  final cacheFile = await _getImageCacheFile(photoId);
+    final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
+    final response = await databaseApi.getSubmissionsByUser(userId: userId);
+
+    List<Map<String, dynamic>> submissions = [];
+    for (var doc in response) {
+      if (_isDisposed) return; // Stop further processing if disposed
+
+      final date = doc.data['date'] ?? 'Unknown Date';
+      final photoUrls =
+          List<String>.from(doc.data['photos'] ?? []).take(3).toList();
+
+      String jamTitle = 'Untitled';
+      final jamData = doc.data['jam'];
+      if (jamData is Map && jamData.containsKey('title')) {
+        jamTitle = jamData['title'] ?? 'Untitled';
+      }
+
+      List<Uint8List?> photos = [];
+      for (var photoUrl in photoUrls) {
+        if (_isDisposed) return; // Stop if disposed
+        final imageData = await _fetchAndCacheImage(photoUrl);
+        photos.add(imageData);
+      }
+
+      submissions.add({
+        'date': date,
+        'jamTitle': jamTitle,
+        'photos': photos,
+      });
+    }
+
+    submissions.sort((a, b) => b['date'].compareTo(a['date']));
+
+    if (_isDisposed) return;
+    setState(() {
+      allSubmissions = submissions;
+      isLoading = false;
+    });
+  } catch (e) {
+    print('Error fetching submissions: $e');
+    if (_isDisposed) return;
+    setState(() => isLoading = false);
+  }
+}
+
+
+Future<Uint8List?> _fetchAndCacheImage(String photoUrl) async {
+  final cacheFile = await _getImageCacheFile(photoUrl);
 
   // Check if the cached image exists
   if (await cacheFile.exists()) {
-    final cachedTime = cacheFile.lastModifiedSync();
-    final serverLastModified = await storageApi.getFileLastModified(photoId);
-
-    // Check that both dates are non-null and that server time is more recent
-    if (serverLastModified != null) {
-      if (!serverLastModified.isAfter(cachedTime)) {
-        print("Loading image from cache: $photoId");
-        return await cacheFile.readAsBytes();
-      }
-    }
+    print("Loading image from cache: $photoUrl");
+    return await cacheFile.readAsBytes();
   }
 
   // If cache is outdated or unavailable, fetch updated image from the server
-  print("Fetching image from network: $photoId");
-  final imageData = await storageApi.fetchAuthenticatedImage(photoId, authToken);
-  if (imageData != null) {
-    await cacheFile.writeAsBytes(imageData); // Cache the new/updated image data locally
+  print("Fetching image from network: $photoUrl");
+
+  try {
+    final request = await HttpClient().getUrl(Uri.parse(photoUrl));
+    final response = await request.close();
+    
+    if (response.statusCode == 200) {
+      // Read the response as bytes
+      final imageData = await consolidateHttpClientResponseBytes(response);
+      await cacheFile.writeAsBytes(imageData); // Cache the new/updated image data locally
+      return imageData;
+    } else {
+      print('Failed to load image from $photoUrl with status code ${response.statusCode}');
+      return null;
+    }
+  } catch (e) {
+    print('Error fetching image from network: $e');
+    return null;
   }
-  return imageData;
 }
 
-  // Helper to get the cache file path based on photoId
-  Future<File> _getImageCacheFile(String photoId) async {
-    final cacheDir = await getTemporaryDirectory();
-    final sanitizedPhotoId = Uri.encodeComponent(photoId);
-    return File('${cacheDir.path}/$sanitizedPhotoId.jpg');
-  }
+// Helper to get the cache file path based on the URL
+Future<File> _getImageCacheFile(String photoUrl) async {
+  final cacheDir = await getTemporaryDirectory();
+  final sanitizedFileName = Uri.parse(photoUrl).pathSegments.last; // Use the last segment as a unique filename
+  return File('${cacheDir.path}/$sanitizedFileName');
+}
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +138,8 @@ Future<Uint8List?> _fetchAndCacheImage(
         title: const Text("All Photos"),
       ),
       body: RefreshIndicator(
-        onRefresh: _fetchAllSubmissions,  // Pull-to-refresh always fetches new data
+        onRefresh:
+            _fetchAllSubmissions, // Pull-to-refresh always fetches new data
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : allSubmissions.isEmpty
@@ -183,7 +197,8 @@ Future<Uint8List?> _fetchAndCacheImage(
                                     );
                                   },
                                   child: photoData != null
-                                      ? Image.memory(photoData, width: 100, height: 100)
+                                      ? Image.memory(photoData,
+                                          width: 100, height: 100)
                                       : Container(
                                           width: 100,
                                           height: 100,
