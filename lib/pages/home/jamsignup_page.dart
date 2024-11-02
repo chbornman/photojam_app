@@ -5,6 +5,7 @@ import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/pages/tabs_page.dart';
+import 'package:photojam_app/standard_button.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
@@ -385,20 +386,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
               ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              onPressed: _submitPhotos,
-              child: Text(
-                "Submit Photos",
-                style: TextStyle(color: Colors.black, fontSize: 16),
-              ),
-            ),
+            standardButton(label: "Submit Photos", onPressed: _submitPhotos),
           ],
         ),
       ),

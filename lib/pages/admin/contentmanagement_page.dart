@@ -2,8 +2,8 @@ import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
+import 'package:photojam_app/standard_button.dart';
 import 'package:provider/provider.dart';
-import 'package:photojam_app/constants/constants.dart';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 
@@ -640,44 +640,37 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
             if (isLoading)
               Center(child: CircularProgressIndicator())
             else ...[
-              _buildManagementButton(
-                  "Create Journey", _openCreateJourneyDialog),
-              _buildManagementButton(
-                  "Update Journey", _fetchAndOpenUpdateJourneyDialog),
-              _buildManagementButton(
-                  "Delete Journey", _fetchAndOpenDeleteJourneyDialog),
-              _buildManagementButton("Create Jam", _openCreateJamDialog),
-              _buildManagementButton(
-                  "Update Jam", _fetchAndOpenUpdateJamDialog),
-              _buildManagementButton(
-                  "Delete Jam", _fetchAndOpenDeleteJamDialog),
-              _buildManagementButton(
-                  "Add Lesson to Journey", _fetchAndOpenAddLessonDialog),
-              // _buildManagementButton(
+              standardButton(
+                  label: "Create Journey", onPressed: _openCreateJourneyDialog),
+              standardButton(
+                label: "Update Journey",
+                onPressed: _fetchAndOpenUpdateJourneyDialog,
+              ),
+              standardButton(
+                label: "Delete Journey",
+                onPressed: _fetchAndOpenDeleteJourneyDialog,
+              ),
+              standardButton(
+                label: "Create Jam",
+                onPressed: _openCreateJamDialog,
+              ),
+              standardButton(
+                label: "Update Jam",
+                onPressed: _fetchAndOpenUpdateJamDialog,
+              ),
+              standardButton(
+                label: "Delete Jam",
+                onPressed: _fetchAndOpenDeleteJamDialog,
+              ),
+              standardButton(
+                label: "Add Lesson to Journey",
+                onPressed: _fetchAndOpenAddLessonDialog,
+              ),
+
+              // standardButton(
               //     "Remove Lesson to Journey", _fetchAndOpenRemoveLessonDialog),
             ],
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildManagementButton(String label, VoidCallback onPressed) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: accentColor,
-            foregroundColor: Colors.black,
-            minimumSize: Size(double.infinity, defaultButtonHeight),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(defaultCornerRadius),
-            ),
-          ),
-          child: Text(label),
         ),
       ),
     );

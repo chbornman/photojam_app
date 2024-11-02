@@ -5,8 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
-import 'package:photojam_app/pages/journeys/markdownviewer_page.dart';
+import 'package:photojam_app/pages/journeys/markdownviewer.dart';
 import 'package:photojam_app/pages/journeys/alljourneys_page.dart';
+import 'package:photojam_app/standard_button.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/constants/constants.dart';
 
@@ -92,7 +93,7 @@ class _JourneyPageState extends State<JourneyPage> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => MarkdownViewerPage(content: lessonData),
+          builder: (context) => MarkdownViewer(content: lessonData),
         ),
       );
     } catch (e) {
@@ -163,22 +164,16 @@ class _JourneyPageState extends State<JourneyPage> {
               },
             ),
             actions: [
-              TextButton(
-                onPressed: () {
+              standardButton(label: "Cancel", onPressed: () {
                   Navigator.of(context).pop();
-                },
-                child: Text("Cancel"),
-              ),
-              ElevatedButton(
-                onPressed: () async {
+                },),
+              standardButton(label: "Sign Up", onPressed: () async {
                   if (selectedJourneyId != null) {
                     await databaseApi.addUserToJourney(selectedJourneyId!, userId);
                     _showMessage("Successfully signed up for the journey!");
                     Navigator.of(context).pop();
                   }
-                },
-                child: Text("Sign Up"),
-              ),
+                },),
             ],
           );
         },

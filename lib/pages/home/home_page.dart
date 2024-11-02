@@ -1,8 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/pages/home/jamsignup_page.dart';
 import 'package:photojam_app/pages/home/master_of_the_month_page.dart';
+import 'package:photojam_app/standard_button.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
@@ -18,12 +18,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<Document> userJams = []; // List to hold user jams as Documents
   Document? nextJam; // Holds the next upcoming jam
-  String? userRole;  // State variable for storing user role
+  String? userRole; // State variable for storing user role
 
   @override
   void initState() {
     super.initState();
-    _fetchUserRole();  // Retrieve user role
+    _fetchUserRole(); // Retrieve user role
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userId = Provider.of<AuthAPI>(context, listen: false).userid;
       if (userId != null) {
@@ -39,11 +39,11 @@ class _HomePageState extends State<HomePage> {
     try {
       final role = await authAPI.getUserRole();
       setState(() {
-        userRole = role;  // Update state with the retrieved user role
+        userRole = role; // Update state with the retrieved user role
       });
     } catch (e) {
       setState(() {
-        userRole = null;  // Handle error if user role is not available
+        userRole = null; // Handle error if user role is not available
       });
     }
   }
@@ -63,7 +63,8 @@ class _HomePageState extends State<HomePage> {
       userJams = jams;
       try {
         nextJam = userJams.firstWhere(
-          (cal) => DateTime.parse(cal.data['jam']['date']).isAfter(DateTime.now()),
+          (cal) =>
+              DateTime.parse(cal.data['jam']['date']).isAfter(DateTime.now()),
         );
       } catch (e) {
         nextJam = null;
@@ -93,54 +94,30 @@ class _HomePageState extends State<HomePage> {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => JamSignupPage()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentColor,
-                  foregroundColor: Colors.black,
-                  minimumSize: Size(double.infinity, defaultButtonHeight),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(defaultCornerRadius),
-                  ),
-                ),
-                child: const Text('Sign Up Now'),
-              ),
+            standardButton(
+              label: 'Sign Up Now',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => JamSignupPage()),
+                );
+              },
             ),
-            SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: (nextJam != null && nextJam!.data['jam']['zoom_link'] != null)
-                    ? () => _goToZoomCall(nextJam!.data['jam']['zoom_link'])
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentColor,
-                  foregroundColor: Colors.black,
-                  minimumSize: Size(double.infinity, defaultButtonHeight),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(defaultCornerRadius),
-                  ),
-                ),
-                child: Text(
-                  nextJam != null
-                      ? 'Join: ${DateFormat('MMM dd, yyyy').format(DateTime.parse(nextJam!.data['jam']['date']))}'
-                      : 'No upcoming jams available',
-                ),
-              ),
+            standardButton(
+              label: nextJam != null
+                  ? 'Join: ${DateFormat('MMM dd, yyyy').format(DateTime.parse(nextJam!.data['jam']['date']))}'
+                  : 'No upcoming jams available',
+              onPressed:
+                  (nextJam != null && nextJam!.data['jam']['zoom_link'] != null)
+                      ? () => _goToZoomCall(nextJam!.data['jam']['zoom_link'])
+                      : null,
             ),
-            SizedBox(height: 20),
             GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => MasterOfTheMonthPage()),
+                  MaterialPageRoute(
+                      builder: (context) => MasterOfTheMonthPage()),
                 );
               },
               child: Container(
@@ -154,12 +131,14 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     Text(
                       'Master of the Month',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 10),
                     Text(
                       'Sebastiano Salgado',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                     SizedBox(height: 10),
                     Container(
@@ -211,22 +190,6 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             SizedBox(height: 30),
-
-            // Conditionally render buttons for admin
-            if (userRole == 'admin') ...[
-              ElevatedButton(
-                onPressed: () {
-                  // Navigate to Add Jam page
-                },
-                child: Text('Add a Jam'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  // Navigate to Add Journey page
-                },
-                child: Text('Add a Journey'),
-              ),
-            ],
           ],
         ),
       ),

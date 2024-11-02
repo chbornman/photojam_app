@@ -4,10 +4,10 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
-class MarkdownViewerPage extends StatelessWidget {
+class MarkdownViewer extends StatelessWidget {
   final Uint8List content;
 
-  MarkdownViewerPage({required this.content});
+  MarkdownViewer({required this.content});
 
   // Handler for opening links
   void _onTapLink(String? text, String? href, String title) async {
