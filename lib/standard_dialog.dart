@@ -6,6 +6,7 @@ class StandardDialog extends StatelessWidget {
   final Widget content;
   final String submitButtonLabel;
   final VoidCallback submitButtonOnPressed;
+  final bool showCancelButton; // New parameter to control cancel button visibility
 
   const StandardDialog({
     Key? key,
@@ -13,6 +14,7 @@ class StandardDialog extends StatelessWidget {
     required this.content,
     required this.submitButtonLabel,
     required this.submitButtonOnPressed,
+    this.showCancelButton = true, // Default to true for backward compatibility
   }) : super(key: key);
 
   @override
@@ -27,11 +29,12 @@ class StandardDialog extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            StandardButton(
-              label: Text('Cancel'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            const SizedBox(width: 8), // Add some space between the buttons
+            if (showCancelButton) // Conditionally show the Cancel button
+              StandardButton(
+                label: Text('Cancel'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            if (showCancelButton) const SizedBox(width: 8), // Add space only if Cancel button is shown
             StandardButton(
               label: Text(submitButtonLabel),
               onPressed: submitButtonOnPressed,

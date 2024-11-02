@@ -22,6 +22,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
   String? selectedJamName;
   List<DropdownMenuItem<String>> jamEvents = [];
   List<File?> photos = [null, null, null];
+  bool isLoading = false; 
 
   late DatabaseAPI database;
   late StorageAPI storage;
@@ -137,6 +138,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
     return "${jamName}_${date}_${username}_photo${index + 1}.jpg";
   }
 
+
   Future<void> _submitPhotos() async {
     // Step 1: Ensure a Jam is selected
     if (selectedJamId == null || selectedJamName == null) {
@@ -154,54 +156,68 @@ class _JamSignupPageState extends State<JamSignupPage> {
       return;
     }
 
-    // Step 3: Proceed with photo upload and submission
+    // Step 3: Show loading spinner
+    setState(() {
+      isLoading = true;
+    });
 
-    final userId = await auth.fetchUserId();
-    if (userId == null) {
-      print("User ID not found. Please log in.");
-      return;
-    }
+    try {
+      final userId = await auth.fetchUserId();
+      if (userId == null) {
+        print("User ID not found. Please log in.");
+        return;
+      }
 
-    List<String> photoUrls = [];
-    for (int i = 0; i < photos.length; i++) {
-      final photo = photos[i];
-      if (photo != null) {
-        String fileName = formatFileName(i, selectedJamName!, userId);
-        try {
-          final photoId =
-              await storage.uploadPhoto(await photo.readAsBytes(), fileName);
-          final photoUrl = await storage.getPhotoUrl(photoId);
-          photoUrls.add(photoUrl);
-          print("Uploaded photo $i with name $fileName");
-        } catch (e) {
-          print("Failed to upload photo $i: $e");
+      List<String> photoUrls = [];
+      for (int i = 0; i < photos.length; i++) {
+        final photo = photos[i];
+        if (photo != null) {
+          String fileName = formatFileName(i, selectedJamName!, userId);
+          try {
+            final photoId =
+                await storage.uploadPhoto(await photo.readAsBytes(), fileName);
+            final photoUrl = await storage.getPhotoUrl(photoId);
+            photoUrls.add(photoUrl);
+            print("Uploaded photo $i with name $fileName");
+          } catch (e) {
+            print("Failed to upload photo $i: $e");
+          }
         }
       }
-    }
 
-    final existingSubmission =
-        await database.getUserSubmissionForJam(selectedJamId!, userId);
-    if (existingSubmission != null) {
-      // Delete existing photos
-      for (String url in existingSubmission.data['photos']) {
-        final fileId = extractFileIdFromUrl(url);
-        await storage.deletePhoto(fileId);
-        print("Deleted existing photo with file ID: $fileId");
+      final existingSubmission =
+          await database.getUserSubmissionForJam(selectedJamId!, userId);
+      if (existingSubmission != null) {
+        // Delete existing photos
+        for (String url in existingSubmission.data['photos']) {
+          final fileId = extractFileIdFromUrl(url);
+          await storage.deletePhoto(fileId);
+          print("Deleted existing photo with file ID: $fileId");
+        }
+
+        // Update submission with new photos
+        await database.updateSubmission(
+          existingSubmission.$id,
+          photoUrls,
+          DateTime.now().toIso8601String(),
+        );
+        print("Submission updated successfully for Jam: $selectedJamId");
+      } else {
+        await database.createSubmission(selectedJamId!, photoUrls, userId);
+        print("Submission created successfully for Jam: $selectedJamId");
       }
 
-      // Update submission with new photos
-      await database.updateSubmission(
-        existingSubmission.$id,
-        photoUrls,
-        DateTime.now().toIso8601String(),
-      );
-      print("Submission updated successfully for Jam: $selectedJamId");
-    } else {
-      await database.createSubmission(selectedJamId!, photoUrls, userId);
-      print("Submission created successfully for Jam: $selectedJamId");
+      // Step 4: Hide loading spinner and show confirmation dialog
+      setState(() {
+        isLoading = false;
+      });
+      _showConfirmationDialog();
+    } catch (e) {
+      print("Error during photo submission: $e");
+      setState(() {
+        isLoading = false; // Ensure spinner is hidden if an error occurs
+      });
     }
-
-    _showConfirmationDialog();
   }
 
 // Helper function to show a dialog if no Jam is selected
@@ -289,31 +305,32 @@ class _JamSignupPageState extends State<JamSignupPage> {
     }
   }
 
-  Future<void> _showConfirmationDialog() async {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StandardDialog(
-          title: "Submission Successful",
-          content: Text("Your photos have been submitted successfully."),
-          submitButtonLabel: "OK",
-          submitButtonOnPressed: () async {
-            if (!mounted) return; // Ensure widget is still mounted
-            Navigator.pop(context); // Close the dialog
-            // Navigate to TabsPage with the resolved user role
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => TabsPage(),
-              ),
-              (route) =>
-                  false, // This removes all routes until the specified route
-            );
-          },
-        );
-      },
-    );
-  }
+Future<void> _showConfirmationDialog() async {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return StandardDialog(
+        title: "Submission Successful",
+        content: Text("Your photos have been submitted successfully."),
+        submitButtonLabel: "OK",
+        submitButtonOnPressed: () async {
+          if (!mounted) return; // Ensure widget is still mounted
+          Navigator.pop(context); // Close the dialog
+          // Navigate to TabsPage with the resolved user role
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TabsPage(),
+            ),
+            (route) => false, // This removes all routes until the specified route
+          );
+        },
+        showCancelButton: false, // Hide the Cancel button
+      );
+    },
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -322,65 +339,76 @@ class _JamSignupPageState extends State<JamSignupPage> {
         title: const Text("Jam Signup"),
         backgroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Flexible(
-              child: DropdownButtonFormField<String>(
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16.0),
-                  ),
-                ),
-                hint: Text("Select Jam Event"),
-                value: selectedJamId,
-                onChanged: (String? newValue) async {
-                  await _onJamSelected(newValue);
-                },
-                items: jamEvents,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Flexible(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(3, (index) {
-                  return Flexible(
-                    child: InkWell(
-                      onTap: () => _selectPhoto(index),
-                      child: Container(
-                        width: 100.0,
-                        height: 100.0,
-                        margin: EdgeInsets.symmetric(horizontal: 8.0),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16.0),
-                          border: Border.all(color: Colors.grey),
-                          image: photos[index] != null
-                              ? DecorationImage(
-                                  image: FileImage(photos[index]!),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                        ),
-                        child: photos[index] == null
-                            ? Icon(Icons.photo, size: 50.0, color: Colors.grey)
-                            : null,
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Flexible(
+                  child: DropdownButtonFormField<String>(
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16.0),
                       ),
                     ),
-                  );
-                }),
+                    hint: Text("Select Jam Event"),
+                    value: selectedJamId,
+                    onChanged: (String? newValue) async {
+                      await _onJamSelected(newValue);
+                    },
+                    items: jamEvents,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Flexible(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(3, (index) {
+                      return Flexible(
+                        child: InkWell(
+                          onTap: () => _selectPhoto(index),
+                          child: Container(
+                            width: 100.0,
+                            height: 100.0,
+                            margin: EdgeInsets.symmetric(horizontal: 8.0),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16.0),
+                              border: Border.all(color: Colors.grey),
+                              image: photos[index] != null
+                                  ? DecorationImage(
+                                      image: FileImage(photos[index]!),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                            ),
+                            child: photos[index] == null
+                                ? Icon(Icons.photo, size: 50.0, color: Colors.grey)
+                                : null,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                StandardButton(label: Text("Submit Photos"), onPressed: _submitPhotos),
+              ],
+            ),
+          ),
+          if (isLoading)
+            Container(
+              color: Colors.black54,
+              child: Center(
+                child: CircularProgressIndicator(),
               ),
             ),
-            const SizedBox(height: 20),
-            StandardButton(label: Text("Submit Photos"), onPressed: _submitPhotos),
-          ],
-        ),
+        ],
       ),
       backgroundColor: Colors.white,
     );
