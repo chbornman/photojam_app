@@ -22,7 +22,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
   String? selectedJamName;
   List<DropdownMenuItem<String>> jamEvents = [];
   List<File?> photos = [null, null, null];
-  bool isLoading = false; 
+  bool isLoading = false;
 
   late DatabaseAPI database;
   late StorageAPI storage;
@@ -48,23 +48,72 @@ class _JamSignupPageState extends State<JamSignupPage> {
 
   Future<void> _fetchJamEvents() async {
     try {
-      @override
-      void didChangeDependencies() {
-        super.didChangeDependencies();
-        database = Provider.of<DatabaseAPI>(context, listen: false);
-        storage = Provider.of<StorageAPI>(context, listen: false);
-        auth = Provider.of<AuthAPI>(context, listen: false);
-      }
-
       final response = await database.getJams();
-
       setState(() {
-        jamEvents = response.documents
-            .map((doc) => DropdownMenuItem<String>(
-                  value: doc.$id,
-                  child: Text(doc.data['title']),
-                ))
-            .toList();
+        jamEvents = response.documents.asMap().entries.map((entry) {
+          int index = entry.key;
+          var doc = entry.value;
+
+          String title = doc.data['title'];
+          DateTime dateTime =
+              DateTime.parse(doc.data['date']); // Assumes ISO 8601
+          String formattedDateTime = DateFormat('MMM dd, yyyy • hh:mm a')
+              .format(dateTime); // Example: "Oct 15, 2024 • 02:30 PM"
+
+          Color backgroundColor =
+              Theme.of(context).primaryColor.withOpacity(0.15);
+          Color alternateBackgroundColor = Colors.transparent;
+
+          return DropdownMenuItem<String>(
+            value: doc.$id,
+            child: Container(
+              decoration: BoxDecoration(
+                color:
+                    index % 2 == 0 ? backgroundColor : alternateBackgroundColor,
+                borderRadius: BorderRadius.circular(12.0),
+                boxShadow: [
+                  if (index % 2 == 0) // Shadow only for items with background
+                    BoxShadow(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.2),
+                      blurRadius: 6.0,
+                      offset: Offset(0, 3),
+                    ),
+                ],
+              ),
+              margin:
+                  EdgeInsets.symmetric(vertical: 4.0), // Space between items
+              padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Text(
+                    formattedDateTime,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList();
       });
     } catch (e) {
       print('Error fetching jam events: $e');
@@ -137,7 +186,6 @@ class _JamSignupPageState extends State<JamSignupPage> {
     String date = DateFormat('yyyyMMdd').format(DateTime.now());
     return "${jamName}_${date}_${username}_photo${index + 1}.jpg";
   }
-
 
   Future<void> _submitPhotos() async {
     // Step 1: Ensure a Jam is selected
@@ -305,32 +353,32 @@ class _JamSignupPageState extends State<JamSignupPage> {
     }
   }
 
-Future<void> _showConfirmationDialog() async {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return StandardDialog(
-        title: "Submission Successful",
-        content: Text("Your photos have been submitted successfully."),
-        submitButtonLabel: "OK",
-        submitButtonOnPressed: () async {
-          if (!mounted) return; // Ensure widget is still mounted
-          Navigator.pop(context); // Close the dialog
-          // Navigate to Mainframe with the resolved user role
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (context) => Mainframe(),
-            ),
-            (route) => false, // This removes all routes until the specified route
-          );
-        },
-        showCancelButton: false, // Hide the Cancel button
-      );
-    },
-  );
-}
-
+  Future<void> _showConfirmationDialog() async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StandardDialog(
+          title: "Submission Successful",
+          content: Text("Your photos have been submitted successfully."),
+          submitButtonLabel: "OK",
+          submitButtonOnPressed: () async {
+            if (!mounted) return; // Ensure widget is still mounted
+            Navigator.pop(context); // Close the dialog
+            // Navigate to Mainframe with the resolved user role
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (context) => Mainframe(),
+              ),
+              (route) =>
+                  false, // This removes all routes until the specified route
+            );
+          },
+          showCancelButton: false, // Hide the Cancel button
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -388,7 +436,8 @@ Future<void> _showConfirmationDialog() async {
                                   : null,
                             ),
                             child: photos[index] == null
-                                ? Icon(Icons.photo, size: 50.0, color: Colors.grey)
+                                ? Icon(Icons.photo,
+                                    size: 50.0, color: Colors.grey)
                                 : null,
                           ),
                         ),
@@ -397,7 +446,8 @@ Future<void> _showConfirmationDialog() async {
                   ),
                 ),
                 const SizedBox(height: 20),
-                StandardButton(label: Text("Submit Photos"), onPressed: _submitPhotos),
+                StandardButton(
+                    label: Text("Submit Photos"), onPressed: _submitPhotos),
               ],
             ),
           ),
@@ -410,7 +460,7 @@ Future<void> _showConfirmationDialog() async {
             ),
         ],
       ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
 }
