@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/jams/jams_page.dart';
+import 'package:photojam_app/pages/login_register/login_page.dart';
 import 'package:photojam_app/standard_appbar.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/pages/account_page.dart';
@@ -69,10 +70,14 @@ class _MainframeState extends State<Mainframe> {
         actions: _currentIndex == 4 // Show sign-out button only on AccountPage
             ? [
                 IconButton(
-                  icon: Icon(Icons.logout, color: Theme.of(context).colorScheme.onPrimary),
+                  icon: Icon(Icons.logout,
+                      color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: () {
                     context.read<AuthAPI>().signOut();
-                    Navigator.of(context).pop(); // Optional: Navigate back to login screen
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => LoginPage()),
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text("Signed out successfully!")),
                     );
@@ -101,8 +106,10 @@ class _MainframeState extends State<Mainframe> {
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: 'Jams'),
           BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Journeys'),
-          BottomNavigationBarItem(icon: Icon(Icons.subscriptions), label: 'Photos'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Account'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.subscriptions), label: 'Photos'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.account_circle), label: 'Account'),
           if (userRole == "admin")
             BottomNavigationBarItem(
                 icon: Icon(Icons.admin_panel_settings), label: 'Admin'),
