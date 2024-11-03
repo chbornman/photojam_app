@@ -8,7 +8,7 @@ import 'package:photojam_app/custom_theme.dart';
 import 'package:photojam_app/userdataprovider.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/pages/login_register/login_page.dart';
-import 'package:photojam_app/pages/tabs_page.dart';
+import 'package:photojam_app/pages/mainframe.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
@@ -63,7 +63,7 @@ class _MyAppState extends State<MyApp> {
                 });
               });
             }
-            return TabsPage();
+            return Mainframe();
           } else {
             return LoginPage();
           }

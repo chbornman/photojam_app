@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/pages/tabs_page.dart';
+import 'package:photojam_app/pages/mainframe.dart';
 
 class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -16,7 +16,7 @@ class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: GestureDetector(
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => TabsPage()),
+          MaterialPageRoute(builder: (context) => Mainframe()),
         ),
         child: Image.asset('assets/icon/app_icon.png'),
       ),

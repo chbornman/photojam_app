@@ -4,7 +4,7 @@ import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photojam_app/standard_dialog.dart';
-import 'package:photojam_app/pages/tabs_page.dart';
+import 'package:photojam_app/pages/mainframe.dart';
 import 'package:photojam_app/standard_button.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
@@ -316,11 +316,11 @@ Future<void> _showConfirmationDialog() async {
         submitButtonOnPressed: () async {
           if (!mounted) return; // Ensure widget is still mounted
           Navigator.pop(context); // Close the dialog
-          // Navigate to TabsPage with the resolved user role
+          // Navigate to Mainframe with the resolved user role
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (context) => TabsPage(),
+              builder: (context) => Mainframe(),
             ),
             (route) => false, // This removes all routes until the specified route
           );

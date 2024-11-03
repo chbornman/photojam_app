@@ -8,16 +8,15 @@ import 'package:photojam_app/pages/home/home_page.dart';
 import 'package:photojam_app/pages/journeys/journey_page.dart';
 import 'package:photojam_app/pages/admin/admin_page.dart';
 import 'package:photojam_app/pages/photos_tab/photos_page.dart';
-import 'package:photojam_app/constants/constants.dart';
 
-class TabsPage extends StatefulWidget {
-  const TabsPage({Key? key}) : super(key: key);
+class Mainframe extends StatefulWidget {
+  const Mainframe({Key? key}) : super(key: key);
 
   @override
-  _TabsPageState createState() => _TabsPageState();
+  _MainframeState createState() => _MainframeState();
 }
 
-class _TabsPageState extends State<TabsPage> {
+class _MainframeState extends State<Mainframe> {
   int _currentIndex = 0;
   String? userRole;
 
@@ -45,29 +44,33 @@ class _TabsPageState extends State<TabsPage> {
     }
   }
 
+  List<Widget> getScreens() {
+    return [
+      HomePage(),
+      JamPage(),
+      JourneyPage(),
+      PhotosPage(),
+      AccountPage(),
+      if (userRole == "admin") AdminPage(),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     if (userRole == null) {
       return Center(child: CircularProgressIndicator());
     }
 
-    List<Widget> _screens = [
-      HomePage(),
-      JamPage(),
-      JourneyPage(),
-      PhotosPage(),
-      AccountPage(),
-    ];
-
-    if (userRole == "admin") {
-      _screens.add(AdminPage());
-    }
+    List<Widget> screens = getScreens();
 
     return Scaffold(
       appBar: StandardAppBar(
-        title: 'Photo Jam',
+        title: getTitleForIndex(_currentIndex),
       ),
-      body: _screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: screens,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
@@ -93,5 +96,24 @@ class _TabsPageState extends State<TabsPage> {
         ],
       ),
     );
+  }
+
+  String getTitleForIndex(int index) {
+    switch (index) {
+      case 0:
+        return 'Home';
+      case 1:
+        return 'Jams';
+      case 2:
+        return 'Journeys';
+      case 3:
+        return 'Photos';
+      case 4:
+        return 'My Account';
+      case 5:
+        return 'Admin Panel';
+      default:
+        return 'PhotoJam';
+    }
   }
 }
