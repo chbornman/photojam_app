@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
+import 'package:photojam_app/pages/journeys/journeycontainer.dart';
 import 'package:photojam_app/pages/journeys/markdownviewer.dart';
 import 'package:provider/provider.dart';
 import 'dart:typed_data';
@@ -59,54 +60,75 @@ class MyJourneysPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: Text("My Journeys")),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _fetchUserJourneys(context),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text("No journeys available."));
-          }
-          final userJourneys = snapshot.data!;
-          return ListView.builder(
-            itemCount: userJourneys.length,
-            itemBuilder: (context, index) {
-              final journey = userJourneys[index];
-              return ExpansionTile(
-                title: Text(journey['title']),
-                children: [
-                  FutureBuilder<List<Widget>>(
-                    future: Future.wait(journey['lessons'].map<Future<Widget>>((lessonUrl) async {
-                      final title = await _fetchLessonTitle(context, lessonUrl);
-                      return ListTile(
-                        title: Text(title),
-                        onTap: () => _viewLesson(context, lessonUrl),
-                      );
-                    }).toList()),
-                    builder: (context, lessonSnapshot) {
-                      if (lessonSnapshot.connectionState == ConnectionState.waiting) {
-                        return Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-                      if (!lessonSnapshot.hasData || lessonSnapshot.data!.isEmpty) {
-                        return Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text("No lessons available."),
-                        );
-                      }
-                      return Column(children: lessonSnapshot.data!);
-                    },
-                  ),
-                ],
-              );
-            },
-          );
-        },
+      appBar: AppBar(
+        title: Text("My Journeys"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: FutureBuilder<List<Map<String, dynamic>>>(
+          future: _fetchUserJourneys(context),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(child: Text("No journeys available."));
+            }
+            final userJourneys = snapshot.data!;
+            return SingleChildScrollView(
+              child: Column(
+                children: userJourneys.map((journey) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8.0),
+                    child: ExpansionTile(
+                      title: Text(
+                        journey['title'],
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      backgroundColor: theme.colorScheme.primary.withOpacity(0.05),
+                      children: [
+                        FutureBuilder<List<Map<String, dynamic>>>(
+                          future: Future.wait(journey['lessons'].map<Future<Map<String, dynamic>>>((lessonUrl) async {
+                            final title = await _fetchLessonTitle(context, lessonUrl);
+                            return {'url': lessonUrl, 'title': title};
+                          }).toList()),
+                          builder: (context, lessonSnapshot) {
+                            if (lessonSnapshot.connectionState == ConnectionState.waiting) {
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Center(child: CircularProgressIndicator()),
+                              );
+                            }
+                            if (!lessonSnapshot.hasData || lessonSnapshot.data!.isEmpty) {
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text("No lessons available."),
+                              );
+                            }
+
+                            // Use JourneyContainer for displaying lessons inside the expansion tile
+                            return JourneyContainer(
+                              title: journey['title'],
+                              lessons: lessonSnapshot.data!,
+                              theme: theme,
+                              onLessonTap: (lessonUrl) => _viewLesson(context, lessonUrl),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

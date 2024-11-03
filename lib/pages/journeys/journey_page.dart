@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/pages/journeys/journeycontainer.dart';
 import 'package:photojam_app/pages/journeys/markdownviewer.dart';
 import 'package:photojam_app/pages/journeys/myjourneys_page.dart';
 import 'package:photojam_app/standard_card.dart';
@@ -274,28 +275,29 @@ class _JourneyPageState extends State<JourneyPage> {
       print('Error viewing lesson: $e');
     }
   }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(journeyTitle),
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: ListView(
-                children: lessons
-                    .map((lesson) => ListTile(
-                          title: Text(lesson['title']),
-                          onTap: () => _viewLesson(lesson['url']),
-                          trailing: Icon(Icons.arrow_forward, color: Colors.black),
-                        ))
-                    .toList(),
+              child: SingleChildScrollView(
+                child: JourneyContainer(
+                  title: journeyTitle,
+                  lessons: lessons,
+                  theme: theme,
+                  onLessonTap: _viewLesson,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -315,13 +317,7 @@ class _JourneyPageState extends State<JourneyPage> {
           ],
         ),
       ),
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: theme.colorScheme.surface,
     );
-  }
-
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
   }
 }
