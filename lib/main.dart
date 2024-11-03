@@ -9,12 +9,9 @@ import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/pages/login_register/login_page.dart';
 import 'package:photojam_app/pages/mainframe.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter(); // Initialize Hive
-  await Hive.openBox('submissionsCache'); // Open the cache box
 
   // Initialize and configure Appwrite Client
   final Client client = Client()
