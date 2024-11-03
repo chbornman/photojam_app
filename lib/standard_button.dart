@@ -12,12 +12,12 @@ Widget StandardButton({
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: accentColor,
+          backgroundColor: PHOTOJAM_YELLOW,
           foregroundColor: Colors.black,
           minimumSize: Size(120,
               defaultButtonHeight), // Set a more reasonable width here if needed
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(defaultCornerRadius),
+            borderRadius: BorderRadius.circular(16.0),
           ),
         ),
         child: icon == null

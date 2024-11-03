@@ -83,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         foregroundColor: Colors.black,
-        backgroundColor: accentColor,
+        backgroundColor: PHOTOJAM_YELLOW,
       ),
       body: Center(
         child: Padding(
@@ -100,7 +100,7 @@ class _LoginPageState extends State<LoginPage> {
                     borderRadius: BorderRadius.circular(defaultCornerRadius),
                   ),
                   filled: true,
-                  fillColor: secondaryAccentColor,
+                  fillColor: Colors.white,
                 ),
               ),
               const SizedBox(height: 16),
@@ -112,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
                     borderRadius: BorderRadius.circular(defaultCornerRadius),
                   ),
                   filled: true,
-                  fillColor: secondaryAccentColor,
+                  fillColor: Colors.white,
                 ),
                 obscureText: true,
               ),
@@ -156,7 +156,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
-      backgroundColor: secondaryAccentColor,
+      backgroundColor: Colors.white,
     );
   }
 }

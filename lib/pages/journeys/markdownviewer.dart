@@ -29,7 +29,7 @@ class MarkdownViewer extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Lesson Content"),
-        backgroundColor: accentColor, // Keeps the AppBar white
+        backgroundColor: PHOTOJAM_YELLOW, // Keeps the AppBar white
         foregroundColor:
             Colors.black, // Sets the title and icon color to black for contrast
       ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/pages/jams/jamsignup_page.dart';
 import 'package:photojam_app/pages/home/master_of_the_month_page.dart';
 import 'package:photojam_app/standard_button.dart';
@@ -157,7 +156,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      backgroundColor: secondaryAccentColor,
+      backgroundColor: Colors.white,
     );
   }
 }

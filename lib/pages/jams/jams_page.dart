@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
-import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/jams/jamsignup_page.dart';
 import 'package:photojam_app/pages/jams/myjams_page.dart';
 import 'package:photojam_app/standard_button.dart';
-import 'package:photojam_app/standard_dialog.dart';
 import 'package:provider/provider.dart';
-import 'package:photojam_app/constants/constants.dart';
 
 class JamPage extends StatefulWidget {
   @override
@@ -98,7 +95,7 @@ class _JamPageState extends State<JamPage> {
           ],
         ),
       ),
-      backgroundColor: secondaryAccentColor,
+      backgroundColor: Colors.white,
     );
   }
 

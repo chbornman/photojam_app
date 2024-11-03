@@ -15,9 +15,7 @@ const String COLLECTION_SUBMISSIONS = "photojam-collection-submission";
 const String BUCKET_PHOTOS_ID = "photojam-bucket-photos";
 const String BUCKET_LESSONS_ID = "photojam-bucket-lessons";
 
-// Colors and Styling
-const Color accentColor = Colors.amber;
-const Color secondaryAccentColor = Colors.white;
+// 
 const double defaultCornerRadius = 16;
 const double defaultButtonHeight = 50;
 
@@ -25,14 +23,13 @@ const double defaultButtonHeight = 50;
 // Zoom link
 const String ZOOM_LINK_URL = "https://us02web.zoom.us/j/86356738535";
 
-
 // Theme colors
-const String PHOTOJAM_YELLOW = "f9d036";
-const String PHOTOJAM_PINK = "e25b63";
-const String PHOTOJAM_BLUE = "28354f";
-const String PHOTOJAM_GREEN = "07D114";
-const String PHOTOJAM_DARK_GREEN = "06510B";
-const String PHOTOJAM_ORANGE = "ef8634";
-const String PHOTOJAM_NEW_PINK = "e45b64";
-const String PHOTOJAM_PALE_BLUE = "6acae4";
-const String PHOTOJAM_PURPLE = "b248e6";
+const Color PHOTOJAM_YELLOW = Color(0xFFF9D036);
+const Color PHOTOJAM_PINK = Color(0xFFE25B63);
+const Color PHOTOJAM_BLUE = Color(0xFF28354F);
+const Color PHOTOJAM_GREEN = Color(0xFF07D114);
+const Color PHOTOJAM_DARK_GREEN = Color(0xFF06510B);
+const Color PHOTOJAM_ORANGE = Color(0xFFEF8634);
+const Color PHOTOJAM_NEW_PINK = Color(0xFFE45B64);
+const Color PHOTOJAM_PALE_BLUE = Color(0xFF6ACAE4);
+const Color PHOTOJAM_PURPLE = Color(0xFFB248E6);

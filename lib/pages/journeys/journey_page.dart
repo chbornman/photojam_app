@@ -9,7 +9,6 @@ import 'package:photojam_app/pages/journeys/myjourneys_page.dart';
 import 'package:photojam_app/standard_button.dart';
 import 'package:photojam_app/standard_dialog.dart';
 import 'package:provider/provider.dart';
-import 'package:photojam_app/constants/constants.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
@@ -309,7 +308,7 @@ class _JourneyPageState extends State<JourneyPage> {
           ],
         ),
       ),
-      backgroundColor: secondaryAccentColor,
+      backgroundColor: Colors.white,
     );
   }
 

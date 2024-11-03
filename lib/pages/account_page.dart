@@ -157,7 +157,7 @@ class _AccountPageState extends State<AccountPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Account'),
-        backgroundColor: accentColor,
+        backgroundColor: PHOTOJAM_YELLOW,
         foregroundColor: Colors.black,
         actions: [
           IconButton(
@@ -197,7 +197,7 @@ class _AccountPageState extends State<AccountPage> {
           ],
         ),
       ),
-      backgroundColor: secondaryAccentColor,
+      backgroundColor: Colors.white,
     );
   }
 }

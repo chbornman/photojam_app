@@ -66,7 +66,7 @@ class _TabsPageState extends State<TabsPage> {
     return Scaffold(
       appBar: StandardAppBar(
         title: 'Photo Jam',
-        backgroundColor: accentColor,
+        backgroundColor: PHOTOJAM_YELLOW,
       ),
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
@@ -74,7 +74,7 @@ class _TabsPageState extends State<TabsPage> {
         currentIndex: _currentIndex,
         selectedItemColor: Colors.black,
         unselectedItemColor: Colors.white,
-        backgroundColor: accentColor,
+        backgroundColor: PHOTOJAM_YELLOW,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
