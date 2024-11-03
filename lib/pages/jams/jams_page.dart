@@ -1,8 +1,9 @@
+import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/pages/jams/jamdetails_page.dart';
 import 'package:photojam_app/pages/jams/jamsignup_page.dart';
-import 'package:photojam_app/pages/jams/myjams_page.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
 import 'package:provider/provider.dart';
 
@@ -14,60 +15,31 @@ class JamPage extends StatefulWidget {
 class _JamPageState extends State<JamPage> {
   String? currentJamId;
   String jamTitle = "Jam";
+  List<Document> upcomingJams = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchLatestJam();
+    _fetchUpcomingJams();
   }
 
-  Future<void> _fetchLatestJam() async {
+  Future<void> _fetchUpcomingJams() async {
     try {
       final auth = Provider.of<AuthAPI>(context, listen: false);
       final userId = auth.userid;
 
       if (userId != null) {
         final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
-        final response = await databaseApi.getJamsByUser(userId);
+        final response = await databaseApi.getUpcomingJamsByUser(userId);
 
-        if (response.documents.isNotEmpty) {
-          response.documents.sort((a, b) {
-            final dateA = DateTime.parse(a.data['date']);
-            final dateB = DateTime.parse(b.data['date']);
-            return dateB.compareTo(dateA); // Latest jam first
-          });
-
-          final latestJam = response.documents.first;
-          setState(() {
-            currentJamId = latestJam.$id;
-            jamTitle = latestJam.data['title'] ?? "Jam";
-          });
-        } else {
-          print("No jams found for this user.");
-        }
+        setState(() {
+          upcomingJams = response.documents;
+        });
       }
     } catch (e) {
-      print('Error fetching the latest jam: $e');
+      print('Error fetching upcoming jams: $e');
     }
   }
-
-  void _goToMyJams() {
-    final auth = Provider.of<AuthAPI>(context, listen: false);
-    final userId = auth.userid;
-
-    if (userId != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => MyJamsPage(userId: userId),
-        ),
-      );
-    } else {
-      print('User ID is not available');
-    }
-  }
-
-  Future<void> _openSignUpForJamDialog() async {}
 
   @override
   Widget build(BuildContext context) {
@@ -77,13 +49,6 @@ class _JamPageState extends State<JamPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            StandardCard(
-              icon: Icons.library_music,
-              title: "View My Jams",
-              subtitle: "See all your scheduled jams",
-              onTap: _goToMyJams,
-            ),
-            const SizedBox(height: 10),
             StandardCard(
               icon: Icons.add_circle_outline,
               title: "Sign Up for a Jam",
@@ -95,15 +60,95 @@ class _JamPageState extends State<JamPage> {
                 );
               },
             ),
+            const SizedBox(height: 20),
+            Text(
+              "Upcoming Jams",
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: upcomingJams.isEmpty
+                  ? Center(
+                      child: Text(
+                        "No upcoming jams.",
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyLarge
+                            ?.copyWith(color: Colors.grey),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: upcomingJams.length,
+                      itemBuilder: (context, index) {
+                        final jam = upcomingJams[index];
+                        final jamDate = DateTime.parse(jam.data['date']);
+                        return Card(
+                          elevation: 4,
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            leading: Icon(
+                              Icons.event,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 30,
+                            ),
+                            title: Text(
+                              jam.data['title'],
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Date: ${jamDate.toLocal()}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(color: Colors.grey[600]),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  jam.data['description'] ??
+                                      "Join us for a memorable event!", // Add description if available
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                            trailing: Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            onTap: () {
+                              // Navigate to the Jam Details Page
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      JamDetailsPage(jam: jam),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+            ),
           ],
         ),
       ),
       backgroundColor: Theme.of(context).colorScheme.surface,
     );
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
   }
 }

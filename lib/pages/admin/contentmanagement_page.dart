@@ -1,5 +1,6 @@
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
+import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
@@ -47,83 +48,6 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     } finally {
       setState(() => isLoading = false);
     }
-  }
-
-  // Create Journey Dialog
-  void _openCreateJourneyDialog() {
-    final TextEditingController titleController = TextEditingController();
-    DateTime? startDate;
-    bool isActive = false;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StandardDialog(
-          title: "Create Journey",
-          content: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(labelText: "Journey Title"),
-                  ),
-                  SizedBox(height: 16),
-                  ListTile(
-                    title: Text(
-                      startDate == null
-                          ? "Select Start Date"
-                          : "Start Date: ${startDate?.toLocal().toString().split(' ')[0]}",
-                    ),
-                    trailing: Icon(Icons.calendar_today),
-                    onTap: () async {
-                      DateTime? pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-                      if (pickedDate != null) {
-                        setState(() {
-                          startDate = pickedDate;
-                        });
-                      }
-                    },
-                  ),
-                  SwitchListTile(
-                    title: Text("Active"),
-                    value: isActive,
-                    onChanged: (value) {
-                      setState(() {
-                        isActive = value;
-                      });
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
-          submitButtonLabel: "Create",
-          submitButtonOnPressed: () {
-            if (!mounted) return; // Ensure widget is still mounted
-            if (titleController.text.isEmpty || startDate == null) {
-              _showMessage("Please enter a title and select a start date.",
-                  isError: true);
-              return;
-            }
-            Map<String, dynamic> journeyData = {
-              "title": titleController.text,
-              "start_date": startDate!.toIso8601String(),
-              "active": isActive,
-            };
-            Navigator.of(context).pop();
-            _executeAction(database.createJourney, journeyData,
-                "Journey created successfully");
-          },
-        );
-      },
-    );
   }
 
   void _fetchAndOpenUpdateJourneyDialog() async {
@@ -491,16 +415,17 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     );
   }
 
-  void _openCreateJamDialog() {
+  void _openCreateJourneyDialog() {
     final TextEditingController titleController = TextEditingController();
-    final TextEditingController zoomLinkController = TextEditingController();
-    DateTime? jamDate;
+    DateTime? startDate;
+    TimeOfDay? startTime;
+    bool isActive = false;
 
     showDialog(
       context: context,
       builder: (context) {
         return StandardDialog(
-          title: "Create Jam",
+          title: "Create Journey",
           content: StatefulBuilder(
             builder: (context, setState) {
               return Column(
@@ -508,14 +433,14 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                 children: [
                   TextField(
                     controller: titleController,
-                    decoration: InputDecoration(labelText: "Jam Title"),
+                    decoration: InputDecoration(labelText: "Journey Title"),
                   ),
                   SizedBox(height: 16),
                   ListTile(
                     title: Text(
-                      jamDate == null
-                          ? "Select Jam Date"
-                          : "Jam Date: ${jamDate?.toLocal().toString().split(' ')[0]}",
+                      startDate == null
+                          ? "Select Start Date"
+                          : "Start Date: ${startDate?.toLocal().toString().split(' ')[0]}",
                     ),
                     trailing: Icon(Icons.calendar_today),
                     onTap: () async {
@@ -527,14 +452,38 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                       );
                       if (pickedDate != null) {
                         setState(() {
-                          jamDate = pickedDate;
+                          startDate = pickedDate;
                         });
                       }
                     },
                   ),
-                  TextField(
-                    controller: zoomLinkController,
-                    decoration: InputDecoration(labelText: "Zoom Link"),
+                  ListTile(
+                    title: Text(
+                      startTime == null
+                          ? "Select Start Time"
+                          : "Start Time: ${startTime?.format(context)}",
+                    ),
+                    trailing: Icon(Icons.access_time),
+                    onTap: () async {
+                      TimeOfDay? pickedTime = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.now(),
+                      );
+                      if (pickedTime != null) {
+                        setState(() {
+                          startTime = pickedTime;
+                        });
+                      }
+                    },
+                  ),
+                  SwitchListTile(
+                    title: Text("Active"),
+                    value: isActive,
+                    onChanged: (value) {
+                      setState(() {
+                        isActive = value;
+                      });
+                    },
                   ),
                 ],
               );
@@ -544,28 +493,148 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
           submitButtonOnPressed: () {
             if (!mounted) return; // Ensure widget is still mounted
             if (titleController.text.isEmpty ||
-                jamDate == null ||
-                zoomLinkController.text.isEmpty) {
-              _showMessage(
-                  "Please enter all required fields, including the Zoom link.",
+                startDate == null ||
+                startTime == null) {
+              _showMessage("Please enter a title, start date, and time.",
                   isError: true);
               return;
             }
-            Map<String, dynamic> jamData = {
+            DateTime journeyDateTime = DateTime(
+              startDate!.year,
+              startDate!.month,
+              startDate!.day,
+              startTime!.hour,
+              startTime!.minute,
+            );
+            Map<String, dynamic> journeyData = {
               "title": titleController.text,
-              "date": jamDate!.toIso8601String(),
-              "zoom_link": zoomLinkController.text,
+              "start_date": journeyDateTime.toIso8601String(),
+              "active": isActive,
             };
             Navigator.of(context).pop();
-            _executeAction(
-                database.createJam, jamData, "Jam created successfully");
+            _executeAction(database.createJourney, journeyData,
+                "Journey created successfully");
           },
         );
       },
     );
   }
 
-@override
+void _openCreateJamDialog() {
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController zoomLinkController = TextEditingController();
+  DateTime? jamDate;
+  TimeOfDay? jamTime;
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StandardDialog(
+        title: "Create Jam",
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: InputDecoration(labelText: "Jam Title"),
+                ),
+                SizedBox(height: 16),
+                ListTile(
+                  title: Text(
+                    jamDate == null
+                        ? "Select Jam Date"
+                        : "Jam Date: ${jamDate?.toLocal().toString().split(' ')[0]}",
+                  ),
+                  trailing: Icon(Icons.calendar_today),
+                  onTap: () async {
+                    DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (pickedDate != null) {
+                      setState(() {
+                        jamDate = pickedDate;
+                      });
+                    }
+                  },
+                ),
+                ListTile(
+                  title: Text(
+                    jamTime == null
+                        ? "Select Jam Time"
+                        : "Jam Time: ${jamTime?.format(context)}",
+                  ),
+                  trailing: Icon(Icons.access_time),
+                  onTap: () async {
+                    TimeOfDay? pickedTime = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (pickedTime != null) {
+                      setState(() {
+                        jamTime = pickedTime;
+                      });
+                    }
+                  },
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: zoomLinkController,
+                        decoration: InputDecoration(labelText: "Zoom Link"),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.input),
+                      tooltip: "Use default Zoom link",
+                      onPressed: () {
+                        zoomLinkController.text = ZOOM_LINK_URL;
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+        submitButtonLabel: "Create",
+        submitButtonOnPressed: () {
+          if (!mounted) return; // Ensure widget is still mounted
+          if (titleController.text.isEmpty ||
+              jamDate == null ||
+              jamTime == null ||
+              zoomLinkController.text.isEmpty) {
+            _showMessage(
+                "Please enter all required fields, including the Zoom link.",
+                isError: true);
+            return;
+          }
+          DateTime jamDateTime = DateTime(
+            jamDate!.year,
+            jamDate!.month,
+            jamDate!.day,
+            jamTime!.hour,
+            jamTime!.minute,
+          );
+          Map<String, dynamic> jamData = {
+            "title": titleController.text,
+            "date": jamDateTime.toIso8601String(),
+            "zoom_link": zoomLinkController.text,
+          };
+          Navigator.of(context).pop();
+          _executeAction(
+              database.createJam, jamData, "Jam created successfully");
+        },
+      );
+    },
+  );
+}
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -575,9 +644,9 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
         padding: const EdgeInsets.all(16.0),
         child: GridView.count(
           crossAxisCount: 1, // Set to single column for better readability
-          crossAxisSpacing: 8.0, 
-          mainAxisSpacing: 8.0, 
-          childAspectRatio: 4, 
+          crossAxisSpacing: 8.0,
+          mainAxisSpacing: 8.0,
+          childAspectRatio: 4,
           shrinkWrap: true,
           children: [
             StandardCard(

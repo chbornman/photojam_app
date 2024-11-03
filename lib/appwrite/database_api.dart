@@ -156,22 +156,71 @@ class DatabaseAPI {
     );
   }
 
-  /// Get all jams and filter by participant_ids in code
-    Future<DocumentList> getJamsByUser(String userId) async {
+  Future<DocumentList> getJamsByUser(String userId) async {
     try {
-      final response = await databases.listDocuments(
+      // Step 1: Get all submissions for the specified user
+      final submissionsResponse = await databases.listDocuments(
         databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JAMS,
+        collectionId: COLLECTION_SUBMISSIONS,
+        queries: [
+          Query.equal('user_id', userId),
+        ],
       );
-      final filteredDocuments = response.documents.where((doc) {
-        return (doc.data['participant_ids'] ?? []).contains(userId);
-      }).toList();
+
+      // Extract unique jam IDs from the submissions
+      final jamIds = submissionsResponse.documents
+          .map((doc) =>
+              doc.data['jam']['\$id']) // Access the document ID of the jam
+          .toSet()
+          .toList();
+
+      // Step 2: Fetch each jam by ID and accumulate results
+      List<Document> jamDocuments = [];
+      for (String jamId in jamIds) {
+        final jamResponse = await databases.getDocument(
+          databaseId: APPWRITE_DATABASE_ID,
+          collectionId: COLLECTION_JAMS,
+          documentId: jamId,
+        );
+        jamDocuments.add(jamResponse);
+      }
+
       return DocumentList(
-        documents: filteredDocuments,
-        total: filteredDocuments.length,
+        documents: jamDocuments,
+        total: jamDocuments.length,
       );
     } catch (e) {
       print('Error fetching jams for user $userId: $e');
+      rethrow;
+    }
+  }
+
+  Future<DocumentList> getUpcomingJamsByUser(String userId) async {
+    try {
+      // Step 1: Fetch jams the user is a part of
+      final userJamDocuments = await getJamsByUser(userId);
+
+      // Step 2: Filter out jams that are in the past
+      final now = DateTime.now();
+      final upcomingJams = userJamDocuments.documents.where((doc) {
+        // Check if 'date' exists and is a String, then parse it
+        final dateValue = doc.data['date'];
+        if (dateValue is String) {
+          final jamDate = DateTime.parse(dateValue);
+          return jamDate.isAfter(now); // Keep only future jams
+        } else {
+          print("Warning: date is not a String for document ID ${doc.$id}");
+          return false;
+        }
+      }).toList();
+
+      // Step 3: Return the filtered list as a DocumentList
+      return DocumentList(
+        documents: upcomingJams,
+        total: upcomingJams.length,
+      );
+    } catch (e) {
+      print('Error fetching upcoming jams for user $userId: $e');
       rethrow;
     }
   }
