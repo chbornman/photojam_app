@@ -15,6 +15,7 @@ class PhotosPage extends StatefulWidget {
   @override
   _PhotosPageState createState() => _PhotosPageState();
 }
+
 class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
   List<Map<String, dynamic>> allSubmissions = [];
   bool isLoading = true;
@@ -69,7 +70,8 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
         for (var photoUrl in photoUrls) {
           if (_isDisposed) return; // Stop if disposed
           // Pass authToken and use storageApi to fetch authenticated image
-          final imageData = await _fetchAndCacheImage(photoUrl, authToken, storageApi);
+          final imageData =
+              await _fetchAndCacheImage(photoUrl, authToken, storageApi);
           photos.add(imageData);
         }
 
@@ -94,7 +96,8 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
     }
   }
 
-Future<Uint8List?> _fetchAndCacheImage(String photoUrl, String authToken, StorageAPI storageApi) async {
+  Future<Uint8List?> _fetchAndCacheImage(
+      String photoUrl, String authToken, StorageAPI storageApi) async {
     final cacheFile = await _getImageCacheFile(photoUrl);
 
     // Check if the cached image exists
@@ -108,9 +111,11 @@ Future<Uint8List?> _fetchAndCacheImage(String photoUrl, String authToken, Storag
 
     try {
       // Fetch image using storage API with authToken
-      final imageData = await storageApi.fetchAuthenticatedImage(photoUrl, authToken);
+      final imageData =
+          await storageApi.fetchAuthenticatedImage(photoUrl, authToken);
       if (imageData != null) {
-        await cacheFile.writeAsBytes(imageData); // Cache the new/updated image data locally
+        await cacheFile.writeAsBytes(
+            imageData); // Cache the new/updated image data locally
       }
       return imageData;
     } catch (e) {
@@ -122,22 +127,26 @@ Future<Uint8List?> _fetchAndCacheImage(String photoUrl, String authToken, Storag
   // Helper to get a unique cache file path based on the URL
   Future<File> _getImageCacheFile(String photoUrl) async {
     final cacheDir = await getTemporaryDirectory();
-    
+
     // Generate a unique hash from the full URL to use as the file name
     final sanitizedFileName = sha256.convert(utf8.encode(photoUrl)).toString();
-    
+
     return File('${cacheDir.path}/$sanitizedFileName.jpg');
   }
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: const Text("All Photos"),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0.0,
       ),
       body: RefreshIndicator(
-        onRefresh:
-            _fetchAllSubmissions, // Pull-to-refresh always fetches new data
+        onRefresh: _fetchAllSubmissions, // Pull-to-refresh always fetches new data
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : allSubmissions.isEmpty
@@ -164,6 +173,7 @@ Future<Uint8List?> _fetchAndCacheImage(String photoUrl, String authToken, Storag
                       return Container(
                         padding: const EdgeInsets.all(16.0),
                         margin: const EdgeInsets.symmetric(vertical: 8.0),
+                        color: Colors.white, // Ensure each container also has a white background
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

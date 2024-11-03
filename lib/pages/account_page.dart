@@ -157,8 +157,8 @@ class _AccountPageState extends State<AccountPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Account'),
-        backgroundColor: PHOTOJAM_YELLOW,
-        foregroundColor: Colors.black,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -169,7 +169,7 @@ class _AccountPageState extends State<AccountPage> {
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
@@ -178,15 +178,16 @@ class _AccountPageState extends State<AccountPage> {
             ),
             Text(
               '${userData.email}',
-              style: const TextStyle(color: Colors.grey),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 30),
             StandardButton(
                 label: Text("Change Name"), onPressed: showUpdateNameDialog),
             userData.isOAuthUser
-                ? const Text(
+                ? Text(
                     "Email updates are managed through your OAuth provider.",
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.secondary),
                   )
                 : StandardButton(
                     label: Text("Change Email"),
@@ -197,7 +198,7 @@ class _AccountPageState extends State<AccountPage> {
           ],
         ),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
 }

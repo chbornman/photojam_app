@@ -83,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         foregroundColor: Colors.black,
-        backgroundColor: PHOTOJAM_YELLOW,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: Center(
         child: Padding(
@@ -156,7 +156,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
-      backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
 }

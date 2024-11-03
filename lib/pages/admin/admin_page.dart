@@ -8,12 +8,16 @@ class AdminPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Admin Panel', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(
+              'Admin Panel',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
             SizedBox(height: 20),
             // User Management Section
             Card(
@@ -25,7 +29,8 @@ class AdminPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => UserManagementPage()),
-                  );                },
+                  );
+                },
               ),
             ),
             SizedBox(height: 10),

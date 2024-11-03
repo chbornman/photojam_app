@@ -74,8 +74,8 @@ class _JamPageState extends State<JamPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(jamTitle),
-        foregroundColor: Colors.black,
-        backgroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -95,7 +95,7 @@ class _JamPageState extends State<JamPage> {
           ],
         ),
       ),
-      backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
 

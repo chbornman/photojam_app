@@ -3,18 +3,16 @@ import 'package:photojam_app/pages/tabs_page.dart';
 
 class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
-  final Color backgroundColor;
 
   StandardAppBar({
     required this.title,
-    required this.backgroundColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
       title: Text(title),
-      backgroundColor: backgroundColor,
+      backgroundColor: Theme.of(context).colorScheme.primary,
       leading: GestureDetector(
         onTap: () => Navigator.push(
           context,

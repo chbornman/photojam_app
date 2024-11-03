@@ -337,7 +337,7 @@ Future<void> _showConfirmationDialog() async {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Jam Signup"),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
       ),
       body: Stack(
         children: [
@@ -410,7 +410,7 @@ Future<void> _showConfirmationDialog() async {
             ),
         ],
       ),
-      backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
 }

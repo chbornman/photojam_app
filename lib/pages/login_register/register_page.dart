@@ -87,7 +87,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create your account'),
-        backgroundColor: PHOTOJAM_YELLOW,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.black,
       ),
       body: Center(
@@ -145,7 +145,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       ),
-      backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
 }

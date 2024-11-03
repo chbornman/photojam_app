@@ -4,6 +4,7 @@ import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
+import 'package:photojam_app/custom_theme.dart';
 import 'package:photojam_app/userdataprovider.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/pages/login_register/login_page.dart';
@@ -25,7 +26,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider<AuthAPI>(create: (_) => AuthAPI(client)),
-        ChangeNotifierProvider<UserDataProvider>(create: (_) => UserDataProvider()), // Add UserDataProvider here
+        ChangeNotifierProvider<UserDataProvider>(
+            create: (_) => UserDataProvider()), // Add UserDataProvider here
         Provider<DatabaseAPI>(create: (_) => DatabaseAPI(client)),
         Provider<StorageAPI>(create: (_) => StorageAPI(client)),
       ],
@@ -46,6 +48,9 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'PhotoJam',
+      theme: getLightTheme(),
+      darkTheme: getDarkTheme(),
+      themeMode: ThemeMode.system,
       home: Consumer<AuthAPI>(
         builder: (context, authAPI, child) {
           if (authAPI.status == AuthStatus.authenticated) {
