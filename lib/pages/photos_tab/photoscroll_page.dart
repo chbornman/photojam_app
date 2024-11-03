@@ -1,6 +1,10 @@
-import 'dart:typed_data';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter/services.dart';
 
 class PhotoScrollPage extends StatefulWidget {
   final List<Map<String, dynamic>> allSubmissions;
@@ -22,6 +26,7 @@ class _PhotoScrollPageState extends State<PhotoScrollPage>
     with AutomaticKeepAliveClientMixin {
   bool isLoading = true;
   List<Map<String, dynamic>> loadedSubmissions = [];
+  Uint8List? activePhotoData; // Track the currently pressed photo
 
   @override
   bool get wantKeepAlive => true;
@@ -45,6 +50,27 @@ class _PhotoScrollPageState extends State<PhotoScrollPage>
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  // Helper function to share image
+  Future<void> _shareImage(Uint8List photoData) async {
+    try {
+      // Haptic feedback on long press
+      HapticFeedback.mediumImpact();
+
+      // Save the image temporarily to share
+      final tempDir = await getTemporaryDirectory();
+      final filePath = '${tempDir.path}/shared_image.png';
+      final file = await File(filePath).writeAsBytes(photoData);
+
+      // Use share_plus to trigger iOS share sheet
+      await Share.shareXFiles([XFile(file.path)], text: 'Check out my PhotoJam submission!');
+    } catch (e) {
+      print("Error sharing photo: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error sharing photo.')),
+      );
     }
   }
 
@@ -128,29 +154,59 @@ class _PhotoScrollPageState extends State<PhotoScrollPage>
                       ),
                       Column(
                         children: photos.map((photoData) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0, vertical: 8.0),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8.0),
-                              child: photoData != null
-                                  ? Image.memory(
-                                      photoData,
-                                      width: double.infinity,
-                                      fit: BoxFit.contain,
-                                    )
-                                  : Container(
-                                      width: double.infinity,
-                                      height: 200,
-                                      color: const Color.fromARGB(
-                                          255, 16, 104, 82),
-                                      child: const Center(
-                                        child: Icon(Icons.image_not_supported,
-                                            color: Color.fromARGB(
-                                                255, 228, 224, 224),
-                                            size: 50),
-                                      ),
+                          return GestureDetector(
+                            onLongPressStart: (_) {
+                              setState(() {
+                                activePhotoData = photoData;
+                              });
+                            },
+                            onLongPressEnd: (_) async {
+                              setState(() {
+                                activePhotoData = null;
+                              });
+                              if (photoData != null) {
+                                await _shareImage(photoData);
+                              }
+                            },
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0, vertical: 8.0),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8.0),
+                                    child: photoData != null
+                                        ? Image.memory(
+                                            photoData,
+                                            width: double.infinity,
+                                            fit: BoxFit.contain,
+                                          )
+                                        : Container(
+                                            width: double.infinity,
+                                            height: 200,
+                                            color: const Color.fromARGB(
+                                                255, 16, 104, 82),
+                                            child: const Center(
+                                              child: Icon(
+                                                  Icons.image_not_supported,
+                                                  color: Color.fromARGB(
+                                                      255, 228, 224, 224),
+                                                  size: 50),
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                                if (activePhotoData == photoData)
+                                  Positioned.fill(
+                                    child: Container(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withOpacity(0.5),
                                     ),
+                                  ),
+                              ],
                             ),
                           );
                         }).toList(),
@@ -160,7 +216,7 @@ class _PhotoScrollPageState extends State<PhotoScrollPage>
                 );
               },
             ),
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
 }
