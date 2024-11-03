@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/pages/facilitator_signup_page.dart';
+import 'package:photojam_app/pages/membership_signup_page.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
 import 'package:photojam_app/utilities/standard_dialog.dart';
 import 'package:photojam_app/utilities/userdataprovider.dart';
@@ -72,7 +74,9 @@ class _AccountPageState extends State<AccountPage> {
         ),
         submitButtonLabel: "Save",
         submitButtonOnPressed: () async {
-          await context.read<AuthAPI>().updateEmail(emailController.text, passwordController.text);
+          await context
+              .read<AuthAPI>()
+              .updateEmail(emailController.text, passwordController.text);
           if (!mounted) return;
           Navigator.of(context).pop();
           setState(() {
@@ -112,7 +116,8 @@ class _AccountPageState extends State<AccountPage> {
             const SizedBox(height: 10),
             TextField(
               controller: confirmPasswordController,
-              decoration: const InputDecoration(labelText: 'Confirm New Password'),
+              decoration:
+                  const InputDecoration(labelText: 'Confirm New Password'),
               obscureText: true,
             ),
           ],
@@ -163,7 +168,8 @@ class _AccountPageState extends State<AccountPage> {
 
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.all(16.0),  // Consistent padding around the page
+        padding:
+            const EdgeInsets.all(16.0), // Consistent padding around the page
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -186,7 +192,8 @@ class _AccountPageState extends State<AccountPage> {
             userData.isOAuthUser
                 ? Text(
                     "Email updates are managed through your OAuth provider.",
-                    style: TextStyle(color: Theme.of(context).colorScheme.secondary),
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.secondary),
                   )
                 : StandardCard(
                     icon: Icons.email,
@@ -201,6 +208,40 @@ class _AccountPageState extends State<AccountPage> {
               subtitle: "Update your account password",
               onTap: showUpdatePasswordDialog,
             ),
+            // Become a member Card
+            if (userRole == 'nonmember') ...[
+              const SizedBox(height: 10),
+              StandardCard(
+                icon: Icons.person_add,
+                title: "Become a Member",
+                subtitle: "Join our community and enjoy exclusive benefits",
+                onTap: () {
+                  // Navigate to membership signup page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => MembershipSignupPage()),
+                  );
+                },
+              ),
+            ]
+            // Become a facilitator Card
+            else if (userRole == 'member') ...[
+              const SizedBox(height: 10),
+              StandardCard(
+                icon: Icons.person_add,
+                title: "Become a Facilitator",
+                subtitle: "Lead Jams and share your photography passion",
+                onTap: () {
+                  // Navigate to facilitator signup page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => FacilitatorSignupPage()),
+                  );
+                },
+              ),
+            ],
           ],
         ),
       ),

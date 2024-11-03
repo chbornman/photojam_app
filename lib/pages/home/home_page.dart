@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:photojam_app/pages/facilitator_signup_page.dart';
 import 'package:photojam_app/pages/jams/jamsignup_page.dart';
 import 'package:photojam_app/pages/home/master_of_the_month_page.dart';
+import 'package:photojam_app/pages/membership_signup_page.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
@@ -96,7 +98,7 @@ class _HomePageState extends State<HomePage> {
               style: textTheme.headlineSmall,
             ),
             const SizedBox(height: 10),
-            
+
             // Sign Up for Jam Card
             StandardCard(
               icon: Icons.add_circle_outline,
@@ -121,19 +123,57 @@ class _HomePageState extends State<HomePage> {
                   ? 'Scheduled on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(nextJam!.data['jam']['date']))}'
                   : 'You will need to sign up for upcoming jams',
               onTap: () {
-                if (nextJam != null && nextJam!.data['jam']['zoom_link'] != null) {
+                if (nextJam != null &&
+                    nextJam!.data['jam']['zoom_link'] != null) {
                   _goToZoomCall(nextJam!.data['jam']['zoom_link']);
                 }
               },
             ),
-            
+
+            // Become a member Card
+            if (userRole == 'nonmember') ...[
+              const SizedBox(height: 10),
+              StandardCard(
+                icon: Icons.person_add,
+                title: "Become a Member",
+                subtitle: "Join our community and enjoy exclusive benefits",
+                onTap: () {
+                  // Navigate to membership signup page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => MembershipSignupPage()),
+                  );
+                },
+              ),
+            ]
+
+            // Become a facilitator Card
+            else if (userRole == 'member') ...[
+              const SizedBox(height: 10),
+              StandardCard(
+                icon: Icons.person_add,
+                title: "Become a Facilitator",
+                subtitle: "Lead Jams and share your photography passion",
+                onTap: () {
+                  // Navigate to facilitator signup page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => FacilitatorSignupPage()),
+                  );
+                },
+              ),
+            ],
+
             // Master of the Month Section
             const SizedBox(height: 30),
             GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => MasterOfTheMonthPage()),
+                  MaterialPageRoute(
+                      builder: (context) => MasterOfTheMonthPage()),
                 );
               },
               child: Column(
@@ -151,7 +191,7 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-            
+
             // Share the Jam Section
             const SizedBox(height: 30),
             Row(
