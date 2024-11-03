@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class PhotoScrollPage extends StatefulWidget {
   final List<Map<String, dynamic>> allSubmissions;
@@ -47,6 +48,17 @@ class _PhotoScrollPageState extends State<PhotoScrollPage>
     }
   }
 
+  // Helper function to format date and time
+  String formatDate(String dateString) {
+    try {
+      DateTime date = DateTime.parse(dateString);
+      return DateFormat('MMM dd, yyyy - hh:mm a').format(date);
+    } catch (e) {
+      print("Error formatting date: $e");
+      return "Invalid Date";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -77,8 +89,7 @@ class _PhotoScrollPageState extends State<PhotoScrollPage>
                       Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
                   margin: const EdgeInsets.only(bottom: 16.0),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                        8.0), // Slight rounding for card corners
+                    borderRadius: BorderRadius.circular(8.0),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,7 +112,7 @@ class _PhotoScrollPageState extends State<PhotoScrollPage>
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              date,
+                              formatDate(date),
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall
@@ -119,17 +130,14 @@ class _PhotoScrollPageState extends State<PhotoScrollPage>
                         children: photos.map((photoData) {
                           return Padding(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 8.0), // Inset the images
+                                horizontal: 16.0, vertical: 8.0),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                  8.0), // Slight rounding for image corners
+                              borderRadius: BorderRadius.circular(8.0),
                               child: photoData != null
                                   ? Image.memory(
                                       photoData,
                                       width: double.infinity,
-                                      fit: BoxFit
-                                          .contain, // Retains aspect ratio
+                                      fit: BoxFit.contain,
                                     )
                                   : Container(
                                       width: double.infinity,

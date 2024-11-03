@@ -7,6 +7,7 @@ import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/pages/photos_tab/photoscroll_page.dart';
+import 'package:photojam_app/standard_photocard.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
@@ -133,7 +134,8 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
     }
   }
 
-  @override
+  
+ @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -147,55 +149,41 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
                 itemBuilder: (context, index) {
                   final submission = allSubmissions[index];
                   final jamTitle = submission['jamTitle'];
+                  final date = submission['date'];
                   final photos = submission['photos'] as List<Uint8List?>;
 
-                  return Card(
-                    elevation: 10,
-                    color: Theme.of(context).colorScheme.surface.withOpacity(0.1),
-                    shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-                    margin: const EdgeInsets.symmetric(vertical: 8.0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            jamTitle,
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              fontWeight: FontWeight.bold,
+                  // Define how each photo should appear
+                  final photoWidgets = [
+                    Row(
+                      children: photos.asMap().entries.map((entry) {
+                        int photoIndex = entry.key;
+                        Uint8List? photoData = entry.value;
+                        return GestureDetector(
+                          onTap: () => _navigateToPhotoScrollPage(index, photoIndex),
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8.0),
+                              child: photoData != null
+                                  ? Image.memory(photoData, width: 100, height: 100, fit: BoxFit.cover)
+                                  : Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: const Color.fromARGB(255, 106, 35, 35),
+                                      child: const Icon(Icons.image_not_supported, color: Colors.white),
+                                    ),
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: photos.asMap().entries.map((entry) {
-                              int photoIndex = entry.key;
-                              Uint8List? photoData = entry.value;
-                              return GestureDetector(
-                                onTap: () => _navigateToPhotoScrollPage(index, photoIndex),
-                                child: Padding(
-                                  padding: const EdgeInsets.only(right: 8.0),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8.0),
-                                    child: photoData != null
-                                        ? Image.memory(photoData, width: 100, height: 100, fit: BoxFit.cover)
-                                        : Container(
-                                            width: 100,
-                                            height: 100,
-                                            color: const Color.fromARGB(255, 106, 35, 35),
-                                            child: const Icon(Icons.image_not_supported, color: Colors.white),
-                                          ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ),
+                        );
+                      }).toList(),
                     ),
+                  ];
+
+                  // Pass photoWidgets to PhotoCard
+                  return PhotoCard(
+                    title: jamTitle,
+                    date: date,
+                    photoWidgets: photoWidgets,
                   );
                 },
               ),
