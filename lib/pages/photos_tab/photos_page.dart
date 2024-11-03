@@ -164,9 +164,18 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
                       final jamTitle = submission['jamTitle'];
                       final photos = submission['photos'] as List<Uint8List?>;
 
+                      // Alternating background color based on index
+                      final backgroundColor = index % 2 == 0
+                          ? Theme.of(context).colorScheme.surface // Even rows
+                          : Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.15); // Odd rows
+
                       return Container(
                         padding: const EdgeInsets.all(16.0),
                         margin: const EdgeInsets.symmetric(vertical: 8.0),
+                        color: backgroundColor,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
