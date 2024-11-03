@@ -3,11 +3,13 @@ import 'package:photojam_app/pages/mainframe.dart';
 
 class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
-  final List<Widget>? actions; // Add an optional actions parameter
+  final List<Widget>? actions;
+  final bool enableLeadingGesture; // New parameter to control leading icon tap
 
   StandardAppBar({
     required this.title,
     this.actions,
+    this.enableLeadingGesture = true, // Default to true for other pages
   });
 
   @override
@@ -20,17 +22,22 @@ class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       backgroundColor: Theme.of(context).colorScheme.primary,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 10.0),
-        child: GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => Mainframe()),
-          ),
-          child: Image.asset('assets/icon/app_icon.png'),
-        ),
-      ),
-      actions: actions, // Pass actions to AppBar
+      leading: enableLeadingGesture
+          ? Padding(
+              padding: const EdgeInsets.only(left: 10.0),
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Mainframe()),
+                ),
+                child: Image.asset('assets/icon/app_icon.png'),
+              ),
+            )
+          : Padding(
+              padding: const EdgeInsets.only(left: 10.0),
+              child: Image.asset('assets/icon/app_icon.png'),
+            ),
+      actions: actions,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(10.0),
         child: Container(

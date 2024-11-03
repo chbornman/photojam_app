@@ -1,7 +1,6 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:flutter/material.dart';
-import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/standard_button.dart';
 import 'package:provider/provider.dart';
 
@@ -19,7 +18,6 @@ class _RegisterPageState extends State<RegisterPage> {
   final confirmPasswordTextController = TextEditingController();
   String? selectedRole = 'nonmember';
 
-  // Role options for the dropdown
   final List<String> roles = ['nonmember', 'member', 'facilitator', 'admin'];
 
   createAccount() async {
@@ -32,39 +30,31 @@ class _RegisterPageState extends State<RegisterPage> {
 
     try {
       final authAPI = context.read<AuthAPI>();
-      print("AuthAPI instance acquired.");
 
-      // Attempt to create the user account in Appwrite
       await authAPI.createUser(
         name: nameTextController.text,
         email: emailTextController.text,
         password: passwordTextController.text,
       );
-      print("Account creation successful!");
 
-      // Authenticate and set role once the user is logged in
       await authAPI.createEmailPasswordSession(
         email: emailTextController.text,
         password: passwordTextController.text,
       );
 
-      // Set role if login is successful
       if (selectedRole != null) {
         await authAPI.setRole(selectedRole!);
-        print("Role ${selectedRole!} set successfully.");
       }
 
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Account created and role set!')));
     } on AppwriteException catch (e) {
-      print("Account creation failed with error code: ${e.code}");
       showAlert(
         title: 'Account creation failed',
         text: e.message.toString(),
       );
     } catch (e) {
-      print("An unexpected error occurred: $e");
       showAlert(
         title: 'Unexpected Error',
         text: 'An unexpected error occurred. Please try again.',
@@ -96,77 +86,120 @@ class _RegisterPageState extends State<RegisterPage> {
       appBar: AppBar(
         title: const Text('Create your account'),
         backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.black,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: nameTextController,
-                decoration: InputDecoration(
-                  labelText: 'Name',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextField(
+                  controller: nameTextController,
+                  decoration: InputDecoration(
+                    labelText: 'Name',
+                    labelStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16.0),
+                    ),
+                    contentPadding: const EdgeInsets.all(20.0),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surface,
                   ),
-                  filled: true,
-                  fillColor: Colors.white,
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: emailTextController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: emailTextController,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    labelStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16.0),
+                    ),
+                    contentPadding: const EdgeInsets.all(20.0),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surface,
                   ),
-                  filled: true,
-                  fillColor: Colors.white,
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: passwordTextController,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: passwordTextController,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    labelStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16.0),
+                    ),
+                    contentPadding: const EdgeInsets.all(20.0),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surface,
                   ),
-                  filled: true,
-                  fillColor: Colors.white,
+                  obscureText: true,
                 ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: confirmPasswordTextController,
-                decoration: InputDecoration(
-                  labelText: 'Confirm Password',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: confirmPasswordTextController,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    labelStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16.0),
+                    ),
+                    contentPadding: const EdgeInsets.all(20.0),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surface,
                   ),
-                  filled: true,
-                  fillColor: Colors.white,
+                  obscureText: true,
                 ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 16),
-              StandardButton(
-                label: const Text('Sign up'),
-                icon: const Icon(Icons.app_registration),
-                onPressed: () {
-                  createAccount();
-                },
-              ),
-            ],
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedRole,
+                  items: roles
+                      .map((role) => DropdownMenuItem(
+                            value: role,
+                            child: Text(role),
+                          ))
+                      .toList(),
+                  decoration: InputDecoration(
+                    labelText: 'Role',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16.0),
+                    ),
+                    contentPadding: const EdgeInsets.all(20.0),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surface,
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedRole = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 26),
+                StandardButton(
+                  label: const Text("Sign up", style: TextStyle(fontSize: 18)),
+                  icon: Icon(
+                    Icons.app_registration,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                  onPressed: createAccount,
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Theme.of(context).colorScheme.background,
     );
   }
 }
