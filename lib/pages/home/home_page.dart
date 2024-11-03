@@ -138,7 +138,7 @@ class _HomePageState extends State<HomePage> {
               title: "Join our Signal Chat",
               subtitle: "Connect with other members in our PhotoJam Signal group",
               onTap: () {
-                _goToExternalLink(SIGNAL_GROUP_URL);
+                _goToExternalLink(signalGroupUrl);
               },
             ),
 

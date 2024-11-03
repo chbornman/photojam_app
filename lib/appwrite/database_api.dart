@@ -13,8 +13,8 @@ class DatabaseAPI {
   Future<Document> createJourney(Map<String, dynamic> data) async {
     try {
       return await databases.createDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJourneys,
         documentId: 'unique()',
         data: data,
       );
@@ -28,8 +28,8 @@ class DatabaseAPI {
   Future<Document> getJourneyById(String journeyId) async {
     try {
       return await databases.getDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJourneys,
         documentId: journeyId,
       );
     } catch (e) {
@@ -42,8 +42,8 @@ class DatabaseAPI {
   Future<DocumentList> getJourneys() async {
     try {
       return await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJourneys,
       );
     } catch (e) {
       print('Error fetching All journeys: $e');
@@ -55,8 +55,8 @@ class DatabaseAPI {
   Future<DocumentList> getAllActiveJourneys() async {
     try {
       return await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJourneys,
         queries: [Query.equal('active', true)],
       );
     } catch (e) {
@@ -69,8 +69,8 @@ class DatabaseAPI {
   Future<DocumentList> getJourneysByUser(String userId) async {
     try {
       final response = await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJourneys,
       );
       final filteredDocuments = response.documents.where((doc) {
         return (doc.data['participant_ids'] ?? []).contains(userId);
@@ -92,8 +92,8 @@ class DatabaseAPI {
       List participants = journey.data['participant_ids'] ?? [];
       participants.add(userId);
       await databases.updateDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJourneys,
         documentId: journeyId,
         data: {'participant_ids': participants},
       );
@@ -108,8 +108,8 @@ class DatabaseAPI {
   Future<Document> createJam(Map<String, dynamic> data) async {
     try {
       return await databases.createDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JAMS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJams,
         documentId: 'unique()',
         data: data,
       );
@@ -123,8 +123,8 @@ class DatabaseAPI {
   Future<void> updateJam(Map<String, dynamic> data) async {
     try {
       await databases.updateDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JAMS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJams,
         documentId: data['jamId'],
         data: {'title': data['title']}, // Update fields as necessary
       );
@@ -138,8 +138,8 @@ class DatabaseAPI {
   Future<void> deleteJam(Map<String, dynamic> data) async {
     try {
       await databases.deleteDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JAMS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJams,
         documentId: data['jamId'],
       );
     } catch (e) {
@@ -151,8 +151,8 @@ class DatabaseAPI {
   /// Retrieve a List of all jams
   Future<DocumentList> getJams() {
     return databases.listDocuments(
-      databaseId: APPWRITE_DATABASE_ID,
-      collectionId: COLLECTION_JAMS,
+      databaseId: appwriteDatabaseId,
+      collectionId: collectionJams,
     );
   }
 
@@ -160,8 +160,8 @@ class DatabaseAPI {
     try {
       // Step 1: Get all submissions for the specified user
       final submissionsResponse = await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_SUBMISSIONS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionSubmissions,
         queries: [
           Query.equal('user_id', userId),
         ],
@@ -178,8 +178,8 @@ class DatabaseAPI {
       List<Document> jamDocuments = [];
       for (String jamId in jamIds) {
         final jamResponse = await databases.getDocument(
-          databaseId: APPWRITE_DATABASE_ID,
-          collectionId: COLLECTION_JAMS,
+          databaseId: appwriteDatabaseId,
+          collectionId: collectionJams,
           documentId: jamId,
         );
         jamDocuments.add(jamResponse);
@@ -229,8 +229,8 @@ class DatabaseAPI {
   Future<Document> getJamById(String jamId) async {
     try {
       return await databases.getDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JAMS, // Use the correct collection ID for jams
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJams, // Use the correct collection ID for jams
         documentId: jamId,
       );
     } catch (e) {
@@ -246,8 +246,8 @@ class DatabaseAPI {
       List submissions = jam.data['submissions'] ?? [];
       submissions.add(submissionId);
       await databases.updateDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JAMS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJams,
         documentId: jamId,
         data: {'submissions': submissions},
       );
@@ -261,8 +261,8 @@ class DatabaseAPI {
     try {
       // Step 1: Retrieve all submissions made by the user
       final userSubmissions = await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_SUBMISSIONS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionSubmissions,
         queries: [
           Query.equal('user_id', userId), // Filter by userId in submissions
         ],
@@ -282,8 +282,8 @@ class DatabaseAPI {
     try {
       // Query submissions for the specified user ID and order by date
       final submissionsResult = await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_SUBMISSIONS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionSubmissions,
         queries: [
           Query.equal('user_id', userId), // Use the provided userId
           Query.orderDesc('date'), // Order by date in descending order
@@ -301,8 +301,8 @@ class DatabaseAPI {
   Future<void> deleteSubmission(String submissionId) async {
     try {
       await databases.deleteDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_SUBMISSIONS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionSubmissions,
         documentId: submissionId,
       );
       print("Submission with ID $submissionId deleted successfully.");
@@ -316,8 +316,8 @@ class DatabaseAPI {
   Future<DocumentList> getSubmissionsByJam(String jamId) async {
     try {
       return await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_SUBMISSIONS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionSubmissions,
         queries: [Query.equal('jam', jamId)],
       );
     } catch (e) {
@@ -331,8 +331,8 @@ class DatabaseAPI {
       String submissionId, List<String> photoUrls, String date) async {
     try {
       await databases.updateDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_SUBMISSIONS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionSubmissions,
         documentId: submissionId,
         data: {'photos': photoUrls, 'date': date},
       );
@@ -347,8 +347,8 @@ class DatabaseAPI {
       String jam, List<String> photos, String userId) async {
     try {
       return await databases.createDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_SUBMISSIONS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionSubmissions,
         documentId: 'unique()',
         data: {
           'user_id': userId, // Ensure user_id matches your schema
@@ -367,8 +367,8 @@ class DatabaseAPI {
   Future<Document?> getUserSubmissionForJam(String jam, String userId) async {
     try {
       final response = await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_SUBMISSIONS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionSubmissions,
         queries: [
           Query.equal('jam', jam), // Correct field name as per schema
           Query.equal(
@@ -386,8 +386,8 @@ class DatabaseAPI {
   Future<DocumentList> listJams() async {
     try {
       return await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JAMS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJams,
       );
     } catch (e) {
       print('Error fetching all jams: $e');
@@ -399,8 +399,8 @@ class DatabaseAPI {
   Future<DocumentList> listJourneys() async {
     try {
       return await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJourneys,
       );
     } catch (e) {
       print('Error fetching all journeys: $e');
@@ -412,8 +412,8 @@ class DatabaseAPI {
   Future<void> updateJourney(Map<String, dynamic> data) async {
     try {
       await databases.updateDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJourneys,
         documentId: data['journeyId'],
         data: {'title': data['title']}, // Update fields as necessary
       );
@@ -427,8 +427,8 @@ class DatabaseAPI {
   Future<void> deleteJourney(Map<String, dynamic> data) async {
     try {
       await databases.deleteDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJourneys,
         documentId: data['journeyId'],
       );
     } catch (e) {
@@ -442,8 +442,8 @@ class DatabaseAPI {
     try {
       // Fetch the current journey document to get all existing attributes
       final journey = await databases.getDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJourneys,
         documentId: journeyId,
       );
 
@@ -456,8 +456,8 @@ class DatabaseAPI {
 
       // Update the journey document, including the required 'active' attribute
       await databases.updateDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_JOURNEYS,
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJourneys,
         documentId: journeyId,
         data: {
           'lessons': lessons,

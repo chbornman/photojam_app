@@ -15,8 +15,8 @@ void main() async {
 
   // Initialize and configure Appwrite Client
   final Client client = Client()
-      .setEndpoint(APPWRITE_ENDPOINT_ID)
-      .setProject(APPWRITE_PROJECT_ID)
+      .setEndpoint(appwriteEndpointId)
+      .setProject(appwriteProjectId)
       .setSelfSigned(); // Include only if necessary
 
   runApp(

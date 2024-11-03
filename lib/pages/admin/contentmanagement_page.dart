@@ -593,7 +593,7 @@ void _openCreateJamDialog() {
                       icon: Icon(Icons.input),
                       tooltip: "Use default Zoom link",
                       onPressed: () {
-                        zoomLinkController.text = ZOOM_LINK_URL;
+                        zoomLinkController.text = zoomLinkUrl;
                       },
                     ),
                   ],

@@ -4,8 +4,8 @@ import 'package:photojam_app/constants/constants.dart';
 ThemeData getLightTheme() {
   return ThemeData(
     colorScheme: ColorScheme.light(
-      primary: PHOTOJAM_YELLOW,
-      secondary: PHOTOJAM_PINK,
+      primary: photojamYellow,
+      secondary: photojamPink,
       surface: Colors.white,
       onPrimary: Colors.black,
       onSurface: Colors.black,
@@ -24,8 +24,8 @@ ThemeData getLightTheme() {
 ThemeData getDarkTheme() {
   return ThemeData(
       colorScheme: ColorScheme.dark(
-        primary: PHOTOJAM_DARK_YELLOW,
-        secondary: PHOTOJAM_DARK_PINK,
+        primary: photojamDarkYellow,
+        secondary: photojamDarkPink,
         surface: Colors.black,
         onPrimary: Colors.black,
         onSurface: Colors.white,

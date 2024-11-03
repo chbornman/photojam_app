@@ -21,7 +21,7 @@ class StorageAPI {
         Uri.parse(Uri.encodeFull(imageUrl)), // Encode URL for compatibility
         headers: {
           'Authorization': 'Bearer $authToken',
-          'X-Appwrite-Project': APPWRITE_PROJECT_ID,
+          'X-Appwrite-Project': appwriteProjectId,
         },
       );
 
@@ -63,14 +63,14 @@ class StorageAPI {
     print("Appwrite endpoint: $endpoint"); // Print endpoint for debugging
 
     // Construct the URL without manually adding /v1
-    return "$endpoint/storage/buckets/$BUCKET_PHOTOS_ID/files/$fileId/view";
+    return "$endpoint/storage/buckets/$bucketPhotosId/files/$fileId/view";
   }
 
   /// Uploads a photo and returns the storage item ID.
   Future<String> uploadPhoto(Uint8List data, String fileName) async {
     try {
       final result = await storage.createFile(
-        bucketId: BUCKET_PHOTOS_ID,
+        bucketId: bucketPhotosId,
         fileId: 'unique()', // Generates a unique ID
         file: InputFile(bytes: data, filename: fileName),
       );
@@ -85,7 +85,7 @@ class StorageAPI {
   Future<Uint8List> getPhoto(String fileId) async {
     try {
       final result = await storage.getFileDownload(
-        bucketId: BUCKET_PHOTOS_ID,
+        bucketId: bucketPhotosId,
         fileId: fileId,
       );
       return result;
@@ -99,7 +99,7 @@ class StorageAPI {
   Future<void> deletePhoto(String fileId) async {
     try {
       await storage.deleteFile(
-        bucketId: BUCKET_PHOTOS_ID,
+        bucketId: bucketPhotosId,
         fileId: fileId,
       );
     } catch (e) {
@@ -111,7 +111,7 @@ class StorageAPI {
   Future<DateTime?> getFileLastModified(String fileId) async {
     try {
       final file = await storage.getFile(
-        bucketId: BUCKET_PHOTOS_ID,
+        bucketId: bucketPhotosId,
         fileId: fileId,
       );
       return DateTime.parse(file.$updatedAt); // Parse updated timestamp
@@ -144,12 +144,12 @@ class StorageAPI {
         if (_isLocalImagePath(imagePath)) {
           // Step 3a: Download the image data
           try {
-            Uint8List? imageData = await fetchLocalImageData('$APPWRITE_ENDPOINT_ID/storage/buckets/$BUCKET_LESSONS_ID/files/', imagePath);
+            Uint8List? imageData = await fetchLocalImageData('$appwriteEndpointId/storage/buckets/$bucketLessonsId/files/', imagePath);
             if (imageData != null) {
               // Step 3b: Upload the image to Appwrite
               String imageId = await _uploadLessonImage(imageData, imagePath);
               String imageUrl =
-                  "$APPWRITE_ENDPOINT_ID/storage/buckets/$BUCKET_LESSONS_ID/files/$imageId/view?project=$APPWRITE_PROJECT_ID";
+                  "$appwriteEndpointId/storage/buckets/$bucketLessonsId/files/$imageId/view?project=$appwriteProjectId";
 
               // Map the original image path to the new URL
               imagePathToUrl[imagePath] = imageUrl;
@@ -175,13 +175,13 @@ class StorageAPI {
 
       // Step 6: Upload the updated Markdown file with replaced URLs
       final result = await storage.createFile(
-        bucketId: BUCKET_LESSONS_ID,
+        bucketId: bucketLessonsId,
         fileId: 'unique()', // Generates a unique ID
         file: InputFile(bytes: updatedMarkdownData, filename: fileName),
       );
 
       // Return the URL for the uploaded Markdown file
-      return "$APPWRITE_ENDPOINT_ID/storage/buckets/$BUCKET_LESSONS_ID/files/${result.$id}/view?project=$APPWRITE_PROJECT_ID";
+      return "$appwriteEndpointId/storage/buckets/$bucketLessonsId/files/${result.$id}/view?project=$appwriteProjectId";
     } catch (e) {
       print('Error uploading lesson: $e');
       rethrow;
@@ -233,7 +233,7 @@ class StorageAPI {
       Uint8List imageData, String imagePath) async {
     try {
       final result = await storage.createFile(
-        bucketId: BUCKET_LESSONS_ID,
+        bucketId: bucketLessonsId,
         fileId: 'unique()', // Generates a unique ID
         file: InputFile(bytes: imageData, filename: imagePath.split('/').last),
       );
@@ -262,7 +262,7 @@ class StorageAPI {
 
     Future<void> deleteLesson(String fileId) async {
     try {
-      await storage.deleteFile(bucketId: BUCKET_LESSONS_ID, fileId: fileId);
+      await storage.deleteFile(bucketId: bucketLessonsId, fileId: fileId);
       print('Lesson file deleted successfully: $fileId');
     } catch (e) {
       print('Error deleting lesson file: $e');
