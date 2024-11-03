@@ -5,7 +5,7 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/constants/custom_theme.dart';
-import 'package:photojam_app/pages/utilities/userdataprovider.dart';
+import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/pages/login_register/login_page.dart';
 import 'package:photojam_app/pages/mainframe.dart';

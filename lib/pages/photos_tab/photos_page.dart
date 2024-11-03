@@ -7,7 +7,7 @@ import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/pages/photos_tab/photoscroll_page.dart';
-import 'package:photojam_app/pages/utilities/standard_photocard.dart';
+import 'package:photojam_app/utilities/standard_photocard.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';

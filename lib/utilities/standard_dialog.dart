@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/pages/utilities/standard_button.dart';
+import 'package:photojam_app/utilities/standard_button.dart';
 
 class StandardDialog extends StatelessWidget {
   final String title;

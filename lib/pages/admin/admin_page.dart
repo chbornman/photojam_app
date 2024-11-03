@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/pages/admin/contentmanagement_page.dart';
 import 'package:photojam_app/pages/admin/usermanagement_page.dart';
-import 'package:photojam_app/pages/utilities/system_logs.dart';
-import 'package:photojam_app/pages/utilities/standard_card.dart';
+import 'package:photojam_app/utilities/system_logs.dart';
+import 'package:photojam_app/utilities/standard_card.dart';
 
 class AdminPage extends StatelessWidget {
   const AdminPage({Key? key}) : super(key: key);

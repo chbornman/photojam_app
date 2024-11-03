@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/pages/journeys/journeycontainer.dart';
-import 'package:photojam_app/pages/utilities/markdownviewer.dart';
+import 'package:photojam_app/utilities/markdownviewer.dart';
 import 'package:provider/provider.dart';
 import 'dart:typed_data';
 import 'dart:convert';
