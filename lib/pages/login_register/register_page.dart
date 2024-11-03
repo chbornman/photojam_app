@@ -1,7 +1,7 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:flutter/material.dart';
-import 'package:photojam_app/standard_button.dart';
+import 'package:photojam_app/pages/utilities/standard_button.dart';
 import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {

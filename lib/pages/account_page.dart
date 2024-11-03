@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
-import 'package:photojam_app/standard_card.dart';
-import 'package:photojam_app/standard_dialog.dart';
-import 'package:photojam_app/userdataprovider.dart';
+import 'package:photojam_app/pages/utilities/standard_card.dart';
+import 'package:photojam_app/pages/utilities/standard_dialog.dart';
+import 'package:photojam_app/pages/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
 
 class AccountPage extends StatefulWidget {

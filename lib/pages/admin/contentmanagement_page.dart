@@ -1,10 +1,10 @@
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
-import 'package:photojam_app/standard_button.dart';
-import 'package:photojam_app/standard_card.dart';
+import 'package:photojam_app/pages/utilities/standard_button.dart';
+import 'package:photojam_app/pages/utilities/standard_card.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
-import 'package:photojam_app/standard_dialog.dart';
+import 'package:photojam_app/pages/utilities/standard_dialog.dart';
 import 'package:provider/provider.dart';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';

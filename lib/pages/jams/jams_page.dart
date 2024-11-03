@@ -3,7 +3,7 @@ import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/jams/jamsignup_page.dart';
 import 'package:photojam_app/pages/jams/myjams_page.dart';
-import 'package:photojam_app/standard_card.dart';
+import 'package:photojam_app/pages/utilities/standard_card.dart';
 import 'package:provider/provider.dart';
 
 class JamPage extends StatefulWidget {

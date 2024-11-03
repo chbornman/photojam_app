@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/jams/jams_page.dart';
-import 'package:photojam_app/standard_appbar.dart';
+import 'package:photojam_app/pages/utilities/standard_appbar.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/pages/account_page.dart';
 import 'package:photojam_app/pages/home/home_page.dart';

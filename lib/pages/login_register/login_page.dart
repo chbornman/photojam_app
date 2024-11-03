@@ -4,8 +4,8 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/login_register/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:photojam_app/standard_appbar.dart';
-import 'package:photojam_app/standard_button.dart';
+import 'package:photojam_app/pages/utilities/standard_appbar.dart';
+import 'package:photojam_app/pages/utilities/standard_button.dart';
 import 'package:provider/provider.dart';
 
 class LoginPage extends StatefulWidget {
