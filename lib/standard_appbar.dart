@@ -3,9 +3,11 @@ import 'package:photojam_app/pages/mainframe.dart';
 
 class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
+  final List<Widget>? actions; // Add an optional actions parameter
 
   StandardAppBar({
     required this.title,
+    this.actions,
   });
 
   @override
@@ -14,12 +16,12 @@ class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Text(
         title,
         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-          color: Theme.of(context).colorScheme.surface, // Use surface color
+          color: Theme.of(context).colorScheme.surface,
         ),
       ),
       backgroundColor: Theme.of(context).colorScheme.primary,
       leading: Padding(
-        padding: const EdgeInsets.only(left: 10.0), // Inset from the left side by 10 pixels
+        padding: const EdgeInsets.only(left: 10.0),
         child: GestureDetector(
           onTap: () => Navigator.push(
             context,
@@ -28,15 +30,16 @@ class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: Image.asset('assets/icon/app_icon.png'),
         ),
       ),
+      actions: actions, // Pass actions to AppBar
       bottom: PreferredSize(
-        preferredSize: Size.fromHeight(10.0), // Adjust the height here
+        preferredSize: const Size.fromHeight(10.0),
         child: Container(
-          color: Colors.transparent, // Optional: set color for visual effect
+          color: Colors.transparent,
         ),
       ),
     );
   }
 
   @override
-  Size get preferredSize => Size.fromHeight(kToolbarHeight + 10.0); // Adjust height here
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 10.0);
 }

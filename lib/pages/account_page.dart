@@ -90,42 +90,58 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  // Method to show dialog for updating password
-  void showUpdatePasswordDialog() {
-    final currentPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => StandardDialog(
-        title: 'Update Password',
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: currentPasswordController,
-              decoration: const InputDecoration(labelText: 'Current Password'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: newPasswordController,
-              decoration: const InputDecoration(labelText: 'New Password'),
-              obscureText: true,
-            ),
-          ],
-        ),
-        submitButtonLabel: "Save",
-        submitButtonOnPressed: () async {
-          await context.read<AuthAPI>().updatePassword(
-              currentPasswordController.text, newPasswordController.text);
-          if (!mounted) return; // Ensure widget is still mounted
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Password updated successfully!")));
-        },
+void showUpdatePasswordDialog() {
+  final currentPasswordController = TextEditingController();
+  final newPasswordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (context) => StandardDialog(
+      title: 'Update Password',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: currentPasswordController,
+            decoration: const InputDecoration(labelText: 'Current Password'),
+            obscureText: true,
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: newPasswordController,
+            decoration: const InputDecoration(labelText: 'New Password'),
+            obscureText: true,
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: confirmPasswordController,
+            decoration: const InputDecoration(labelText: 'Confirm New Password'),
+            obscureText: true,
+          ),
+        ],
       ),
-    );
-  }
+      submitButtonLabel: "Save",
+      submitButtonOnPressed: () async {
+        if (newPasswordController.text != confirmPasswordController.text) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Passwords do not match!")),
+          );
+          return;
+        }
+
+        await context.read<AuthAPI>().updatePassword(
+            currentPasswordController.text, newPasswordController.text);
+
+        if (!mounted) return; // Ensure widget is still mounted
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Password updated successfully!")),
+        );
+      },
+    ),
+  );
+}
 
   signOut() {
     context.read<AuthAPI>().signOut();
@@ -154,36 +170,39 @@ class _AccountPageState extends State<AccountPage> {
     final userData = context.watch<UserDataProvider>();
 
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              'Welcome back, ${userData.username}!',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            Text(
-              '${userData.email}',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-            ),
-            const SizedBox(height: 30),
-            StandardButton(
-                label: Text("Change Name"), onPressed: showUpdateNameDialog),
-            userData.isOAuthUser
-                ? Text(
-                    "Email updates are managed through your OAuth provider.",
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.secondary),
-                  )
-                : StandardButton(
-                    label: Text("Change Email"),
-                    onPressed: showUpdateEmailDialog),
-            StandardButton(
-                label: Text("Change Password"),
-                onPressed: showUpdatePasswordDialog),
-          ],
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Welcome back, ${userData.username}!',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              Text(
+                '${userData.email}',
+                style:
+                    TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              ),
+              const SizedBox(height: 30),
+              StandardButton(
+                  label: Text("Change Name"), onPressed: showUpdateNameDialog),
+              userData.isOAuthUser
+                  ? Text(
+                      "Email updates are managed through your OAuth provider.",
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.secondary),
+                    )
+                  : StandardButton(
+                      label: Text("Change Email"),
+                      onPressed: showUpdateEmailDialog),
+              StandardButton(
+                  label: Text("Change Password"),
+                  onPressed: showUpdatePasswordDialog),
+            ],
+          ),
         ),
       ),
       backgroundColor: Theme.of(context).colorScheme.surface,

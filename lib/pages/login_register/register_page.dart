@@ -16,12 +16,20 @@ class _RegisterPageState extends State<RegisterPage> {
   final nameTextController = TextEditingController();
   final emailTextController = TextEditingController();
   final passwordTextController = TextEditingController();
+  final confirmPasswordTextController = TextEditingController();
   String? selectedRole = 'nonmember';
 
   // Role options for the dropdown
   final List<String> roles = ['nonmember', 'member', 'facilitator', 'admin'];
 
   createAccount() async {
+    if (passwordTextController.text != confirmPasswordTextController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Passwords do not match!")),
+      );
+      return;
+    }
+
     try {
       final authAPI = context.read<AuthAPI>();
       print("AuthAPI instance acquired.");
@@ -74,8 +82,8 @@ class _RegisterPageState extends State<RegisterPage> {
             actions: [
               ElevatedButton(
                   onPressed: () {
-              Navigator.pop(context);
-            },
+                    Navigator.pop(context);
+                  },
                   child: const Text('Ok'))
             ],
           );
@@ -134,6 +142,19 @@ class _RegisterPageState extends State<RegisterPage> {
                 obscureText: true,
               ),
               const SizedBox(height: 16),
+              TextField(
+                controller: confirmPasswordTextController,
+                decoration: InputDecoration(
+                  labelText: 'Confirm Password',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(defaultCornerRadius),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 16),
               StandardButton(
                 label: const Text('Sign up'),
                 icon: const Icon(Icons.app_registration),
@@ -145,7 +166,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
 }
