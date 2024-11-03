@@ -143,44 +143,58 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
             ? const Center(child: CircularProgressIndicator())
             : ListView.builder(
                 itemCount: allSubmissions.length,
+                padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
                 itemBuilder: (context, index) {
                   final submission = allSubmissions[index];
                   final jamTitle = submission['jamTitle'];
                   final photos = submission['photos'] as List<Uint8List?>;
 
-                  return Container(
-                    padding: const EdgeInsets.all(16.0),
+                  return Card(
+                    elevation: 10,
+                    color: Theme.of(context).colorScheme.surface.withOpacity(0.1),
+                    shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
                     margin: const EdgeInsets.symmetric(vertical: 8.0),
-                    color: index % 2 == 0
-                        ? Theme.of(context).colorScheme.surface
-                        : Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          jamTitle,
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8.0,
-                          runSpacing: 8.0,
-                          children: photos.asMap().entries.map((entry) {
-                            int photoIndex = entry.key;
-                            Uint8List? photoData = entry.value;
-                            return GestureDetector(
-                              onTap: () => _navigateToPhotoScrollPage(index, photoIndex),
-                              child: photoData != null
-                                  ? Image.memory(photoData, width: 100, height: 100)
-                                  : Container(
-                                      width: 100,
-                                      height: 100,
-                                      color: Colors.grey,
-                                    ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            jamTitle,
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: photos.asMap().entries.map((entry) {
+                              int photoIndex = entry.key;
+                              Uint8List? photoData = entry.value;
+                              return GestureDetector(
+                                onTap: () => _navigateToPhotoScrollPage(index, photoIndex),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8.0),
+                                    child: photoData != null
+                                        ? Image.memory(photoData, width: 100, height: 100, fit: BoxFit.cover)
+                                        : Container(
+                                            width: 100,
+                                            height: 100,
+                                            color: const Color.fromARGB(255, 106, 35, 35),
+                                            child: const Icon(Icons.image_not_supported, color: Colors.white),
+                                          ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },

@@ -69,7 +69,7 @@ class _MainframeState extends State<Mainframe> {
         actions: _currentIndex == 4 // Show sign-out button only on AccountPage
             ? [
                 IconButton(
-                  icon: Icon(Icons.logout, color: Theme.of(context).colorScheme.surface),
+                  icon: Icon(Icons.logout, color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: () {
                     context.read<AuthAPI>().signOut();
                     Navigator.of(context).pop(); // Optional: Navigate back to login screen
@@ -90,7 +90,7 @@ class _MainframeState extends State<Mainframe> {
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         selectedItemColor: Theme.of(context).colorScheme.onSurface,
-        unselectedItemColor: Theme.of(context).colorScheme.onPrimary,
+        unselectedItemColor: Theme.of(context).colorScheme.surface,
         backgroundColor: Theme.of(context).colorScheme.primary,
         onTap: (index) {
           setState(() {

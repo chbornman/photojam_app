@@ -7,7 +7,7 @@ ThemeData getLightTheme() {
       primary: PHOTOJAM_YELLOW,
       secondary: PHOTOJAM_PINK,
       surface: Colors.white,
-      onPrimary: Colors.white,
+      onPrimary: Colors.black,
       onSurface: Colors.black,
       // more colors
       ),

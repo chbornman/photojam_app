@@ -18,7 +18,7 @@ class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Text(
         title,
         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.onPrimary,
         ),
       ),
       backgroundColor: Theme.of(context).colorScheme.primary,
