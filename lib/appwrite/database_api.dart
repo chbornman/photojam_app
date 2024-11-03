@@ -366,7 +366,7 @@ class DatabaseAPI {
         databaseId: APPWRITE_DATABASE_ID,
         collectionId: COLLECTION_JOURNEYS,
         documentId: data['journeyId'],
-        data: {'name': data['name']}, // Update fields as necessary
+        data: {'title': data['title']}, // Update fields as necessary
       );
     } catch (e) {
       print('Error updating journey: $e');

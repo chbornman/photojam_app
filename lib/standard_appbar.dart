@@ -24,7 +24,7 @@ class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Theme.of(context).colorScheme.primary,
       leading: enableLeadingGesture
           ? Padding(
-              padding: const EdgeInsets.only(left: 10.0),
+              padding: const EdgeInsets.only(left: 8.0),
               child: GestureDetector(
                 onTap: () => Navigator.push(
                   context,
@@ -34,12 +34,12 @@ class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             )
           : Padding(
-              padding: const EdgeInsets.only(left: 10.0),
+              padding: const EdgeInsets.only(left: 8.0),
               child: Image.asset('assets/icon/app_icon_transparent.png'),
             ),
       actions: actions,
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(10.0),
+        preferredSize: const Size.fromHeight(20.0),
         child: Container(
           color: Colors.transparent,
         ),
