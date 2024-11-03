@@ -181,6 +181,7 @@ class _JourneyPageState extends State<JourneyPage> {
             submitButtonLabel: "Sign Up",
             submitButtonOnPressed: () async {
               if (!mounted) return; // Ensure widget is still mounted
+
               if (selectedJourneyId != null) {
                 await databaseApi.addUserToJourney(selectedJourneyId!, userId);
                 _showMessage("Successfully signed up for the journey!");
@@ -192,10 +193,11 @@ class _JourneyPageState extends State<JourneyPage> {
                     selectedJourney.data['lessons'] as List<dynamic>? ?? [];
                 await _cacheLessons(lessonUrls);
 
-                Navigator.of(context).pop();
+                // Close the dialog before making any state updates
+                if (mounted) Navigator.of(context).pop();
 
-                // Refresh the screen by resetting the journey data
                 setState(() {
+                  // Refresh the screen by resetting the journey data
                   dependenciesInitialized =
                       false; // Reset to re-trigger dependencies
                   currentJourneyId = null;
@@ -204,7 +206,7 @@ class _JourneyPageState extends State<JourneyPage> {
                 });
 
                 // Trigger the dependencies to load the latest journey
-                _fetchLatestJourney();
+                if (mounted) _fetchLatestJourney();
               }
             },
           );
@@ -292,11 +294,17 @@ class _JourneyPageState extends State<JourneyPage> {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                child: JourneyContainer(
-                  title: journeyTitle,
-                  lessons: lessons,
-                  theme: theme,
-                  onLessonTap: _viewLesson,
+                child: Column(
+                  children: [
+                    // Only show the JourneyContainer if there is a journey associated
+                    if (currentJourneyId != null && lessons.isNotEmpty)
+                      JourneyContainer(
+                        title: journeyTitle,
+                        lessons: lessons,
+                        theme: theme,
+                        onLessonTap: _viewLesson,
+                      ),
+                  ],
                 ),
               ),
             ),
