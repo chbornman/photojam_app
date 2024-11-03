@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
-import 'package:photojam_app/standard_button.dart';
+import 'package:photojam_app/standard_card.dart';
 import 'package:photojam_app/standard_dialog.dart';
 import 'package:photojam_app/userdataprovider.dart';
 import 'package:provider/provider.dart';
@@ -19,7 +19,6 @@ class _AccountPageState extends State<AccountPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _fetchUserRole());
   }
 
-// Method to show dialog for updating name
   void showUpdateNameDialog() {
     final userData = context.read<UserDataProvider>();
     final nameController = TextEditingController(text: userData.username);
@@ -35,7 +34,7 @@ class _AccountPageState extends State<AccountPage> {
         submitButtonLabel: "Save",
         submitButtonOnPressed: () async {
           await context.read<AuthAPI>().updateName(nameController.text);
-          if (!mounted) return; // Ensure widget is still mounted
+          if (!mounted) return;
           Navigator.of(context).pop();
           setState(() {
             userData.username = nameController.text;
@@ -48,7 +47,6 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  // Method to show dialog for updating email
   void showUpdateEmailDialog() {
     final userData = context.read<UserDataProvider>();
     final emailController = TextEditingController(text: userData.email);
@@ -74,10 +72,8 @@ class _AccountPageState extends State<AccountPage> {
         ),
         submitButtonLabel: "Save",
         submitButtonOnPressed: () async {
-          await context
-              .read<AuthAPI>()
-              .updateEmail(emailController.text, passwordController.text);
-          if (!mounted) return; // Ensure widget is still mounted
+          await context.read<AuthAPI>().updateEmail(emailController.text, passwordController.text);
+          if (!mounted) return;
           Navigator.of(context).pop();
           setState(() {
             userData.email = emailController.text;
@@ -90,61 +86,57 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-void showUpdatePasswordDialog() {
-  final currentPasswordController = TextEditingController();
-  final newPasswordController = TextEditingController();
-  final confirmPasswordController = TextEditingController();
+  void showUpdatePasswordDialog() {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
 
-  showDialog(
-    context: context,
-    builder: (context) => StandardDialog(
-      title: 'Update Password',
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: currentPasswordController,
-            decoration: const InputDecoration(labelText: 'Current Password'),
-            obscureText: true,
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: newPasswordController,
-            decoration: const InputDecoration(labelText: 'New Password'),
-            obscureText: true,
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: confirmPasswordController,
-            decoration: const InputDecoration(labelText: 'Confirm New Password'),
-            obscureText: true,
-          ),
-        ],
-      ),
-      submitButtonLabel: "Save",
-      submitButtonOnPressed: () async {
-        if (newPasswordController.text != confirmPasswordController.text) {
+    showDialog(
+      context: context,
+      builder: (context) => StandardDialog(
+        title: 'Update Password',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: currentPasswordController,
+              decoration: const InputDecoration(labelText: 'Current Password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: newPasswordController,
+              decoration: const InputDecoration(labelText: 'New Password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: confirmPasswordController,
+              decoration: const InputDecoration(labelText: 'Confirm New Password'),
+              obscureText: true,
+            ),
+          ],
+        ),
+        submitButtonLabel: "Save",
+        submitButtonOnPressed: () async {
+          if (newPasswordController.text != confirmPasswordController.text) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Passwords do not match!")),
+            );
+            return;
+          }
+
+          await context.read<AuthAPI>().updatePassword(
+              currentPasswordController.text, newPasswordController.text);
+
+          if (!mounted) return;
+          Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Passwords do not match!")),
+            SnackBar(content: Text("Password updated successfully!")),
           );
-          return;
-        }
-
-        await context.read<AuthAPI>().updatePassword(
-            currentPasswordController.text, newPasswordController.text);
-
-        if (!mounted) return; // Ensure widget is still mounted
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Password updated successfully!")),
-        );
-      },
-    ),
-  );
-}
-
-  signOut() {
-    context.read<AuthAPI>().signOut();
+        },
+      ),
+    );
   }
 
   void _fetchUserRole() async {
@@ -170,42 +162,49 @@ void showUpdatePasswordDialog() {
     final userData = context.watch<UserDataProvider>();
 
     return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                'Welcome back, ${userData.username}!',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              Text(
-                '${userData.email}',
-                style:
-                    TextStyle(color: Theme.of(context).colorScheme.onSurface),
-              ),
-              const SizedBox(height: 30),
-              StandardButton(
-                  label: Text("Change Name"), onPressed: showUpdateNameDialog),
-              userData.isOAuthUser
-                  ? Text(
-                      "Email updates are managed through your OAuth provider.",
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.secondary),
-                    )
-                  : StandardButton(
-                      label: Text("Change Email"),
-                      onPressed: showUpdateEmailDialog),
-              StandardButton(
-                  label: Text("Change Password"),
-                  onPressed: showUpdatePasswordDialog),
-            ],
-          ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),  // Consistent padding around the page
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Welcome back, ${userData.username}!',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            Text(
+              '${userData.email}',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
+            const SizedBox(height: 20),
+            StandardCard(
+              icon: Icons.person,
+              title: "Change Name",
+              subtitle: "Update your display name",
+              onTap: showUpdateNameDialog,
+            ),
+            const SizedBox(height: 10), // Consistent spacing between cards
+            userData.isOAuthUser
+                ? Text(
+                    "Email updates are managed through your OAuth provider.",
+                    style: TextStyle(color: Theme.of(context).colorScheme.secondary),
+                  )
+                : StandardCard(
+                    icon: Icons.email,
+                    title: "Change Email",
+                    subtitle: "Update your email address",
+                    onTap: showUpdateEmailDialog,
+                  ),
+            const SizedBox(height: 10),
+            StandardCard(
+              icon: Icons.lock,
+              title: "Change Password",
+              subtitle: "Update your account password",
+              onTap: showUpdatePasswordDialog,
+            ),
+          ],
         ),
       ),
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Theme.of(context).colorScheme.background,
     );
   }
 }
