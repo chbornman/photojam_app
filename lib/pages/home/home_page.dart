@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/pages/jams/jamsignup_page.dart';
 import 'package:photojam_app/pages/home/master_of_the_month_page.dart';
-import 'package:photojam_app/standard_button.dart';
+import 'package:photojam_app/standard_card.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
@@ -82,8 +82,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme =
-        Theme.of(context).textTheme; // Access the theme's text styles
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -94,62 +93,73 @@ class _HomePageState extends State<HomePage> {
             // Title: Join the Jam
             Text(
               'Join the Jam',
-              style: textTheme.headlineSmall, // Use a theme-defined style
+              style: textTheme.headlineSmall,
             ),
-            SizedBox(height: 10),
-            StandardButton(
-              label: Text('Sign Up Now'),
-              onPressed: () {
+            const SizedBox(height: 10),
+            
+            // Sign Up for Jam Card
+            StandardCard(
+              icon: Icons.add_circle_outline,
+              title: "Sign Up for a Jam",
+              subtitle: "Experience the world's nicest photo community",
+              onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => JamSignupPage()),
                 );
               },
             ),
-            StandardButton(
-              label: Text(
-                nextJam != null
-                    ? 'Join: ${DateFormat('MMM dd, yyyy').format(DateTime.parse(nextJam!.data['jam']['date']))}'
-                    : 'No upcoming jams available',
-              ),
-              onPressed:
-                  (nextJam != null && nextJam!.data['jam']['zoom_link'] != null)
-                      ? () => _goToZoomCall(nextJam!.data['jam']['zoom_link'])
-                      : null,
+            const SizedBox(height: 10),
+
+            // Join Next Jam Card
+            StandardCard(
+              icon: Icons.video_call,
+              title: nextJam != null
+                  ? 'Join Your Next Scheduled Jam'
+                  : 'No upcoming jams available',
+              subtitle: nextJam != null
+                  ? 'Scheduled on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(nextJam!.data['jam']['date']))}'
+                  : 'You will need to sign up for upcoming jams',
+              onTap: () {
+                if (nextJam != null && nextJam!.data['jam']['zoom_link'] != null) {
+                  _goToZoomCall(nextJam!.data['jam']['zoom_link']);
+                }
+              },
             ),
+            
             // Master of the Month Section
+            const SizedBox(height: 30),
             GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (context) => MasterOfTheMonthPage()),
+                  MaterialPageRoute(builder: (context) => MasterOfTheMonthPage()),
                 );
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 30),
                   Text(
                     'Master of the Month',
-                    style: textTheme.headlineSmall, // Use theme's headline style
+                    style: textTheme.headlineSmall,
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   Text(
                     'Sebastiano Salgado',
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
+            
             // Share the Jam Section
-            SizedBox(height: 30),
+            const SizedBox(height: 30),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'Share the Jam',
-                  style: textTheme.headlineSmall, // Another headline style
+                  style: textTheme.headlineSmall,
                 ),
                 Image.asset(
                   'assets/images/qrcode.png',
@@ -159,7 +169,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            SizedBox(height: 30),
+            const SizedBox(height: 30),
           ],
         ),
       ),

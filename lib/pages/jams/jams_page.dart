@@ -3,7 +3,7 @@ import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/jams/jamsignup_page.dart';
 import 'package:photojam_app/pages/jams/myjams_page.dart';
-import 'package:photojam_app/standard_button.dart';
+import 'package:photojam_app/standard_card.dart';
 import 'package:provider/provider.dart';
 
 class JamPage extends StatefulWidget {
@@ -77,10 +77,18 @@ class _JamPageState extends State<JamPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            StandardButton(label: Text("View My Jams"), onPressed: _goToMyJams),
-            StandardButton(
-              label: Text('Sign up for a Jam'),
-              onPressed: () {
+            StandardCard(
+              icon: Icons.library_music,
+              title: "View My Jams",
+              subtitle: "See all your scheduled jams",
+              onTap: _goToMyJams,
+            ),
+            const SizedBox(height: 10),
+            StandardCard(
+              icon: Icons.add_circle_outline,
+              title: "Sign Up for a Jam",
+              subtitle: "Experience the world's nicest photo community",
+              onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => JamSignupPage()),
@@ -90,7 +98,7 @@ class _JamPageState extends State<JamPage> {
           ],
         ),
       ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
 

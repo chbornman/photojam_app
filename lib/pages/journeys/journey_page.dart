@@ -6,7 +6,7 @@ import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/journeys/markdownviewer.dart';
 import 'package:photojam_app/pages/journeys/myjourneys_page.dart';
-import 'package:photojam_app/standard_button.dart';
+import 'package:photojam_app/standard_card.dart';
 import 'package:photojam_app/standard_dialog.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
@@ -274,7 +274,6 @@ class _JourneyPageState extends State<JourneyPage> {
       print('Error viewing lesson: $e');
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -294,23 +293,32 @@ class _JourneyPageState extends State<JourneyPage> {
                     .map((lesson) => ListTile(
                           title: Text(lesson['title']),
                           onTap: () => _viewLesson(lesson['url']),
-                          trailing:
-                              Icon(Icons.arrow_forward, color: Colors.black),
+                          trailing: Icon(Icons.arrow_forward, color: Colors.black),
                         ))
                     .toList(),
               ),
             ),
-            StandardButton(
-                label: Text("View My Journeys"), onPressed: _goToMyJourneys),
-            StandardButton(
-                label: Text("Sign Up for a Journey"),
-                onPressed: _openSignUpForJourneyDialog),
+            const SizedBox(height: 20),
+            StandardCard(
+              icon: Icons.library_books,
+              title: "View My Journeys",
+              subtitle: "See all your journeys",
+              onTap: _goToMyJourneys,
+            ),
+            const SizedBox(height: 10),
+            StandardCard(
+              icon: Icons.add_circle_outline,
+              title: "Sign Up for a Journey",
+              subtitle: "Join a new journey",
+              onTap: _openSignUpForJourneyDialog,
+            ),
           ],
         ),
       ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
+
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
