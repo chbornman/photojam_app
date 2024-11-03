@@ -30,12 +30,12 @@ class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
                   context,
                   MaterialPageRoute(builder: (context) => Mainframe()),
                 ),
-                child: Image.asset('assets/icon/app_icon.png'),
+                child: Image.asset('assets/icon/app_icon_transparent.png'),
               ),
             )
           : Padding(
               padding: const EdgeInsets.only(left: 10.0),
-              child: Image.asset('assets/icon/app_icon.png'),
+              child: Image.asset('assets/icon/app_icon_transparent.png'),
             ),
       actions: actions,
       bottom: PreferredSize(
