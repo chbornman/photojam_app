@@ -1,8 +1,9 @@
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
+import 'package:photojam_app/standard_button.dart';
+import 'package:photojam_app/standard_card.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
-import 'package:photojam_app/standard_button.dart';
 import 'package:photojam_app/standard_dialog.dart';
 import 'package:provider/provider.dart';
 import 'dart:typed_data';
@@ -564,7 +565,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     );
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -573,39 +574,53 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: GridView.count(
-          crossAxisCount: 2, // Set to 2 columns
-          crossAxisSpacing: 8.0, // Space between columns
-          mainAxisSpacing: 8.0, // Space between rows
-          childAspectRatio: 3, // Adjust height of buttons
-          shrinkWrap: true, // Makes GridView take only as much space as needed
+          crossAxisCount: 1, // Set to single column for better readability
+          crossAxisSpacing: 8.0, 
+          mainAxisSpacing: 8.0, 
+          childAspectRatio: 4, 
+          shrinkWrap: true,
           children: [
-            StandardButton(
-              label: Text("Create Journey"),
-              onPressed: _openCreateJourneyDialog,
+            StandardCard(
+              icon: Icons.add,
+              title: "Create Journey",
+              subtitle: "Start a new journey",
+              onTap: _openCreateJourneyDialog,
             ),
-            StandardButton(
-              label: Text("Update Journey"),
-              onPressed: _fetchAndOpenUpdateJourneyDialog,
+            StandardCard(
+              icon: Icons.edit,
+              title: "Update Journey",
+              subtitle: "Modify an existing journey",
+              onTap: _fetchAndOpenUpdateJourneyDialog,
             ),
-            StandardButton(
-              label: Text("Delete Journey"),
-              onPressed: _fetchAndOpenDeleteJourneyDialog,
+            StandardCard(
+              icon: Icons.delete,
+              title: "Delete Journey",
+              subtitle: "Remove a journey",
+              onTap: _fetchAndOpenDeleteJourneyDialog,
             ),
-            StandardButton(
-              label: Text("Create Jam"),
-              onPressed: _openCreateJamDialog,
+            StandardCard(
+              icon: Icons.add,
+              title: "Create Jam",
+              subtitle: "Start a new jam session",
+              onTap: _openCreateJamDialog,
             ),
-            StandardButton(
-              label: Text("Update Jam"),
-              onPressed: _fetchAndOpenUpdateJamDialog,
+            StandardCard(
+              icon: Icons.edit,
+              title: "Update Jam",
+              subtitle: "Modify an existing jam session",
+              onTap: _fetchAndOpenUpdateJamDialog,
             ),
-            StandardButton(
-              label: Text("Delete Jam"),
-              onPressed: _fetchAndOpenDeleteJamDialog,
+            StandardCard(
+              icon: Icons.delete,
+              title: "Delete Jam",
+              subtitle: "Remove a jam session",
+              onTap: _fetchAndOpenDeleteJamDialog,
             ),
-            StandardButton(
-              label: Text("Add Lesson to Journey"),
-              onPressed: _fetchAndOpenAddLessonDialog,
+            StandardCard(
+              icon: Icons.file_upload,
+              title: "Add Lesson to Journey",
+              subtitle: "Upload a lesson file to a journey",
+              onTap: _fetchAndOpenAddLessonDialog,
             ),
           ],
         ),

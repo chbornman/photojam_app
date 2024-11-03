@@ -124,7 +124,7 @@ class _MainframeState extends State<Mainframe> {
       case 4:
         return 'Account';
       case 5:
-        return 'Admin Panel';
+        return 'Admin Dashboard';
       default:
         return 'PhotoJam';
     }
