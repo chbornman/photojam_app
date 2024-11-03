@@ -82,15 +82,19 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme =
+        Theme.of(context).textTheme; // Access the theme's text styles
+
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Title: Join the Jam
             Text(
               'Join the Jam',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: textTheme.headlineSmall, // Use a theme-defined style
             ),
             SizedBox(height: 10),
             StandardButton(
@@ -103,14 +107,17 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             StandardButton(
-              label: Text(nextJam != null
-                  ? 'Join: ${DateFormat('MMM dd, yyyy').format(DateTime.parse(nextJam!.data['jam']['date']))}'
-                  : 'No upcoming jams available'),
+              label: Text(
+                nextJam != null
+                    ? 'Join: ${DateFormat('MMM dd, yyyy').format(DateTime.parse(nextJam!.data['jam']['date']))}'
+                    : 'No upcoming jams available',
+              ),
               onPressed:
                   (nextJam != null && nextJam!.data['jam']['zoom_link'] != null)
                       ? () => _goToZoomCall(nextJam!.data['jam']['zoom_link'])
                       : null,
             ),
+            // Master of the Month Section
             GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -125,24 +132,24 @@ class _HomePageState extends State<HomePage> {
                   SizedBox(height: 30),
                   Text(
                     'Master of the Month',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: textTheme.headlineSmall, // Use theme's headline style
                   ),
                   SizedBox(height: 10),
                   Text(
                     'Sebastiano Salgado',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   SizedBox(height: 10),
                 ],
               ),
             ),
+            // Share the Jam Section
             SizedBox(height: 30),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'Share the Jam',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: textTheme.headlineSmall, // Another headline style
                 ),
                 Image.asset(
                   'assets/images/qrcode.png',

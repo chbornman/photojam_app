@@ -25,7 +25,9 @@ const String ZOOM_LINK_URL = "https://us02web.zoom.us/j/86356738535";
 
 // Theme colors
 const Color PHOTOJAM_YELLOW = Color(0xFFF9D036);
+const Color PHOTOJAM_DARK_YELLOW = Color.fromARGB(255, 218, 181, 46);
 const Color PHOTOJAM_PINK = Color(0xFFE25B63);
+const Color PHOTOJAM_DARK_PINK = Color.fromARGB(255, 154, 60, 67);
 const Color PHOTOJAM_BLUE = Color(0xFF28354F);
 const Color PHOTOJAM_GREEN = Color(0xFF07D114);
 const Color PHOTOJAM_DARK_GREEN = Color(0xFF06510B);

@@ -24,8 +24,8 @@ ThemeData getLightTheme() {
 ThemeData getDarkTheme() {
   return ThemeData(
       colorScheme: ColorScheme.dark(
-        primary: PHOTOJAM_YELLOW,
-        secondary: PHOTOJAM_PINK,
+        primary: PHOTOJAM_DARK_YELLOW,
+        secondary: PHOTOJAM_DARK_PINK,
         surface: Colors.black,
         onPrimary: Colors.black,
         onSurface: Colors.white,

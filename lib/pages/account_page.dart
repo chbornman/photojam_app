@@ -155,17 +155,6 @@ class _AccountPageState extends State<AccountPage> {
     final userData = context.watch<UserDataProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Account'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: signOut,
-          ),
-        ],
-      ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(

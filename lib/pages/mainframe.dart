@@ -107,9 +107,9 @@ class _MainframeState extends State<Mainframe> {
       case 2:
         return 'Journeys';
       case 3:
-        return 'Photos';
+        return 'My Photos';
       case 4:
-        return 'My Account';
+        return 'Account';
       case 5:
         return 'Admin Panel';
       default:

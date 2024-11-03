@@ -134,19 +134,13 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
     return File('${cacheDir.path}/$sanitizedFileName.jpg');
   }
 
- @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        title: const Text("All Photos"),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0.0,
-      ),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: RefreshIndicator(
-        onRefresh: _fetchAllSubmissions, // Pull-to-refresh always fetches new data
+        onRefresh:
+            _fetchAllSubmissions, // Pull-to-refresh always fetches new data
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : allSubmissions.isEmpty
@@ -173,18 +167,14 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
                       return Container(
                         padding: const EdgeInsets.all(16.0),
                         margin: const EdgeInsets.symmetric(vertical: 8.0),
-                        color: Colors.white, // Ensure each container also has a white background
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               jamTitle,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context).textTheme.headlineSmall,
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 12),
                             Wrap(
                               spacing: 8.0,
                               runSpacing: 8.0,

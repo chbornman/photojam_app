@@ -72,11 +72,6 @@ class _JamPageState extends State<JamPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(jamTitle),
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

@@ -21,7 +21,7 @@ class StandardButton extends StatelessWidget {
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary, 
-            foregroundColor: Colors.black,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
             minimumSize: Size(120, defaultButtonHeight),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16.0),
