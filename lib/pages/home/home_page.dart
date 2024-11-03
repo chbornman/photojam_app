@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/pages/facilitator_signup_page.dart';
 import 'package:photojam_app/pages/jams/jamsignup_page.dart';
 import 'package:photojam_app/pages/home/master_of_the_month_page.dart';
@@ -73,7 +74,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _goToZoomCall(String url) {
+  void _goToExternalLink(String url) {
     final Uri zoomUri = Uri.parse(url);
     if (zoomUri.hasScheme) {
       launchUrl(zoomUri);
@@ -125,8 +126,19 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 if (nextJam != null &&
                     nextJam!.data['jam']['zoom_link'] != null) {
-                  _goToZoomCall(nextJam!.data['jam']['zoom_link']);
+                  _goToExternalLink(nextJam!.data['jam']['zoom_link']);
                 }
+              },
+            ),
+
+                        // Signal link Card
+            const SizedBox(height: 10),
+            StandardCard(
+              icon: Icons.chat,
+              title: "Join our Signal Chat",
+              subtitle: "Connect with other members in our PhotoJam Signal group",
+              onTap: () {
+                _goToExternalLink(SIGNAL_GROUP_URL);
               },
             ),
 

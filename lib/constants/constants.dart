@@ -15,6 +15,11 @@ const String COLLECTION_SUBMISSIONS = "photojam-collection-submission";
 const String BUCKET_PHOTOS_ID = "photojam-bucket-photos";
 const String BUCKET_LESSONS_ID = "photojam-bucket-lessons";
 
+//Stripe
+const String STRIPE_PAYMENT_INTENT_URL = 'todo'; //TODO Ask Molly for STRIPE_SECRET_KEY and STRIPE_WEBHOOK SECRET 'https://your-backend.com/create-stripe-payment-intent';
+
+//Signal
+const String SIGNAL_GROUP_URL = 'https://signal.group/#CjQKIOsRUWoZYHxVI7YrNr4wmJCnfcObCS8jkds92nbEgt6TEhCOzgJEXXcSmaMVCceO5-0m';
 // 
 const double defaultCornerRadius = 16;
 const double defaultButtonHeight = 50;
