@@ -17,6 +17,7 @@ class JourneyPage extends StatefulWidget {
   @override
   _JourneyPageState createState() => _JourneyPageState();
 }
+
 class _JourneyPageState extends State<JourneyPage> {
   late DatabaseAPI databaseApi;
   late StorageAPI storageApi;
@@ -40,7 +41,7 @@ class _JourneyPageState extends State<JourneyPage> {
       _fetchLatestJourney();
     }
   }
-  
+
   Future<void> _fetchLatestJourney() async {
     try {
       final userId = auth.userid;
@@ -61,7 +62,8 @@ class _JourneyPageState extends State<JourneyPage> {
             journeyTitle = latestJourney.data['title'] ?? "Journey";
           });
 
-          final lessonUrls = latestJourney.data['lessons'] as List<dynamic>? ?? [];
+          final lessonUrls =
+              latestJourney.data['lessons'] as List<dynamic>? ?? [];
           _fetchLessonsByURLs(lessonUrls);
         } else {
           print("No journeys found for this user.");
@@ -83,7 +85,8 @@ class _JourneyPageState extends State<JourneyPage> {
           print("Loaded lesson from cache: $url");
         } else {
           print("Fetching lesson from network: $url");
-          lessonData = await storageApi.getLessonByURL(url); // Fetch from network if not cached
+          lessonData = await storageApi
+              .getLessonByURL(url); // Fetch from network if not cached
           await _cacheLessonLocally(url, lessonData); // Cache it for future use
         }
 
@@ -138,7 +141,8 @@ class _JourneyPageState extends State<JourneyPage> {
       final allJourneys = await databaseApi.getAllActiveJourneys();
       final userJourneys = await databaseApi.getJourneysByUser(userId!);
 
-      final userJourneyIds = userJourneys.documents.map((doc) => doc.$id).toSet();
+      final userJourneyIds =
+          userJourneys.documents.map((doc) => doc.$id).toSet();
       final availableJourneys = allJourneys.documents
           .where((journey) => !userJourneyIds.contains(journey.$id))
           .toList();
@@ -182,11 +186,25 @@ class _JourneyPageState extends State<JourneyPage> {
                 _showMessage("Successfully signed up for the journey!");
 
                 // Fetch lessons for the selected journey and cache them
-                final selectedJourney = availableJourneys.firstWhere((journey) => journey.$id == selectedJourneyId);
-                final lessonUrls = selectedJourney.data['lessons'] as List<dynamic>? ?? [];
+                final selectedJourney = availableJourneys
+                    .firstWhere((journey) => journey.$id == selectedJourneyId);
+                final lessonUrls =
+                    selectedJourney.data['lessons'] as List<dynamic>? ?? [];
                 await _cacheLessons(lessonUrls);
 
                 Navigator.of(context).pop();
+
+                // Refresh the screen by resetting the journey data
+                setState(() {
+                  dependenciesInitialized =
+                      false; // Reset to re-trigger dependencies
+                  currentJourneyId = null;
+                  journeyTitle = "Journey";
+                  lessons.clear();
+                });
+
+                // Trigger the dependencies to load the latest journey
+                _fetchLatestJourney();
               }
             },
           );
@@ -197,11 +215,12 @@ class _JourneyPageState extends State<JourneyPage> {
     }
   }
 
- Future<void> _cacheLessons(List<dynamic> lessonUrls) async {
+  Future<void> _cacheLessons(List<dynamic> lessonUrls) async {
     for (String url in lessonUrls) {
       try {
         print("Downloading lesson to cache: $url");
-        final lessonData = await storageApi.getLessonByURL(url); // Download lesson content
+        final lessonData =
+            await storageApi.getLessonByURL(url); // Download lesson content
         await _cacheLessonLocally(url, lessonData); // Save to local cache
       } catch (e) {
         print("Error caching lesson: $e");
@@ -209,7 +228,8 @@ class _JourneyPageState extends State<JourneyPage> {
     }
   }
 
-  Future<void> _cacheLessonLocally(String lessonUrl, Uint8List lessonData) async {
+  Future<void> _cacheLessonLocally(
+      String lessonUrl, Uint8List lessonData) async {
     final cacheDir = await getApplicationDocumentsDirectory();
     final fileName = _generateCacheFileName(lessonUrl);
     final filePath = File('${cacheDir.path}/$fileName');
@@ -219,7 +239,8 @@ class _JourneyPageState extends State<JourneyPage> {
 
   // Helper function to generate a unique cache file name based on URL
   String _generateCacheFileName(String url) {
-    return base64Url.encode(utf8.encode(url)); // Use a base64-encoded URL as file name
+    return base64Url
+        .encode(utf8.encode(url)); // Use a base64-encoded URL as file name
   }
 
   String _extractTitleFromMarkdown(Uint8List lessonData) {
@@ -237,7 +258,8 @@ class _JourneyPageState extends State<JourneyPage> {
 
       if (lessonData == null) {
         print("Fetching lesson for viewing from network: $lessonUrl");
-        lessonData = await storageApi.getLessonByURL(lessonUrl); // Fetch from network
+        lessonData =
+            await storageApi.getLessonByURL(lessonUrl); // Fetch from network
         await _cacheLessonLocally(lessonUrl, lessonData); // Cache it
       } else {
         print("Viewing lesson from cache: $lessonUrl");
@@ -253,6 +275,7 @@ class _JourneyPageState extends State<JourneyPage> {
       print('Error viewing lesson: $e');
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:photojam_app/constants/constants.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -28,6 +29,9 @@ class MarkdownViewer extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Lesson Content"),
+        backgroundColor: accentColor, // Keeps the AppBar white
+        foregroundColor:
+            Colors.black, // Sets the title and icon color to black for contrast
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

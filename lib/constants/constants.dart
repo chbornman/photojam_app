@@ -24,3 +24,15 @@ const double defaultButtonHeight = 50;
 
 // Zoom link
 const String ZOOM_LINK_URL = "https://us02web.zoom.us/j/86356738535";
+
+
+// Theme colors
+const String PHOTOJAM_YELLOW = "f9d036";
+const String PHOTOJAM_PINK = "e25b63";
+const String PHOTOJAM_BLUE = "28354f";
+const String PHOTOJAM_GREEN = "07D114";
+const String PHOTOJAM_DARK_GREEN = "06510B";
+const String PHOTOJAM_ORANGE = "ef8634";
+const String PHOTOJAM_NEW_PINK = "e45b64";
+const String PHOTOJAM_PALE_BLUE = "6acae4";
+const String PHOTOJAM_PURPLE = "b248e6";
