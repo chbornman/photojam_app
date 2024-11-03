@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/jams/jams_page.dart';
-import 'package:photojam_app/pages/login_register/login_page.dart';
 import 'package:photojam_app/standard_appbar.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/pages/account_page.dart';
@@ -56,6 +55,12 @@ class _MainframeState extends State<Mainframe> {
     ];
   }
 
+  signOut() {
+    context.read<AuthAPI>().signOut();
+  }
+
+  
+
   @override
   Widget build(BuildContext context) {
     if (userRole == null) {
@@ -73,11 +78,7 @@ class _MainframeState extends State<Mainframe> {
                   icon: Icon(Icons.logout,
                       color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: () {
-                    context.read<AuthAPI>().signOut();
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => LoginPage()),
-                    );
+                    signOut();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text("Signed out successfully!")),
                     );
