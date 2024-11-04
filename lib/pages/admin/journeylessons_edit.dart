@@ -27,6 +27,7 @@ class _JourneyLessonsPageState extends State<JourneyLessonsPage> {
   List<String> lessonTitles = [];
   List<String> lessonUrls = [];
   bool isLoading = false;
+  bool hasUnsavedChanges = false;
 
   @override
   void initState() {
@@ -77,6 +78,7 @@ class _JourneyLessonsPageState extends State<JourneyLessonsPage> {
         setState(() {
           lessonTitles.add(lessonTitle);
           lessonUrls.add(fileUrl);
+          hasUnsavedChanges = true;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -92,8 +94,43 @@ class _JourneyLessonsPageState extends State<JourneyLessonsPage> {
     }
   }
 
+  Future<void> _confirmDeleteLesson(int index) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Confirm Deletion"),
+          content: Text("Are you sure you want to delete the lesson titled '${lessonTitles[index]}'?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text("Delete"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete ?? false) {
+      setState(() {
+        lessonTitles.removeAt(index);
+        lessonUrls.removeAt(index);
+        hasUnsavedChanges = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Lesson deleted successfully"),
+        backgroundColor: Colors.green,
+      ));
+    }
+  }
+
   Future<void> _saveChanges() async {
     await widget.database.updateJourneyLessons(widget.journeyId, lessonUrls);
+    setState(() => hasUnsavedChanges = false);
     Navigator.of(context).pop(); // Go back to the previous page
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text("Lessons updated successfully"),
@@ -101,57 +138,85 @@ class _JourneyLessonsPageState extends State<JourneyLessonsPage> {
     ));
   }
 
+  Future<bool> _onWillPop() async {
+    if (!hasUnsavedChanges) return true;
+
+    final shouldDiscard = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Discard Changes?"),
+          content: Text("You have unsaved changes. Are you sure you want to discard them?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text("Discard"),
+            ),
+          ],
+        );
+      },
+    );
+
+    return shouldDiscard ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Manage Lessons for ${widget.journeyTitle}"),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.check),
-            onPressed: _saveChanges,
-          ),
-        ],
-      ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: ReorderableListView(
-                    onReorder: (oldIndex, newIndex) {
-                      setState(() {
-                        if (newIndex > oldIndex) newIndex -= 1;
-                        final lessonTitle = lessonTitles.removeAt(oldIndex);
-                        final lessonUrl = lessonUrls.removeAt(oldIndex);
-                        lessonTitles.insert(newIndex, lessonTitle);
-                        lessonUrls.insert(newIndex, lessonUrl);
-                      });
-                    },
-                    children: List.generate(lessonTitles.length, (index) {
-                      return ListTile(
-                        key: ValueKey(lessonUrls[index]),
-                        title: Text(lessonTitles[index]),
-                        trailing: IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
-                          onPressed: () {
-                            setState(() {
-                              lessonTitles.removeAt(index);
-                              lessonUrls.removeAt(index);
-                            });
-                          },
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-              ],
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text("Manage Lessons for ${widget.journeyTitle}"),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.check),
+              onPressed: _saveChanges,
             ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: StandardButton(
-          onPressed: _addLesson,
-          label: Text("Add New Lesson"),
+          ],
+        ),
+        body: isLoading
+            ? Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  Expanded(
+                    child: ReorderableListView(
+                      onReorder: (oldIndex, newIndex) {
+                        setState(() {
+                          if (newIndex > oldIndex) newIndex -= 1;
+                          final lessonTitle = lessonTitles.removeAt(oldIndex);
+                          final lessonUrl = lessonUrls.removeAt(oldIndex);
+                          lessonTitles.insert(newIndex, lessonTitle);
+                          lessonUrls.insert(newIndex, lessonUrl);
+                          hasUnsavedChanges = true;
+                        });
+                      },
+                      children: List.generate(lessonTitles.length, (index) {
+                        return ListTile(
+                          key: ValueKey(lessonUrls[index]),
+                          title: Text(lessonTitles[index]),
+                          trailing: IconButton(
+                            icon: Icon(
+                              Icons.delete,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            onPressed: () => _confirmDeleteLesson(index),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+        bottomNavigationBar: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: StandardButton(
+            onPressed: _addLesson,
+            label: Text("Add New Lesson"),
+          ),
         ),
       ),
     );
