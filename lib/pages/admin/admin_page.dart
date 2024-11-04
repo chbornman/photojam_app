@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/pages/admin/contentmanagement_page.dart';
+import 'package:photojam_app/pages/admin/jamcalendar_page.dart';
 import 'package:photojam_app/pages/admin/usermanagement_page.dart';
 import 'package:photojam_app/utilities/system_logs.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
@@ -26,6 +27,20 @@ class AdminPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
+            // Jam Calendar Section
+            StandardCard(
+              icon: Icons.calendar_month,
+              title: 'Jam Calendar',
+              subtitle: 'See list of upcoming jams and attendees',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => JamCalendar()),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
+
             // User Management Section
             StandardCard(
               icon: Icons.people,
@@ -48,7 +63,8 @@ class AdminPage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ContentManagementPage()),
+                  MaterialPageRoute(
+                      builder: (context) => ContentManagementPage()),
                 );
               },
             ),
