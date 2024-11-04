@@ -100,7 +100,8 @@ class _JourneyLessonsPageState extends State<JourneyLessonsPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text("Confirm Deletion"),
-          content: Text("Are you sure you want to delete the lesson titled '${lessonTitles[index]}'?"),
+          content: Text(
+              "Are you sure you want to delete the lesson titled '${lessonTitles[index]}'?"),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -146,7 +147,8 @@ class _JourneyLessonsPageState extends State<JourneyLessonsPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text("Discard Changes?"),
-          content: Text("You have unsaved changes. Are you sure you want to discard them?"),
+          content: Text(
+              "You have unsaved changes. Are you sure you want to discard them?"),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -182,6 +184,10 @@ class _JourneyLessonsPageState extends State<JourneyLessonsPage> {
             ? Center(child: CircularProgressIndicator())
             : Column(
                 children: [
+                  StandardButton(
+                    onPressed: _addLesson,
+                    label: Text("Add New Lesson"),
+                  ),
                   Expanded(
                     child: ReorderableListView(
                       onReorder: (oldIndex, newIndex) {
@@ -211,13 +217,6 @@ class _JourneyLessonsPageState extends State<JourneyLessonsPage> {
                   ),
                 ],
               ),
-        bottomNavigationBar: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: StandardButton(
-            onPressed: _addLesson,
-            label: Text("Add New Lesson"),
-          ),
-        ),
       ),
     );
   }
