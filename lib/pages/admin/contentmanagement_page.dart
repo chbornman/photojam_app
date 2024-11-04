@@ -1,6 +1,7 @@
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/constants/constants.dart';
+import 'package:photojam_app/pages/admin/journeylessons_edit.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
@@ -110,23 +111,26 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     }
   }
 
-  void _fetchAndOpenAddLessonDialog() async {
+  void _fetchAndOpenAddLessonDialog(String journeyTitle) async {
     setState(() => isLoading = true);
     try {
+      // Get the journey ID for the provided journey title
       DocumentList journeyList = await database.listJourneys();
-      Map<String, String> journeyMap = {
-        for (var doc in journeyList.documents) doc.data['title']: doc.$id
-      };
-      _openAddLessonDialog(journeyMap);
+      final journeyDoc = journeyList.documents.firstWhere(
+        (doc) => doc.data['title'] == journeyTitle,
+        orElse: () => throw Exception("Journey not found"),
+      );
+
+      final journeyId = journeyDoc.$id;
+      _openAddLessonDialog(journeyId, journeyTitle);
     } catch (e) {
-      _showMessage("Error fetching journeys: $e", isError: true);
+      _showMessage("Error fetching journey: $e", isError: true);
     } finally {
       setState(() => isLoading = false);
     }
   }
 
-  void _openAddLessonDialog(Map<String, String> journeyMap) {
-    String selectedTitle = journeyMap.keys.first;
+  void _openAddLessonDialog(String journeyId, String journeyTitle) {
     Uint8List? selectedFileBytes;
     String? selectedFileName;
 
@@ -134,28 +138,12 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
       context: context,
       builder: (context) {
         return StandardDialog(
-          title: "Add Lesson to Journey",
+          title: "Add Lesson to $journeyTitle",
           content: StatefulBuilder(
             builder: (context, setState) {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  DropdownButtonFormField<String>(
-                    value: selectedTitle,
-                    items: journeyMap.keys.map((title) {
-                      return DropdownMenuItem(
-                        value: title,
-                        child: Text(title),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedTitle = value!;
-                      });
-                    },
-                    decoration: InputDecoration(labelText: "Select Journey"),
-                  ),
-                  SizedBox(height: 16),
                   StandardButton(
                     label: Text(selectedFileName ?? "Select Lesson File"),
                     onPressed: () async {
@@ -199,8 +187,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
 
               // Step 2: Add the uploaded file URL to the journey
               print("File uploaded. URL: $fileUrl");
-              await database.addLessonToJourney(
-                  journeyMap[selectedTitle]!, fileUrl);
+              await database.addLessonToJourney(journeyId, fileUrl);
 
               Navigator.of(context).pop();
               _showMessage("Lesson uploaded successfully");
@@ -956,6 +943,86 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     );
   }
 
+  void _fetchAndOpenUpdateJourneyLessonsPage() async {
+    setState(() => isLoading = true);
+    try {
+      // Fetch the list of journeys
+      DocumentList journeyList = await database.listJourneys();
+      Map<String, String> journeyMap = {
+        for (var doc in journeyList.documents) doc.data['title']: doc.$id
+      };
+
+      // Show a dialog to select the journey
+      _openJourneySelectionDialog(journeyMap);
+    } catch (e) {
+      _showMessage("Error fetching journeys: $e", isError: true);
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  void _openJourneySelectionDialog(Map<String, String> journeyMap) {
+    String? selectedTitle;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Select Journey"),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return DropdownButtonFormField<String>(
+                value: selectedTitle,
+                hint: Text("Select Journey"),
+                items: journeyMap.keys.map((title) {
+                  return DropdownMenuItem(
+                    value: title,
+                    child: Text(title),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedTitle = value;
+                  });
+                },
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(), // Close dialog
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                if (selectedTitle != null) {
+                  // Get the journeyId from the selectedTitle
+                  final journeyId = journeyMap[selectedTitle]!;
+                  Navigator.of(context).pop(); // Close dialog
+                  _openUpdateJourneyLessonsPage(journeyId, selectedTitle!);
+                }
+              },
+              child: Text("Open"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _openUpdateJourneyLessonsPage(String journeyId, String journeyTitle) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => JourneyLessonsPage(
+          journeyId: journeyId,
+          journeyTitle: journeyTitle,
+          database: database,
+          storage: storage,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -984,6 +1051,12 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
               onTap: _fetchAndOpenUpdateJourneyDialog,
             ),
             StandardCard(
+              icon: Icons.list,
+              title: "Update Journey Lessons",
+              subtitle: "Reorder, add, or delete lessons in a journey",
+              onTap: _fetchAndOpenUpdateJourneyLessonsPage,
+            ),
+            StandardCard(
               icon: Icons.delete,
               title: "Delete Journey",
               subtitle: "Remove a journey",
@@ -1006,12 +1079,6 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
               title: "Delete Jam",
               subtitle: "Remove a jam session",
               onTap: _fetchAndOpenDeleteJamDialog,
-            ),
-            StandardCard(
-              icon: Icons.file_upload,
-              title: "Add Lesson to Journey",
-              subtitle: "Upload a lesson file to a journey",
-              onTap: _fetchAndOpenAddLessonDialog,
             ),
           ],
         ),

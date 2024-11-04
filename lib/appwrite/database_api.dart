@@ -445,6 +445,41 @@ class DatabaseAPI {
     }
   }
 
+  /// Updates the lesson URLs of a specified journey
+  Future<void> updateJourneyLessons(
+      String journeyId, List<String> lessonUrls) async {
+    try {
+      // Fetch the current journey document to ensure other attributes are retained
+      final journey = await databases.getDocument(
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJourneys,
+        documentId: journeyId,
+      );
+
+      // Retrieve the 'active' attribute (or any other required attributes) from the existing journey
+      bool isActive = journey.data['active'] ?? true;
+      String title = journey.data['title'] ?? 'Untitled Journey';
+      String startDate =
+          journey.data['start_date'] ?? DateTime.now().toIso8601String();
+
+      // Update the journey document with the new list of lessons, while keeping other attributes intact
+      await databases.updateDocument(
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJourneys,
+        documentId: journeyId,
+        data: {
+          'lessons': lessonUrls, // Replace with the new list of lesson URLs
+          'active': isActive, // Keep other attributes unchanged
+          'title': title,
+          'start_date': startDate,
+        },
+      );
+    } catch (e) {
+      print('Error updating journey lessons: $e');
+      rethrow;
+    }
+  }
+
   /// Adds a lesson URL to a specified journey
   Future<void> addLessonToJourney(String journeyId, String lessonURL) async {
     try {

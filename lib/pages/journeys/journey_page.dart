@@ -5,6 +5,7 @@ import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/journeys/journeycontainer.dart';
+import 'package:photojam_app/utilities/markdown_utilities.dart';
 import 'package:photojam_app/utilities/markdownviewer.dart';
 import 'package:photojam_app/pages/journeys/myjourneys_page.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
@@ -90,7 +91,7 @@ class _JourneyPageState extends State<JourneyPage> {
           await _cacheLessonLocally(url, lessonData); // Cache it for future use
         }
 
-        final title = _extractTitleFromMarkdown(lessonData);
+        final title = extractTitleFromMarkdown(lessonData);
         fetchedLessons.add({'url': url, 'title': title});
       } catch (e) {
         print("Error fetching lesson title: $e");
@@ -243,14 +244,6 @@ class _JourneyPageState extends State<JourneyPage> {
   String _generateCacheFileName(String url) {
     return base64Url
         .encode(utf8.encode(url)); // Use a base64-encoded URL as file name
-  }
-
-  String _extractTitleFromMarkdown(Uint8List lessonData) {
-    final content = utf8.decode(lessonData);
-    final firstLine = content.split('\n').first.trim();
-    return firstLine.startsWith('#')
-        ? firstLine.replaceFirst('#', '').trim()
-        : 'Untitled Lesson';
   }
 
   // Method to view a lesson, checks cache first
