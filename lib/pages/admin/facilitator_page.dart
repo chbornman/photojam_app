@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/pages/admin/contentmanagement_page.dart';
 import 'package:photojam_app/pages/admin/jampreppage.dart';
-import 'package:photojam_app/pages/admin/usermanagement_page.dart';
-import 'package:photojam_app/utilities/system_logs.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
 
 class FacilitatorPage extends StatelessWidget {
@@ -22,7 +19,7 @@ class FacilitatorPage extends StatelessWidget {
             Text(
               'This page allows facilitators to select and download submitted photos, and sign up to facilitate jams',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onBackground.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
               ),
             ),
             const SizedBox(height: 20),
@@ -58,7 +55,7 @@ class FacilitatorPage extends StatelessWidget {
           ],
         ),
       ),
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
     );
   }
 }
