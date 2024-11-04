@@ -3,18 +3,20 @@ import 'package:intl/intl.dart';
 
 class PhotoCard extends StatelessWidget {
   final String title;
-  final String date;
+  final String? date;
   final List<Widget> photoWidgets;
 
   const PhotoCard({
     Key? key,
     required this.title,
-    required this.date,
+    this.date, // Making date optional
     required this.photoWidgets,
   }) : super(key: key);
 
   // Helper function to format date
-  String formatDate(String dateString) {
+  String formatDate(String? dateString) {
+    if (dateString == null) return "No Date Provided"; // Default text if date is null
+
     try {
       DateTime parsedDate = DateTime.parse(dateString);
       return DateFormat('MMM dd, yyyy - hh:mm a').format(parsedDate);
@@ -48,13 +50,15 @@ class PhotoCard extends StatelessWidget {
                 color: theme.colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              formatDate(date),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+            if (date != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                formatDate(date),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: 8),
             ...photoWidgets,
           ],

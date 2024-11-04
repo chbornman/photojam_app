@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/pages/admin/facilitator_page.dart';
 import 'package:photojam_app/pages/jams/jams_page.dart';
 import 'package:photojam_app/utilities/standard_appbar.dart';
 import 'package:provider/provider.dart';
@@ -51,6 +52,7 @@ class _MainframeState extends State<Mainframe> {
       JourneyPage(),
       PhotosPage(),
       AccountPage(),
+      if (userRole == "facilitator" || userRole == "admin") FacilitatorPage(),
       if (userRole == "admin") AdminPage(),
     ];
   }
@@ -58,8 +60,6 @@ class _MainframeState extends State<Mainframe> {
   signOut() {
     context.read<AuthAPI>().signOut();
   }
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -93,27 +93,53 @@ class _MainframeState extends State<Mainframe> {
         children: screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
+        type: BottomNavigationBarType.shifting,
         currentIndex: _currentIndex,
         selectedItemColor: Theme.of(context).colorScheme.onSurface,
         unselectedItemColor: Theme.of(context).colorScheme.surface,
-        backgroundColor: Theme.of(context).colorScheme.primary,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
         items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: 'Jams'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Journeys'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.subscriptions), label: 'Photos'),
+            icon: Icon(Icons.home),
+            label: 'Home',
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.account_circle), label: 'Account'),
+            icon: Icon(Icons.camera_alt),
+            label: 'Jams',
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.book),
+            label: 'Journeys',
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.subscriptions),
+            label: 'Photos',
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_circle),
+            label: 'Account',
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+          if (userRole == "facilitator" || userRole == "admin")
+            BottomNavigationBarItem(
+              icon: Icon(Icons.group),
+              label: 'Facilitate',
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
           if (userRole == "admin")
             BottomNavigationBarItem(
-                icon: Icon(Icons.admin_panel_settings), label: 'Admin'),
+              icon: Icon(Icons.admin_panel_settings),
+              label: 'Admin',
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
         ],
       ),
     );
@@ -132,6 +158,8 @@ class _MainframeState extends State<Mainframe> {
       case 4:
         return 'Account';
       case 5:
+        return 'Facilitator Dashboard';
+      case 6:
         return 'Admin Dashboard';
       default:
         return 'PhotoJam';
