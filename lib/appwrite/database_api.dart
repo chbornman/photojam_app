@@ -126,7 +126,11 @@ class DatabaseAPI {
         databaseId: appwriteDatabaseId,
         collectionId: collectionJams,
         documentId: data['jamId'],
-        data: {'title': data['title']}, // Update fields as necessary
+        data: {
+          'title': data['title'],
+          'date': data['date'],
+          'zoom_link': data['zoom_link'],
+        },
       );
     } catch (e) {
       print('Error updating jam: $e');
@@ -415,7 +419,11 @@ class DatabaseAPI {
         databaseId: appwriteDatabaseId,
         collectionId: collectionJourneys,
         documentId: data['journeyId'],
-        data: {'title': data['title']}, // Update fields as necessary
+        data: {
+          'title': data['title'],
+          'start_date': data['start_date'],
+          'active': data['active'],
+        },
       );
     } catch (e) {
       print('Error updating journey: $e');
