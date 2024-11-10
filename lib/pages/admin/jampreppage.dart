@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
+import 'package:photojam_app/log_service.dart';
 import 'package:photojam_app/pages/admin/photoselect_page.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/utilities/standard_photocard.dart';
@@ -87,7 +88,7 @@ class _JamPrepPageState extends State<JamPrepPage>  with WidgetsBindingObserver 
         isLoading = false;
       });
     } catch (e) {
-      print('Error fetching submissions: $e');
+      LogService.instance.error('Error fetching submissions: $e');
       if (_isDisposed) return;
       setState(() => isLoading = false);
     }
@@ -107,7 +108,7 @@ class _JamPrepPageState extends State<JamPrepPage>  with WidgetsBindingObserver 
       }
       return imageData;
     } catch (e) {
-      print('Error fetching image from network: $e');
+      LogService.instance.error('Error fetching image from network: $e');
       return null;
     }
   }

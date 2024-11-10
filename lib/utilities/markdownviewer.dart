@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:photojam_app/log_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -15,7 +16,7 @@ class MarkdownViewer extends StatelessWidget {
       if (await canLaunch(href)) {
         await launch(href);
       } else {
-        print('Could not launch $href');
+        LogService.instance.info('Could not launch $href');
       }
     }
   }

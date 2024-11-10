@@ -1,5 +1,6 @@
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
+import 'package:photojam_app/log_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class JamDetailsPage extends StatelessWidget {
@@ -94,7 +95,7 @@ class JamDetailsPage extends StatelessWidget {
     if (await canLaunch(zoomLink)) {
       await launch(zoomLink);
     } else {
-      print('Could not open the Zoom link.');
+      LogService.instance.info('Could not open the Zoom link.');
     }
   }
 

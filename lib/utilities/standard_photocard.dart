@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:photojam_app/log_service.dart';
 
 class PhotoCard extends StatelessWidget {
   final String title;
@@ -21,7 +22,7 @@ class PhotoCard extends StatelessWidget {
       DateTime parsedDate = DateTime.parse(dateString);
       return DateFormat('MMM dd, yyyy - hh:mm a').format(parsedDate);
     } catch (e) {
-      print("Error formatting date: $e");
+      LogService.instance.error("Error formatting date: $e");
       return "Invalid Date";
     }
   }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:photojam_app/log_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/services.dart';
 
@@ -46,7 +47,7 @@ class _PhotoSelectPageState extends State<PhotoSelectPage>
         isLoading = false;
       });
     } catch (e) {
-      print("Error loading photos: $e");
+      LogService.instance.error("Error loading photos: $e");
       setState(() {
         isLoading = false;
       });
@@ -67,7 +68,7 @@ class _PhotoSelectPageState extends State<PhotoSelectPage>
       // Use share_plus to trigger iOS share sheet
       await Share.shareXFiles([XFile(file.path)]);
     } catch (e) {
-      print("Error sharing photo: $e");
+      LogService.instance.error("Error sharing photo: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error sharing photo.')),
       );
@@ -80,7 +81,7 @@ class _PhotoSelectPageState extends State<PhotoSelectPage>
       DateTime date = DateTime.parse(dateString);
       return DateFormat('MMM dd, yyyy - hh:mm a').format(date);
     } catch (e) {
-      print("Error formatting date: $e");
+      LogService.instance.error("Error formatting date: $e");
       return "Invalid Date";
     }
   }

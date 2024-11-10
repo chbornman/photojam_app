@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'dart:io';
 
+import 'package:photojam_app/log_service.dart';
+
 class StorageAPI {
   final Client client;
   final Storage storage;
@@ -15,7 +17,7 @@ class StorageAPI {
   Future<Uint8List?> fetchAuthenticatedImage(
       String imageUrl, String authToken) async {
     try {
-      print("Fetching image from: $imageUrl");
+      LogService.instance.info("Fetching image from: $imageUrl");
 
       final response = await http.get(
         Uri.parse(Uri.encodeFull(imageUrl)), // Encode URL for compatibility
@@ -28,12 +30,12 @@ class StorageAPI {
       if (response.statusCode == 200) {
         return response.bodyBytes;
       } else {
-        print(
+        LogService.instance.info(
             'Failed to load image. Status code: ${response.statusCode}, Reason: ${response.reasonPhrase}');
         throw Exception('Failed to load image');
       }
     } catch (e) {
-      print("Error fetching image: $e");
+      LogService.instance.error("Error fetching image: $e");
       return null;
     }
   }
@@ -45,14 +47,14 @@ class StorageAPI {
 
     try {
       if (await file.exists()) {
-        print("File found at $imagePath, proceeding with upload.");
+        LogService.instance.info("File found at $imagePath, proceeding with upload.");
         return await file.readAsBytes(); // Or any other file operation
       } else {
-        print("File at $imagePath does not exist. Verify path or permissions.");
+        LogService.instance.info("File at $imagePath does not exist. Verify path or permissions.");
         return null; // Or handle this case as needed
       }
     } catch (e) {
-      print("Error reading file: $e");
+      LogService.instance.error("Error reading file: $e");
       return null;
     }
   }
@@ -60,7 +62,7 @@ class StorageAPI {
   // Simplified getPhotoUrl without appending /v1
   Future<String> getPhotoUrl(String fileId) async {
     final endpoint = client.endPoint; // Base endpoint from client
-    print("Appwrite endpoint: $endpoint"); // Print endpoint for debugging
+    LogService.instance.info("Appwrite endpoint: $endpoint"); // Print endpoint for debugging
 
     // Construct the URL without manually adding /v1
     return "$endpoint/storage/buckets/$bucketPhotosId/files/$fileId/view";
@@ -76,7 +78,7 @@ class StorageAPI {
       );
       return result.$id;
     } catch (e) {
-      print('Error uploading photo: $e');
+      LogService.instance.error('Error uploading photo: $e');
       rethrow;
     }
   }
@@ -90,7 +92,7 @@ class StorageAPI {
       );
       return result;
     } catch (e) {
-      print('Error retrieving photo: $e');
+      LogService.instance.error('Error retrieving photo: $e');
       rethrow;
     }
   }
@@ -103,7 +105,7 @@ class StorageAPI {
         fileId: fileId,
       );
     } catch (e) {
-      print('Error deleting photo: $e');
+      LogService.instance.error('Error deleting photo: $e');
     }
   }
 
@@ -116,7 +118,7 @@ class StorageAPI {
       );
       return DateTime.parse(file.$updatedAt); // Parse updated timestamp
     } catch (e) {
-      print('Error fetching last modified date: $e');
+      LogService.instance.error('Error fetching last modified date: $e');
       return null; // Return null if the date cannot be retrieved
     }
   }
@@ -154,13 +156,13 @@ class StorageAPI {
               // Map the original image path to the new URL
               imagePathToUrl[imagePath] = imageUrl;
             } else {
-              print("Warning: Failed to fetch image data for $imagePath");
+              LogService.instance.info("Warning: Failed to fetch image data for $imagePath");
             }
           } catch (e) {
-            print("Error processing image '$imagePath': $e");
+            LogService.instance.error("Error processing image '$imagePath': $e");
           }
         } else {
-          print("Skipping non-image or external URL: $imagePath");
+          LogService.instance.info("Skipping non-image or external URL: $imagePath");
         }
       }
 
@@ -183,7 +185,7 @@ class StorageAPI {
       // Return the URL for the uploaded Markdown file
       return "$appwriteEndpointId/storage/buckets/$bucketLessonsId/files/${result.$id}/view?project=$appwriteProjectId";
     } catch (e) {
-      print('Error uploading lesson: $e');
+      LogService.instance.error('Error uploading lesson: $e');
       rethrow;
     }
   }
@@ -218,11 +220,11 @@ class StorageAPI {
       if (await file.exists()) {
         return await file.readAsBytes();
       } else {
-        print("File at $imagePath does not exist.");
+        LogService.instance.info("File at $imagePath does not exist.");
         return null;
       }
     } catch (e) {
-      print("Error reading file: $e");
+      LogService.instance.error("Error reading file: $e");
       return null;
     }
   }
@@ -239,7 +241,7 @@ class StorageAPI {
       );
       return result.$id;
     } catch (e) {
-      print('Error uploading image: $e');
+      LogService.instance.error('Error uploading image: $e');
       rethrow;
     }
   }
@@ -255,7 +257,7 @@ class StorageAPI {
         throw Exception('Failed to load lesson from URL');
       }
     } catch (e) {
-      print('Error retrieving lesson by URL: $e');
+      LogService.instance.error('Error retrieving lesson by URL: $e');
       rethrow;
     }
   }
@@ -263,9 +265,9 @@ class StorageAPI {
     Future<void> deleteLesson(String fileId) async {
     try {
       await storage.deleteFile(bucketId: bucketLessonsId, fileId: fileId);
-      print('Lesson file deleted successfully: $fileId');
+      LogService.instance.info('Lesson file deleted successfully: $fileId');
     } catch (e) {
-      print('Error deleting lesson file: $e');
+      LogService.instance.error('Error deleting lesson file: $e');
       throw Exception('Failed to delete lesson file');
     }
   }

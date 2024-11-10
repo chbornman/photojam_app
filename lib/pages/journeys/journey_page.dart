@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/log_service.dart';
 import 'package:photojam_app/pages/journeys/journeycontainer.dart';
 import 'package:photojam_app/utilities/markdown_utilities.dart';
 import 'package:photojam_app/utilities/markdownviewer.dart';
@@ -67,11 +68,11 @@ class _JourneyPageState extends State<JourneyPage> {
               latestJourney.data['lessons'] as List<dynamic>? ?? [];
           _fetchLessonsByURLs(lessonUrls);
         } else {
-          print("No journeys found for this user.");
+          LogService.instance.info("No journeys found for this user.");
         }
       }
     } catch (e) {
-      print('Error fetching the latest journey: $e');
+      LogService.instance.error('Error fetching the latest journey: $e');
     }
   }
 
@@ -83,9 +84,9 @@ class _JourneyPageState extends State<JourneyPage> {
         Uint8List? lessonData = await _getLessonFromCache(url);
 
         if (lessonData != null) {
-          print("Loaded lesson from cache: $url");
+          LogService.instance.info("Loaded lesson from cache: $url");
         } else {
-          print("Fetching lesson from network: $url");
+          LogService.instance.info("Fetching lesson from network: $url");
           lessonData = await storageApi
               .getLessonByURL(url); // Fetch from network if not cached
           await _cacheLessonLocally(url, lessonData); // Cache it for future use
@@ -94,7 +95,7 @@ class _JourneyPageState extends State<JourneyPage> {
         final title = extractTitleFromMarkdown(lessonData);
         fetchedLessons.add({'url': url, 'title': title});
       } catch (e) {
-        print("Error fetching lesson title: $e");
+        LogService.instance.error("Error fetching lesson title: $e");
         fetchedLessons.add({'url': url, 'title': 'Untitled Lesson'});
       }
     }
@@ -110,10 +111,10 @@ class _JourneyPageState extends State<JourneyPage> {
     final filePath = File('${cacheDir.path}/$fileName');
 
     if (await filePath.exists()) {
-      print("Found cached lesson for URL: $lessonUrl");
+      LogService.instance.info("Found cached lesson for URL: $lessonUrl");
       return await filePath.readAsBytes();
     } else {
-      print("No cached lesson found for URL: $lessonUrl");
+      LogService.instance.info("No cached lesson found for URL: $lessonUrl");
     }
     return null; // Return null if lesson is not in cache
   }
@@ -130,7 +131,7 @@ class _JourneyPageState extends State<JourneyPage> {
         ),
       );
     } else {
-      print('User ID is not available');
+      LogService.instance.info('User ID is not available');
     }
   }
 
@@ -214,19 +215,19 @@ class _JourneyPageState extends State<JourneyPage> {
         },
       );
     } catch (e) {
-      print('Error fetching available journeys: $e');
+      LogService.instance.error('Error fetching available journeys: $e');
     }
   }
 
   Future<void> _cacheLessons(List<dynamic> lessonUrls) async {
     for (String url in lessonUrls) {
       try {
-        print("Downloading lesson to cache: $url");
+        LogService.instance.info("Downloading lesson to cache: $url");
         final lessonData =
             await storageApi.getLessonByURL(url); // Download lesson content
         await _cacheLessonLocally(url, lessonData); // Save to local cache
       } catch (e) {
-        print("Error caching lesson: $e");
+        LogService.instance.error("Error caching lesson: $e");
       }
     }
   }
@@ -237,7 +238,7 @@ class _JourneyPageState extends State<JourneyPage> {
     final fileName = _generateCacheFileName(lessonUrl);
     final filePath = File('${cacheDir.path}/$fileName');
     await filePath.writeAsBytes(lessonData); // Save lesson data locally
-    print("Lesson cached locally for URL: $lessonUrl");
+    LogService.instance.info("Lesson cached locally for URL: $lessonUrl");
   }
 
   // Helper function to generate a unique cache file name based on URL
@@ -252,12 +253,12 @@ class _JourneyPageState extends State<JourneyPage> {
       Uint8List? lessonData = await _getLessonFromCache(lessonUrl);
 
       if (lessonData == null) {
-        print("Fetching lesson for viewing from network: $lessonUrl");
+        LogService.instance.info("Fetching lesson for viewing from network: $lessonUrl");
         lessonData =
             await storageApi.getLessonByURL(lessonUrl); // Fetch from network
         await _cacheLessonLocally(lessonUrl, lessonData); // Cache it
       } else {
-        print("Viewing lesson from cache: $lessonUrl");
+        LogService.instance.info("Viewing lesson from cache: $lessonUrl");
       }
 
       Navigator.push(
@@ -267,7 +268,7 @@ class _JourneyPageState extends State<JourneyPage> {
         ),
       );
     } catch (e) {
-      print('Error viewing lesson: $e');
+      LogService.instance.error('Error viewing lesson: $e');
     }
   }
 

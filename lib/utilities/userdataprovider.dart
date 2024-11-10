@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/log_service.dart';
 
 class UserDataProvider extends ChangeNotifier {
   String? username;
@@ -13,7 +14,7 @@ class UserDataProvider extends ChangeNotifier {
       isOAuthUser = false; //TODO authAPI.isOAuthUser();
       notifyListeners();
     } catch (e) {
-      print("Error loading user data: $e");
+      LogService.instance.error("Error loading user data: $e");
     }
   }
 }

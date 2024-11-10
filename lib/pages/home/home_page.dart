@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/constants/constants.dart';
+import 'package:photojam_app/log_service.dart';
 import 'package:photojam_app/pages/facilitator_signup_page.dart';
 import 'package:photojam_app/pages/jams/jamsignup_page.dart';
 import 'package:photojam_app/pages/home/master_of_the_month_page.dart';
@@ -31,7 +32,7 @@ class _HomePageState extends State<HomePage> {
       if (userId != null) {
         _fetchUserJams();
       } else {
-        print("User ID is null, delaying fetch until user is authenticated.");
+        LogService.instance.info("User ID is null, delaying fetch until user is authenticated.");
       }
     });
   }
@@ -79,7 +80,7 @@ class _HomePageState extends State<HomePage> {
     if (zoomUri.hasScheme) {
       launchUrl(zoomUri);
     } else {
-      print("Invalid Zoom URL");
+      LogService.instance.info("Invalid Zoom URL");
     }
   }
 

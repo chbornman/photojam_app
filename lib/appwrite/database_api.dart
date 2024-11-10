@@ -1,6 +1,7 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:photojam_app/constants/constants.dart';
+import 'package:photojam_app/log_service.dart';
 
 class DatabaseAPI {
   final Client client;
@@ -19,7 +20,7 @@ class DatabaseAPI {
         data: data,
       );
     } catch (e) {
-      print('Error creating journey: $e');
+      LogService.instance.error('Error creating journey: $e');
       rethrow;
     }
   }
@@ -33,7 +34,7 @@ class DatabaseAPI {
         documentId: journeyId,
       );
     } catch (e) {
-      print('Error fetching journey: $e');
+      LogService.instance.error('Error fetching journey: $e');
       rethrow;
     }
   }
@@ -46,7 +47,7 @@ class DatabaseAPI {
         collectionId: collectionJourneys,
       );
     } catch (e) {
-      print('Error fetching All journeys: $e');
+      LogService.instance.error('Error fetching All journeys: $e');
       rethrow;
     }
   }
@@ -60,7 +61,7 @@ class DatabaseAPI {
         queries: [Query.equal('active', true)],
       );
     } catch (e) {
-      print('Error fetching active journeys: $e');
+      LogService.instance.error('Error fetching active journeys: $e');
       rethrow;
     }
   }
@@ -80,7 +81,7 @@ class DatabaseAPI {
         total: filteredDocuments.length,
       );
     } catch (e) {
-      print('Error fetching journeys for user $userId: $e');
+      LogService.instance.error('Error fetching journeys for user $userId: $e');
       rethrow;
     }
   }
@@ -98,7 +99,7 @@ class DatabaseAPI {
         data: {'participant_ids': participants},
       );
     } catch (e) {
-      print('Error adding user to journey: $e');
+      LogService.instance.error('Error adding user to journey: $e');
       rethrow;
     }
   }
@@ -114,7 +115,7 @@ class DatabaseAPI {
         data: data,
       );
     } catch (e) {
-      print('Error creating jam: $e');
+      LogService.instance.error('Error creating jam: $e');
       rethrow;
     }
   }
@@ -133,7 +134,7 @@ class DatabaseAPI {
         },
       );
     } catch (e) {
-      print('Error updating jam: $e');
+      LogService.instance.error('Error updating jam: $e');
       rethrow;
     }
   }
@@ -147,7 +148,7 @@ class DatabaseAPI {
         documentId: data['jamId'],
       );
     } catch (e) {
-      print('Error deleting jam: $e');
+      LogService.instance.error('Error deleting jam: $e');
       rethrow;
     }
   }
@@ -194,7 +195,7 @@ class DatabaseAPI {
         total: jamDocuments.length,
       );
     } catch (e) {
-      print('Error fetching jams for user $userId: $e');
+      LogService.instance.error('Error fetching jams for user $userId: $e');
       rethrow;
     }
   }
@@ -213,7 +214,7 @@ class DatabaseAPI {
           final jamDate = DateTime.parse(dateValue);
           return jamDate.isAfter(now); // Keep only future jams
         } else {
-          print("Warning: date is not a String for document ID ${doc.$id}");
+          LogService.instance.info("Warning: date is not a String for document ID ${doc.$id}");
           return false;
         }
       }).toList();
@@ -224,7 +225,7 @@ class DatabaseAPI {
         total: upcomingJams.length,
       );
     } catch (e) {
-      print('Error fetching upcoming jams for user $userId: $e');
+      LogService.instance.error('Error fetching upcoming jams for user $userId: $e');
       rethrow;
     }
   }
@@ -238,7 +239,7 @@ class DatabaseAPI {
         documentId: jamId,
       );
     } catch (e) {
-      print('Error fetching jam: $e');
+      LogService.instance.error('Error fetching jam: $e');
       rethrow;
     }
   }
@@ -256,7 +257,7 @@ class DatabaseAPI {
         data: {'submissions': submissions},
       );
     } catch (e) {
-      print('Error adding submission to jam: $e');
+      LogService.instance.error('Error adding submission to jam: $e');
       rethrow;
     }
   }
@@ -274,7 +275,7 @@ class DatabaseAPI {
 
       return userSubmissions.documents;
     } catch (e) {
-      print("Error fetching jams with submissions for user $userId: $e");
+      LogService.instance.error("Error fetching jams with submissions for user $userId: $e");
       return []; // Return an empty list if the query fails
     }
   }
@@ -296,7 +297,7 @@ class DatabaseAPI {
 
       return submissionsResult.documents;
     } catch (e) {
-      print('Error fetching all submissions: $e');
+      LogService.instance.error('Error fetching all submissions: $e');
       rethrow;
     }
   }
@@ -309,9 +310,9 @@ class DatabaseAPI {
         collectionId: collectionSubmissions,
         documentId: submissionId,
       );
-      print("Submission with ID $submissionId deleted successfully.");
+      LogService.instance.info("Submission with ID $submissionId deleted successfully.");
     } catch (e) {
-      print("Error deleting submission with ID $submissionId: $e");
+      LogService.instance.error("Error deleting submission with ID $submissionId: $e");
       rethrow;
     }
   }
@@ -325,7 +326,7 @@ class DatabaseAPI {
         queries: [Query.equal('jam', jamId)],
       );
     } catch (e) {
-      print('Error fetching submissions for jam $jamId: $e');
+      LogService.instance.error('Error fetching submissions for jam $jamId: $e');
       rethrow;
     }
   }
@@ -341,7 +342,7 @@ class DatabaseAPI {
         data: {'photos': photoUrls, 'date': date},
       );
     } catch (e) {
-      print("Error updating submission: $e");
+      LogService.instance.error("Error updating submission: $e");
       rethrow;
     }
   }
@@ -362,7 +363,7 @@ class DatabaseAPI {
         },
       );
     } catch (e) {
-      print('Error creating submission: $e');
+      LogService.instance.error('Error creating submission: $e');
       rethrow;
     }
   }
@@ -381,7 +382,7 @@ class DatabaseAPI {
       );
       return response.documents.isNotEmpty ? response.documents.first : null;
     } catch (e) {
-      print("Error fetching submission: $e");
+      LogService.instance.error("Error fetching submission: $e");
       return null;
     }
   }
@@ -394,7 +395,7 @@ class DatabaseAPI {
         collectionId: collectionJams,
       );
     } catch (e) {
-      print('Error fetching all jams: $e');
+      LogService.instance.error('Error fetching all jams: $e');
       rethrow;
     }
   }
@@ -407,7 +408,7 @@ class DatabaseAPI {
         collectionId: collectionJourneys,
       );
     } catch (e) {
-      print('Error fetching all journeys: $e');
+      LogService.instance.error('Error fetching all journeys: $e');
       rethrow;
     }
   }
@@ -426,7 +427,7 @@ class DatabaseAPI {
         },
       );
     } catch (e) {
-      print('Error updating journey: $e');
+      LogService.instance.error('Error updating journey: $e');
       rethrow;
     }
   }
@@ -440,7 +441,7 @@ class DatabaseAPI {
         documentId: data['journeyId'],
       );
     } catch (e) {
-      print('Error deleting journey: $e');
+      LogService.instance.error('Error deleting journey: $e');
       rethrow;
     }
   }
@@ -475,7 +476,7 @@ class DatabaseAPI {
         },
       );
     } catch (e) {
-      print('Error updating journey lessons: $e');
+      LogService.instance.error('Error updating journey lessons: $e');
       rethrow;
     }
   }
@@ -508,7 +509,7 @@ class DatabaseAPI {
         },
       );
     } catch (e) {
-      print('Error adding lesson to journey: $e');
+      LogService.instance.error('Error adding lesson to journey: $e');
       rethrow;
     }
   }

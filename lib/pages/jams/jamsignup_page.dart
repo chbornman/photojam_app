@@ -3,6 +3,7 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:photojam_app/log_service.dart';
 import 'package:photojam_app/utilities/standard_dialog.dart';
 import 'package:photojam_app/pages/mainframe.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
@@ -116,7 +117,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
         }).toList();
       });
     } catch (e) {
-      print('Error fetching jam events: $e');
+      LogService.instance.error('Error fetching jam events: $e');
     }
   }
 
@@ -212,7 +213,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
     try {
       final userId = await auth.fetchUserId();
       if (userId == null) {
-        print("User ID not found. Please log in.");
+        LogService.instance.info("User ID not found. Please log in.");
         return;
       }
 
@@ -226,9 +227,9 @@ class _JamSignupPageState extends State<JamSignupPage> {
                 await storage.uploadPhoto(await photo.readAsBytes(), fileName);
             final photoUrl = await storage.getPhotoUrl(photoId);
             photoUrls.add(photoUrl);
-            print("Uploaded photo $i with name $fileName");
+            LogService.instance.info("Uploaded photo $i with name $fileName");
           } catch (e) {
-            print("Failed to upload photo $i: $e");
+            LogService.instance.error("Failed to upload photo $i: $e");
           }
         }
       }
@@ -240,7 +241,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
         for (String url in existingSubmission.data['photos']) {
           final fileId = extractFileIdFromUrl(url);
           await storage.deletePhoto(fileId);
-          print("Deleted existing photo with file ID: $fileId");
+          LogService.instance.info("Deleted existing photo with file ID: $fileId");
         }
 
         // Update submission with new photos
@@ -249,10 +250,10 @@ class _JamSignupPageState extends State<JamSignupPage> {
           photoUrls,
           DateTime.now().toIso8601String(),
         );
-        print("Submission updated successfully for Jam: $selectedJamId");
+        LogService.instance.info("Submission updated successfully for Jam: $selectedJamId");
       } else {
         await database.createSubmission(selectedJamId!, photoUrls, userId);
-        print("Submission created successfully for Jam: $selectedJamId");
+        LogService.instance.error("Submission created successfully for Jam: $selectedJamId");
       }
 
       // Step 4: Hide loading spinner and show confirmation dialog
@@ -261,7 +262,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
       });
       _showConfirmationDialog();
     } catch (e) {
-      print("Error during photo submission: $e");
+      LogService.instance.error("Error during photo submission: $e");
       setState(() {
         isLoading = false; // Ensure spinner is hidden if an error occurs
       });
@@ -328,12 +329,12 @@ class _JamSignupPageState extends State<JamSignupPage> {
         for (String url in existingSubmission.data['photos']) {
           final fileId = extractFileIdFromUrl(url);
           await storage.deletePhoto(fileId);
-          print("Deleted photo with file ID: $fileId");
+          LogService.instance.info("Deleted photo with file ID: $fileId");
         }
 
         // Delete the submission itself
         await database.deleteSubmission(existingSubmission.$id);
-        print("Existing submission deleted for Jam: $selectedJamId");
+        LogService.instance.info("Existing submission deleted for Jam: $selectedJamId");
       }
     }
 

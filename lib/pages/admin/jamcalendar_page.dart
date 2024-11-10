@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:photojam_app/log_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
@@ -56,7 +57,7 @@ class _JamCalendarState extends State<JamCalendar> {
         _jamEvents = events;
       });
     } catch (e) {
-      print('Error loading jam events: $e');
+      LogService.instance.error('Error loading jam events: $e');
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/constants/constants.dart';
+import 'package:photojam_app/log_service.dart';
 import 'package:photojam_app/pages/admin/journeylessons_edit.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
@@ -159,10 +160,10 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                           selectedFileName = result.files.single.name;
                           selectedFileBytes = result.files.single.bytes;
                         });
-                        print(
+                        LogService.instance.info(
                             "File selected: $selectedFileName - ${selectedFileBytes?.lengthInBytes ?? 0} bytes");
                       } else {
-                        print("No file selected or file has no bytes.");
+                        LogService.instance.error("No file selected or file has no bytes.");
                       }
                     },
                   ),
@@ -180,19 +181,19 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
 
             try {
               // Step 1: Upload file using the Storage API
-              print(
+              LogService.instance.info(
                   "Uploading file: $selectedFileName with ${selectedFileBytes!.lengthInBytes} bytes");
               final fileUrl = await storage.uploadLesson(
                   selectedFileBytes!, selectedFileName!);
 
               // Step 2: Add the uploaded file URL to the journey
-              print("File uploaded. URL: $fileUrl");
+              LogService.instance.info("File uploaded. URL: $fileUrl");
               await database.addLessonToJourney(journeyId, fileUrl);
 
               Navigator.of(context).pop();
               _showMessage("Lesson uploaded successfully");
             } catch (e) {
-              print("Error uploading lesson: $e");
+              LogService.instance.error("Error uploading lesson: $e");
               _showMessage("Error uploading lesson: $e", isError: true);
             }
           },

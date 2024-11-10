@@ -2,6 +2,7 @@ import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart';
 import 'package:flutter/widgets.dart';
+import 'package:photojam_app/log_service.dart';
 
 enum AuthStatus {
   uninitialized,
@@ -20,10 +21,10 @@ class AuthAPI extends ChangeNotifier {
   // Constructor with injected client
   AuthAPI(this.client) : account = Account(client) {
     loadUser().then((_) {
-      print('Authenticated user ID: $userid');
-      print('username: $username');
+      LogService.instance.info('Authenticated user ID: $userid');
+      LogService.instance.info('username: $username');
     }).catchError((error) {
-      print('Error loading user: $error');
+      LogService.instance.error('Error loading user: $error');
     });
   }
 
@@ -60,7 +61,7 @@ class AuthAPI extends ChangeNotifier {
     required String password,
   }) async {
     try {
-      print("Attempting to create user with email: $email");
+      LogService.instance.info("Attempting to create user with email: $email");
 
       // Create the user with email, password, and name only
       final user = await account.create(
@@ -70,20 +71,20 @@ class AuthAPI extends ChangeNotifier {
         name: name,
       );
 
-      print("User created successfully with ID: ${user.$id}");
+      LogService.instance.info("User created successfully with ID: ${user.$id}");
 
       // Return the created user without setting a role
       return user;
     } on AppwriteException catch (e) {
       // Log specific details about the exception
-      print("AppwriteException: ${e.message}");
-      print("Status Code: ${e.code}");
-      print("Response: ${e.response}");
+      LogService.instance.error("AppwriteException: ${e.message}");
+      LogService.instance.error("Status Code: ${e.code}");
+      LogService.instance.error("Response: ${e.response}");
 
       // Propagate the exception after logging
       rethrow;
     } catch (e) {
-      print("Unexpected error: $e");
+      LogService.instance.error("Unexpected error: $e");
       rethrow;
     }
   }
@@ -93,23 +94,23 @@ class AuthAPI extends ChangeNotifier {
       final prefs = await account.getPrefs();
       // Additional Debug: Print retrieved role
       final role = prefs.data['role'] as String?;
-      print("Retrieved user role: $role");
+      LogService.instance.info("Retrieved user role: $role");
       return role;
     } catch (e) {
       // Debug: Role retrieval failed or not set
-      print("Error retrieving user role or role not set in preferences.");
+      LogService.instance.error("Error retrieving user role or role not set in preferences.");
       return null;
     }
   }
 
   Future<void> setRole(String role) async {
     if (_status != AuthStatus.authenticated) {
-      print("User is not logged in. Unable to set role.");
+      LogService.instance.info("User is not logged in. Unable to set role.");
       throw Exception("User must be logged in to set a role.");
     }
 
     try {
-      print("Setting user role to: $role");
+      LogService.instance.info("Setting user role to: $role");
 
       // Update the role in user preferences
       await account.updatePrefs(prefs: {'role': role});
@@ -117,18 +118,18 @@ class AuthAPI extends ChangeNotifier {
       // Verify that the role was saved correctly
       final prefs = await account.getPrefs();
       if (prefs.data['role'] == role) {
-        print("Role set successfully: ${prefs.data['role']}");
+        LogService.instance.info("Role set successfully: ${prefs.data['role']}");
       } else {
-        print("Role verification failed. Expected: $role, Found: ${prefs.data['role']}");
+        LogService.instance.info("Role verification failed. Expected: $role, Found: ${prefs.data['role']}");
         throw Exception("Role verification failed after setting.");
       }
     } on AppwriteException catch (e) {
-      print("AppwriteException: ${e.message}");
-      print("Status Code: ${e.code}");
-      print("Response: ${e.response}");
+      LogService.instance.error("AppwriteException: ${e.message}");
+      LogService.instance.error("Status Code: ${e.code}");
+      LogService.instance.error("Response: ${e.response}");
       rethrow;
     } catch (e) {
-      print("Unexpected error in setRole: $e");
+      LogService.instance.error("Unexpected error in setRole: $e");
       rethrow;
     }
   }
@@ -141,9 +142,9 @@ class AuthAPI extends ChangeNotifier {
       // Attempt to delete any existing session
       try {
         await account.deleteSession(sessionId: 'current');
-        print("Existing session deleted.");
+        LogService.instance.info("Existing session deleted.");
       } catch (e) {
-        print("No existing session to delete or deletion failed: $e");
+        LogService.instance.error("No existing session to delete or deletion failed: $e");
       }
 
       // Create a new session
@@ -153,13 +154,13 @@ class AuthAPI extends ChangeNotifier {
       );
       
       // Additional Debug: Print session details to verify session creation
-      print("Session created successfully: Session ID: ${session.$id}");
+      LogService.instance.info("Session created successfully: Session ID: ${session.$id}");
       _currentUser = await account.get(); // Get user details for the new session
       _status = AuthStatus.authenticated;
-      print("User authenticated successfully. User ID: ${_currentUser?.$id}, Status: $_status");
+      LogService.instance.info("User authenticated successfully. User ID: ${_currentUser?.$id}, Status: $_status");
       return session;
     } on AppwriteException catch (e) {
-      print("Login failed: ${e.message}");
+      LogService.instance.error("Login failed: ${e.message}");
       rethrow;
     } finally {
       notifyListeners();
@@ -200,7 +201,7 @@ class AuthAPI extends ChangeNotifier {
       _currentUser = await account.get(); // Refresh current user data
       notifyListeners(); // Notify listeners of the change
     } catch (e) {
-      print("Error updating name: $e");
+      LogService.instance.error("Error updating name: $e");
       rethrow;
     }
   }
@@ -212,7 +213,7 @@ class AuthAPI extends ChangeNotifier {
           password: newPassword, oldPassword: currentPassword);
       notifyListeners(); // Notify listeners if there’s any UI dependency
     } catch (e) {
-      print("Error updating password: $e");
+      LogService.instance.error("Error updating password: $e");
       rethrow;
     }
   }
@@ -227,7 +228,7 @@ class AuthAPI extends ChangeNotifier {
       _currentUser = await account.get(); // Refresh current user data
       notifyListeners();
     } catch (e) {
-      print("Error updating email: $e");
+      LogService.instance.error("Error updating email: $e");
       rethrow;
     }
   }
@@ -237,7 +238,7 @@ class AuthAPI extends ChangeNotifier {
       User user = await account.get();
       return user.name; 
     } catch (e) {
-      print("Error retrieving username: $e");
+      LogService.instance.error("Error retrieving username: $e");
       return null;
     }
   }
@@ -251,7 +252,7 @@ class AuthAPI extends ChangeNotifier {
       final session = await account.getSession(sessionId: 'current');
       _authToken = session.$id;
     } catch (e) {
-      print('No active session found, creating a new one.');
+      LogService.instance.error('No active session found, creating a new one.');
       final email = "user@example.com";
       final password = "user_password";
 
@@ -264,7 +265,7 @@ class AuthAPI extends ChangeNotifier {
         _currentUser = await account.get();
         _status = AuthStatus.authenticated;
       } catch (e) {
-        print("Failed to create session: $e");
+        LogService.instance.error("Failed to create session: $e");
         _status = AuthStatus.unauthenticated;
       }
     }
