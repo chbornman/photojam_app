@@ -34,7 +34,8 @@ class _HomePageState extends State<HomePage> {
       if (userId != null) {
         _fetchUserJams();
       } else {
-        LogService.instance.info("User ID is null, delaying fetch until user is authenticated.");
+        LogService.instance.info(
+            "User ID is null, delaying fetch until user is authenticated.");
       }
     });
   }
@@ -134,16 +135,19 @@ class _HomePageState extends State<HomePage> {
               },
             ),
 
-                        // Signal link Card
-            const SizedBox(height: 10),
-            StandardCard(
-              icon: Icons.chat,
-              title: "Join our Signal Chat",
-              subtitle: "Connect with other members in our PhotoJam Signal group",
-              onTap: () {
-                _goToExternalLink(signalGroupUrl);
-              },
-            ),
+            // Signal link Card
+            if (userRole != 'nonmember') ...[
+              const SizedBox(height: 10),
+              StandardCard(
+                icon: Icons.chat,
+                title: "Join our Signal Chat",
+                subtitle:
+                    "Connect with other members in our PhotoJam Signal group",
+                onTap: () {
+                  _goToExternalLink(signalGroupUrl);
+                },
+              ),
+            ],
 
             // Become a member Card
             if (userRole == 'nonmember') ...[
