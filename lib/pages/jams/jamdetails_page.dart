@@ -1,6 +1,7 @@
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/utilities/standard_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class JamDetailsPage extends StatelessWidget {
@@ -56,33 +57,19 @@ class JamDetailsPage extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const Spacer(),
-            ElevatedButton.icon(
+            StandardButton(
               icon: Icon(Icons.link),
               label: Text("Join Zoom Call"),
-              style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
               onPressed: () {
-                _openZoomLink(zoomLink);
+              _openZoomLink(zoomLink);
               },
             ),
             const SizedBox(height: 10),
-            ElevatedButton.icon(
+            StandardButton(
               icon: Icon(Icons.calendar_today),
               label: Text("Add to Calendar"),
-              style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
               onPressed: () {
-                _addToGoogleCalendar(jamDate, title, description);
+              _addToGoogleCalendar(jamDate, title, description);
               },
             ),
             const SizedBox(height: 100),

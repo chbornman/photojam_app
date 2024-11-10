@@ -24,6 +24,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
   List<DropdownMenuItem<String>> jamEvents = [];
   List<File?> photos = [null, null, null];
   bool isLoading = false;
+  final TextEditingController _commentController = TextEditingController();
 
   late DatabaseAPI database;
   late StorageAPI storage;
@@ -45,6 +46,12 @@ class _JamSignupPageState extends State<JamSignupPage> {
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchJamEvents() async {
@@ -249,10 +256,11 @@ class _JamSignupPageState extends State<JamSignupPage> {
           existingSubmission.$id,
           photoUrls,
           DateTime.now().toIso8601String(),
+          _commentController.text,
         );
         LogService.instance.info("Submission updated successfully for Jam: $selectedJamId");
       } else {
-        await database.createSubmission(selectedJamId!, photoUrls, userId);
+        await database.createSubmission(selectedJamId!, photoUrls, userId, _commentController.text);
         LogService.instance.error("Submission created successfully for Jam: $selectedJamId");
       }
 
@@ -447,8 +455,21 @@ class _JamSignupPageState extends State<JamSignupPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    controller: _commentController,
+                    decoration: InputDecoration(
+                      labelText: 'Note to facilitator (optional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
                 StandardButton(
-                    label: Text("Submit Photos"), onPressed: _submitPhotos),
+                    label: Text("Submit Photos"), onPressed: () {
+                      final comment = _commentController.text;
+                      _submitPhotos();
+                    }),
               ],
             ),
           ),

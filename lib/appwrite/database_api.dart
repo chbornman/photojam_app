@@ -333,13 +333,13 @@ class DatabaseAPI {
 
   // Updates an existing submission with new photos and date
   Future<void> updateSubmission(
-      String submissionId, List<String> photoUrls, String date) async {
+      String submissionId, List<String> photoUrls, String date, String comment) async {
     try {
       await databases.updateDocument(
         databaseId: appwriteDatabaseId,
         collectionId: collectionSubmissions,
         documentId: submissionId,
-        data: {'photos': photoUrls, 'date': date},
+        data: {'photos': photoUrls, 'date': date, 'comment': comment},
       );
     } catch (e) {
       LogService.instance.error("Error updating submission: $e");
@@ -349,7 +349,7 @@ class DatabaseAPI {
 
 // Updated createSubmission to include user_id
   Future<Document> createSubmission(
-      String jam, List<String> photos, String userId) async {
+      String jam, List<String> photos, String userId, String comment) async {
     try {
       return await databases.createDocument(
         databaseId: appwriteDatabaseId,
@@ -359,7 +359,8 @@ class DatabaseAPI {
           'user_id': userId, // Ensure user_id matches your schema
           'jam': jam, // Make sure jam matches the schema field
           'photos': photos,
-          'date': DateTime.now().toIso8601String()
+          'date': DateTime.now().toIso8601String(),
+          'comment': comment,
         },
       );
     } catch (e) {
