@@ -10,7 +10,7 @@ class LogService {
       lineLength: 80, // Width of the output
       colors: true, // Enable colors
       printEmojis: true, // Print an emoji for each log type
-      printTime: true, // Add a timestamp to each log
+      dateTimeFormat: DateTimeFormat.dateAndTime, // Add a timestamp to each log
     ),
   );
 

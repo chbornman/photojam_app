@@ -59,7 +59,8 @@ class _PhotoScrollPageState extends State<PhotoScrollPage>
     try {
       // Haptic feedback on long press
       HapticFeedback.mediumImpact();
-
+      LogService.instance.info("Sharing photo...");
+      
       // Save the image temporarily to share
       final tempDir = await getTemporaryDirectory();
       final filePath = '${tempDir.path}/shared_image.png';
