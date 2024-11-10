@@ -60,7 +60,8 @@ class JamDetailsPage extends StatelessWidget {
               icon: Icon(Icons.link),
               label: Text("Join Zoom Call"),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -74,15 +75,17 @@ class JamDetailsPage extends StatelessWidget {
               icon: Icon(Icons.calendar_today),
               label: Text("Add to Calendar"),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
               onPressed: () {
-                _addToCalendar(jamDate, title, description);
+                _addToGoogleCalendar(jamDate, title, description);
               },
             ),
+            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -99,15 +102,30 @@ class JamDetailsPage extends StatelessWidget {
     }
   }
 
-  // Function to add the event to the user's calendar (pseudo-code)
-  void _addToCalendar(DateTime date, String title, String description) {
-    // You can use a package like add_2_calendar to add the event to the calendar
-    // Example:
-    // Add2Calendar.addEvent2Cal(Event(
-    //   title: title,
-    //   description: description,
-    //   startDate: date,
-    //   endDate: date.add(Duration(hours: 1)), // Assume a 1-hour event
-    // ));
+  void _addToGoogleCalendar(
+      DateTime date, String title, String description) async {
+    final startDate = date
+        .toUtc()
+        .toIso8601String()
+        .replaceAll('-', '')
+        .replaceAll(':', '')
+        .split('.')[0];
+    final endDate = date
+        .add(Duration(hours: 1))
+        .toUtc()
+        .toIso8601String()
+        .replaceAll('-', '')
+        .replaceAll(':', '')
+        .split('.')[0];
+
+    final googleCalendarUrl = Uri.parse(
+      'https://www.google.com/calendar/render?action=TEMPLATE&text=$title&details=$description&dates=$startDate/$endDate',
+    );
+
+    if (await canLaunchUrl(googleCalendarUrl)) {
+      await launchUrl(googleCalendarUrl);
+    } else {
+      print('Could not launch Google Calendar');
+    }
   }
 }
