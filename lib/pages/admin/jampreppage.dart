@@ -13,6 +13,8 @@ import 'package:provider/provider.dart';
 import 'package:photojam_app/utilities/standard_photocard.dart';
 
 class JamPrepPage extends StatefulWidget {
+  const JamPrepPage({super.key});
+
   @override
   _JamPrepPageState createState() => _JamPrepPageState();
 }

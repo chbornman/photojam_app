@@ -8,6 +8,8 @@ import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
 
 class AccountPage extends StatefulWidget {
+  const AccountPage({super.key});
+
   @override
   _AccountPageState createState() => _AccountPageState();
 }
@@ -245,7 +247,7 @@ class _AccountPageState extends State<AccountPage> {
           ],
         ),
       ),
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class MasterOfTheMonthPage extends StatelessWidget {
+  const MasterOfTheMonthPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

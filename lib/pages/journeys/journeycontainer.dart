@@ -7,12 +7,12 @@ class JourneyContainer extends StatelessWidget {
   final Function(String url) onLessonTap;
 
   const JourneyContainer({
-    Key? key,
+    super.key,
     required this.title,
     required this.lessons,
     required this.theme,
     required this.onLessonTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

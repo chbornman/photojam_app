@@ -6,7 +6,7 @@ class StandardButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final Widget? icon;
 
-  StandardButton({
+  const StandardButton({super.key, 
     required this.label,
     required this.onPressed,
     this.icon,

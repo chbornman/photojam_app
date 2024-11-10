@@ -8,7 +8,7 @@ import 'dart:typed_data';
 class MarkdownViewer extends StatelessWidget {
   final Uint8List content;
 
-  MarkdownViewer({required this.content});
+  const MarkdownViewer({super.key, required this.content});
 
   // Handler for opening links
   void _onTapLink(String? text, String? href, String title) async {

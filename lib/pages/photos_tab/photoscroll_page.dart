@@ -13,11 +13,11 @@ class PhotoScrollPage extends StatefulWidget {
   final int initialPhotoIndex;
 
   const PhotoScrollPage({
-    Key? key,
+    super.key,
     required this.allSubmissions,
     required this.initialSubmissionIndex,
     required this.initialPhotoIndex,
-  }) : super(key: key);
+  });
 
   @override
   _PhotoScrollPageState createState() => _PhotoScrollPageState();

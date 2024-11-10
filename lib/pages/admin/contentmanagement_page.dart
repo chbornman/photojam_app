@@ -13,6 +13,8 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 
 class ContentManagementPage extends StatefulWidget {
+  const ContentManagementPage({super.key});
+
   @override
   _ContentManagementPageState createState() => _ContentManagementPageState();
 }
@@ -209,7 +211,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     DateTime? jamDate;
     TimeOfDay? jamTime;
 
-    Future<void> _loadJamDetails(String jamId) async {
+    Future<void> loadJamDetails(String jamId) async {
       try {
         final Document selectedJam = await database.getJamById(jamId);
         titleController.text = selectedJam.data['title'] ?? '';
@@ -252,7 +254,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                         zoomLinkController.clear();
                         jamDate = null;
                         jamTime = null;
-                        await _loadJamDetails(jamMap[selectedTitle]!);
+                        await loadJamDetails(jamMap[selectedTitle]!);
                         setState(() {}); // Refresh the form with loaded data
                       }
                     },
@@ -363,7 +365,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     String? jamTitle;
     DateTime? jamDate;
 
-    Future<void> _loadJamDetails(String jamId) async {
+    Future<void> loadJamDetails(String jamId) async {
       try {
         final Document selectedJam = await database.getJamById(jamId);
         jamTitle = selectedJam.data['title'] ?? '';
@@ -375,7 +377,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
       }
     }
 
-    void _showConfirmationDialog() {
+    void showConfirmationDialog() {
       final dateStr =
           jamDate != null ? jamDate!.toLocal().toString().split(' ')[0] : "N/A";
       final timeStr = jamDate != null
@@ -442,7 +444,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                           jamTitle = null;
                           jamDate = null;
                         });
-                        await _loadJamDetails(jamMap[selectedTitle]!);
+                        await loadJamDetails(jamMap[selectedTitle]!);
                         setState(() {}); // Refresh the form with loaded data
                       }
                     },
@@ -458,7 +460,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
               _showMessage("Please select a jam to delete.", isError: true);
               return;
             }
-            _showConfirmationDialog(); // Show confirmation dialog before deletion
+            showConfirmationDialog(); // Show confirmation dialog before deletion
           },
         );
       },
@@ -472,7 +474,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     TimeOfDay? journeyStartTime;
     bool isActive = false;
 
-    Future<void> _loadJourneyDetails(String journeyId) async {
+    Future<void> loadJourneyDetails(String journeyId) async {
       try {
         final Document selectedJourney =
             await database.getJourneyById(journeyId);
@@ -518,7 +520,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                           journeyStartTime = null;
                           isActive = false;
                         });
-                        await _loadJourneyDetails(journeyMap[selectedTitle]!);
+                        await loadJourneyDetails(journeyMap[selectedTitle]!);
                         setState(() {}); // Refresh the form with loaded data
                       }
                     },
@@ -620,7 +622,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     String? journeyTitle;
     DateTime? journeyStartDate;
 
-    Future<void> _loadJourneyDetails(String journeyId) async {
+    Future<void> loadJourneyDetails(String journeyId) async {
       try {
         final Document selectedJourney =
             await database.getJourneyById(journeyId);
@@ -633,7 +635,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
       }
     }
 
-    void _showConfirmationDialog() {
+    void showConfirmationDialog() {
       final dateStr = journeyStartDate != null
           ? journeyStartDate!.toLocal().toString().split(' ')[0]
           : "N/A";
@@ -701,7 +703,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                           journeyTitle = null;
                           journeyStartDate = null;
                         });
-                        await _loadJourneyDetails(journeyMap[selectedTitle]!);
+                        await loadJourneyDetails(journeyMap[selectedTitle]!);
                         setState(() {}); // Refresh the form with loaded data
                       }
                     },
@@ -717,7 +719,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
               _showMessage("Please select a journey to delete.", isError: true);
               return;
             }
-            _showConfirmationDialog(); // Show confirmation dialog before deletion
+            showConfirmationDialog(); // Show confirmation dialog before deletion
           },
         );
       },

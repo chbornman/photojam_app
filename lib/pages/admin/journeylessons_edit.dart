@@ -12,7 +12,7 @@ class JourneyLessonsPage extends StatefulWidget {
   final DatabaseAPI database;
   final StorageAPI storage;
 
-  JourneyLessonsPage({
+  const JourneyLessonsPage({super.key, 
     required this.journeyId,
     required this.journeyTitle,
     required this.database,

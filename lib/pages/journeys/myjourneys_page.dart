@@ -11,7 +11,7 @@ import 'dart:convert';
 class MyJourneysPage extends StatelessWidget {
   final String userId;
 
-  MyJourneysPage({required this.userId});
+  const MyJourneysPage({super.key, required this.userId});
 
   Future<List<Map<String, dynamic>>> _fetchUserJourneys(BuildContext context) async {
     try {

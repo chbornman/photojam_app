@@ -9,13 +9,13 @@ class StandardDialog extends StatelessWidget {
   final bool showCancelButton; // New parameter to control cancel button visibility
 
   const StandardDialog({
-    Key? key,
+    super.key,
     required this.title,
     required this.content,
     required this.submitButtonLabel,
     required this.submitButtonOnPressed,
     this.showCancelButton = true, // Default to true for backward compatibility
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

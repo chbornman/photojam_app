@@ -3,7 +3,7 @@ import 'package:photojam_app/pages/admin/jampreppage.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
 
 class FacilitatorPage extends StatelessWidget {
-  const FacilitatorPage({Key? key}) : super(key: key);
+  const FacilitatorPage({super.key});
 
   @override
   Widget build(BuildContext context) {

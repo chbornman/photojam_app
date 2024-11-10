@@ -13,11 +13,11 @@ class PhotoSelectPage extends StatefulWidget {
   final int initialPhotoIndex;
 
   const PhotoSelectPage({
-    Key? key,
+    super.key,
     required this.allSubmissions,
     required this.initialSubmissionIndex,
     required this.initialPhotoIndex,
-  }) : super(key: key);
+  });
 
   @override
   _PhotoSelectPageState createState() => _PhotoSelectPageState();

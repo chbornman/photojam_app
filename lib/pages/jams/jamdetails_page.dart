@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 class JamDetailsPage extends StatelessWidget {
   final Document jam;
 
-  const JamDetailsPage({Key? key, required this.jam}) : super(key: key);
+  const JamDetailsPage({super.key, required this.jam});
 
   @override
   Widget build(BuildContext context) {

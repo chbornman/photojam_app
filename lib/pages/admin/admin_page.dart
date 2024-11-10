@@ -6,7 +6,7 @@ import 'package:photojam_app/utilities/system_logs.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
 
 class AdminPage extends StatelessWidget {
-  const AdminPage({Key? key}) : super(key: key);
+  const AdminPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +22,7 @@ class AdminPage extends StatelessWidget {
             Text(
               'This page allows administrators to manage users, content, and view system logs.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onBackground.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
               ),
             ),
             const SizedBox(height: 20),
@@ -85,7 +85,7 @@ class AdminPage extends StatelessWidget {
           ],
         ),
       ),
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
     );
   }
 }

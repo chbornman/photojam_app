@@ -14,6 +14,8 @@ import 'package:appwrite/models.dart';
 import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }

@@ -14,6 +14,8 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
 class PhotosPage extends StatefulWidget {
+  const PhotosPage({super.key});
+
   @override
   _PhotosPageState createState() => _PhotosPageState();
 }

@@ -2,6 +2,8 @@ import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
 
 class UserManagementPage extends StatefulWidget {
+  const UserManagementPage({super.key});
+
   @override
   _UserManagementPageState createState() => _UserManagementPageState();
 }

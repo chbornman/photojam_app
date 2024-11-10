@@ -11,7 +11,7 @@ import 'package:photojam_app/pages/admin/admin_page.dart';
 import 'package:photojam_app/pages/photos_tab/photos_page.dart';
 
 class Mainframe extends StatefulWidget {
-  const Mainframe({Key? key}) : super(key: key);
+  const Mainframe({super.key});
 
   @override
   _MainframeState createState() => _MainframeState();

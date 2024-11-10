@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 
 class JamCalendar extends StatefulWidget {
-  const JamCalendar({Key? key}) : super(key: key);
+  const JamCalendar({super.key});
 
   @override
   _JamCalendarState createState() => _JamCalendarState();

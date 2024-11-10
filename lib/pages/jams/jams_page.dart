@@ -9,6 +9,8 @@ import 'package:photojam_app/utilities/standard_card.dart';
 import 'package:provider/provider.dart';
 
 class JamPage extends StatefulWidget {
+  const JamPage({super.key});
+
   @override
   _JamPageState createState() => _JamPageState();
 }

@@ -6,7 +6,7 @@ class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final List<Widget>? actions;
   final bool enableLeadingGesture; // New parameter to control leading icon tap
 
-  StandardAppBar({
+  const StandardAppBar({super.key, 
     required this.title,
     this.actions,
     this.enableLeadingGesture = true, // Default to true for other pages

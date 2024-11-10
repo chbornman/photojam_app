@@ -12,7 +12,7 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 
 class JamSignupPage extends StatefulWidget {
-  const JamSignupPage({Key? key}) : super(key: key);
+  const JamSignupPage({super.key});
 
   @override
   _JamSignupPageState createState() => _JamSignupPageState();

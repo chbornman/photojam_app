@@ -8,11 +8,11 @@ class PhotoCard extends StatelessWidget {
   final List<Widget> photoWidgets;
 
   const PhotoCard({
-    Key? key,
+    super.key,
     required this.title,
     this.date, // Making date optional
     required this.photoWidgets,
-  }) : super(key: key);
+  });
 
   // Helper function to format date
   String formatDate(String? dateString) {

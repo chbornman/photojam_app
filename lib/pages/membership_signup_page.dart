@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class MembershipSignupPage extends StatefulWidget {
+  const MembershipSignupPage({super.key});
+
   @override
   _MembershipSignupPageState createState() => _MembershipSignupPageState();
 }

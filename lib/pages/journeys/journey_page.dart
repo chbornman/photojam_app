@@ -16,6 +16,8 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 class JourneyPage extends StatefulWidget {
+  const JourneyPage({super.key});
+
   @override
   _JourneyPageState createState() => _JourneyPageState();
 }

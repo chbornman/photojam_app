@@ -5,7 +5,7 @@ import 'package:photojam_app/utilities/standard_button.dart';
 import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({Key? key}) : super(key: key);
+  const RegisterPage({super.key});
 
   @override
   _RegisterPageState createState() => _RegisterPageState();
@@ -199,7 +199,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       ),
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
 }

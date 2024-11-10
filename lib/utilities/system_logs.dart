@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 class SystemLogsPage extends StatelessWidget {
-  const SystemLogsPage({Key? key}) : super(key: key);
+  const SystemLogsPage({super.key});
 
   @override
   Widget build(BuildContext context) {

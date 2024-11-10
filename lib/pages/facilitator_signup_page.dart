@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
 
 class FacilitatorSignupPage extends StatelessWidget {
+  const FacilitatorSignupPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
