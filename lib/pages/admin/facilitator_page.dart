@@ -16,20 +16,11 @@ class FacilitatorPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            Text(
-              'This page allows facilitators to select and download submitted photos, and sign up to facilitate jams',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 20),
 
             // Content Management Section
             StandardCard(
               icon: Icons.photo_library,
               title: 'Select Jam Photos',
-              subtitle:
-                  'View submissions and download photos to share with the Jam',
               onTap: () {
                 Navigator.push(
                   context,
@@ -44,7 +35,6 @@ class FacilitatorPage extends StatelessWidget {
             StandardCard(
               icon: Icons.report,
               title: 'Facilitator Calendar',
-              subtitle: 'Sign up to lead a Jam',
               onTap: () {
                 // Navigator.push(
                 //   context,

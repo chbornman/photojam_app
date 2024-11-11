@@ -59,7 +59,6 @@ class _JamSignupPageState extends State<JamSignupPage> {
       final response = await database.getJams();
       setState(() {
         jamEvents = response.documents.asMap().entries.map((entry) {
-          int index = entry.key;
           var doc = entry.value;
 
           String title = doc.data['title'];
@@ -67,10 +66,6 @@ class _JamSignupPageState extends State<JamSignupPage> {
               DateTime.parse(doc.data['date']); // Assumes ISO 8601
           String formattedDateTime = DateFormat('MMM dd, yyyy • hh:mm a')
               .format(dateTime); // Example: "Oct 15, 2024 • 02:30 PM"
-
-          Color backgroundColor =
-              Theme.of(context).primaryColor.withOpacity(0.15);
-          Color alternateBackgroundColor = Colors.transparent;
 
           return DropdownMenuItem<String>(
             value: doc.$id,

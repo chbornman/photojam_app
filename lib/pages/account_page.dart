@@ -187,7 +187,6 @@ class _AccountPageState extends State<AccountPage> {
             StandardCard(
               icon: Icons.person,
               title: "Change Name",
-              subtitle: "Update your display name",
               onTap: showUpdateNameDialog,
             ),
             const SizedBox(height: 10), // Consistent spacing between cards
@@ -200,14 +199,12 @@ class _AccountPageState extends State<AccountPage> {
                 : StandardCard(
                     icon: Icons.email,
                     title: "Change Email",
-                    subtitle: "Update your email address",
                     onTap: showUpdateEmailDialog,
                   ),
             const SizedBox(height: 10),
             StandardCard(
               icon: Icons.lock,
               title: "Change Password",
-              subtitle: "Update your account password",
               onTap: showUpdatePasswordDialog,
             ),
             // Become a member Card

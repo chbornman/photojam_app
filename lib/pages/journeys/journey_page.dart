@@ -308,14 +308,12 @@ class _JourneyPageState extends State<JourneyPage> {
             StandardCard(
               icon: Icons.library_books,
               title: "View My Journeys",
-              subtitle: "See all your journeys",
               onTap: _goToMyJourneys,
             ),
             const SizedBox(height: 10),
             StandardCard(
               icon: Icons.add_circle_outline,
               title: "Sign Up for a Journey",
-              subtitle: "Join a new journey",
               onTap: _openSignUpForJourneyDialog,
             ),
           ],

@@ -31,7 +31,6 @@ class AdminPage extends StatelessWidget {
             StandardCard(
               icon: Icons.calendar_month,
               title: 'Jam Calendar',
-              subtitle: 'See list of upcoming jams and attendees',
               onTap: () {
                 Navigator.push(
                   context,
@@ -45,7 +44,6 @@ class AdminPage extends StatelessWidget {
             StandardCard(
               icon: Icons.people,
               title: 'User Management',
-              subtitle: 'View and manage users',
               onTap: () {
                 Navigator.push(
                   context,
@@ -59,7 +57,6 @@ class AdminPage extends StatelessWidget {
             StandardCard(
               icon: Icons.photo_library,
               title: 'Content Management',
-              subtitle: 'Manage photos and submissions',
               onTap: () {
                 Navigator.push(
                   context,
@@ -74,7 +71,6 @@ class AdminPage extends StatelessWidget {
             StandardCard(
               icon: Icons.report,
               title: 'System Logs',
-              subtitle: 'View system logs and errors',
               onTap: () {
                 Navigator.push(
                   context,
