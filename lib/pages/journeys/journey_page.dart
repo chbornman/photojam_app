@@ -14,6 +14,7 @@ import 'package:photojam_app/utilities/standard_dialog.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:photojam_app/utilities/userdataprovider.dart';
 
 class JourneyPage extends StatefulWidget {
   const JourneyPage({super.key});
@@ -255,7 +256,8 @@ class _JourneyPageState extends State<JourneyPage> {
       Uint8List? lessonData = await _getLessonFromCache(lessonUrl);
 
       if (lessonData == null) {
-        LogService.instance.info("Fetching lesson for viewing from network: $lessonUrl");
+        LogService.instance
+            .info("Fetching lesson for viewing from network: $lessonUrl");
         lessonData =
             await storageApi.getLessonByURL(lessonUrl); // Fetch from network
         await _cacheLessonLocally(lessonUrl, lessonData); // Cache it
@@ -282,6 +284,7 @@ class _JourneyPageState extends State<JourneyPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final userRole = context.watch<UserDataProvider>().userRole;
 
     return Scaffold(
       body: Padding(
@@ -311,11 +314,19 @@ class _JourneyPageState extends State<JourneyPage> {
               onTap: _goToMyJourneys,
             ),
             const SizedBox(height: 10),
-            StandardCard(
-              icon: Icons.add_circle_outline,
-              title: "Sign Up for a Journey",
-              onTap: _openSignUpForJourneyDialog,
-            ),
+            if (userRole == 'nonmember') ...[
+              StandardCard(
+                icon: Icons.add_circle_outline,
+                title: "Sign Up for a Journey",
+                onTap: _openSignUpForJourneyDialog,
+              ),
+              const SizedBox(height: 10),
+              StandardCard(
+                icon: Icons.add_circle_outline,
+                title: "Sign Up for an a la carte lesson",
+                onTap: _openSignUpForJourneyDialog,
+              ),
+            ],
           ],
         ),
       ),

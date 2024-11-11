@@ -5,6 +5,7 @@ import 'package:photojam_app/pages/facilitator_signup_page.dart';
 import 'package:photojam_app/pages/jams/jamsignup_page.dart';
 import 'package:photojam_app/pages/membership_signup_page.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
+import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
@@ -22,12 +23,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<Document> userJams = []; // List to hold user jams as Documents
   Document? nextJam; // Holds the next upcoming jam
-  String? userRole; // State variable for storing user role
 
   @override
   void initState() {
     super.initState();
-    _fetchUserRole(); // Retrieve user role
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userId = Provider.of<AuthAPI>(context, listen: false).userid;
       if (userId != null) {
@@ -37,20 +36,6 @@ class _HomePageState extends State<HomePage> {
             "User ID is null, delaying fetch until user is authenticated.");
       }
     });
-  }
-
-  void _fetchUserRole() async {
-    final authAPI = Provider.of<AuthAPI>(context, listen: false);
-    try {
-      final role = await authAPI.getUserRole();
-      setState(() {
-        userRole = role; // Update state with the retrieved user role
-      });
-    } catch (e) {
-      setState(() {
-        userRole = null; // Handle error if user role is not available
-      });
-    }
   }
 
   Future<void> _fetchUserJams() async {
@@ -64,17 +49,18 @@ class _HomePageState extends State<HomePage> {
       return dateA.compareTo(dateB);
     });
 
-    setState(() {
-      userJams = jams;
-      try {
-        nextJam = userJams.firstWhere(
-          (cal) =>
-              DateTime.parse(cal.data['jam']['date']).isAfter(DateTime.now()),
-        );
-      } catch (e) {
-        nextJam = null;
-      }
-    });
+    if (mounted)
+      setState(() {
+        userJams = jams;
+        try {
+          nextJam = userJams.firstWhere(
+            (cal) =>
+                DateTime.parse(cal.data['jam']['date']).isAfter(DateTime.now()),
+          );
+        } catch (e) {
+          nextJam = null;
+        }
+      });
   }
 
   void _goToExternalLink(String url) {
@@ -89,6 +75,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final userRole = context.watch<UserDataProvider>().userRole;
 
     // Check if the next jam is within the next hour
     bool isNextJamWithinHour() {
@@ -129,14 +116,14 @@ class _HomePageState extends State<HomePage> {
               StandardCard(
                 icon: Icons.video_call,
                 title: 'Join Your Next Scheduled Jam',
-                subtitle: 'Scheduled on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(nextJam!.data['jam']['date']))}',
+                subtitle:
+                    'Scheduled on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(nextJam!.data['jam']['date']))}',
                 onTap: () {
                   if (nextJam!.data['jam']['zoom_link'] != null) {
                     _goToExternalLink(nextJam!.data['jam']['zoom_link']);
                   }
                 },
               ),
-
 
             // Signal link Card
             if (userRole != 'nonmember') ...[

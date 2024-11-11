@@ -15,12 +15,10 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-  String? userRole;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchUserRole());
   }
 
   void showUpdateNameDialog() {
@@ -146,24 +144,6 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  void _fetchUserRole() async {
-    final authAPI = Provider.of<AuthAPI>(context, listen: false);
-    try {
-      final role = await authAPI.getUserRole();
-      if (mounted) {
-        setState(() {
-          userRole = role;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          userRole = null;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final userData = context.watch<UserDataProvider>();
@@ -208,7 +188,7 @@ class _AccountPageState extends State<AccountPage> {
               onTap: showUpdatePasswordDialog,
             ),
             // Become a member Card
-            if (userRole == 'nonmember') ...[
+            if (userData.userRole == 'nonmember') ...[
               const SizedBox(height: 10),
               StandardCard(
                 icon: Icons.person_add,
@@ -225,7 +205,7 @@ class _AccountPageState extends State<AccountPage> {
               ),
             ]
             // Become a facilitator Card
-            else if (userRole == 'member') ...[
+            else if (userData.userRole == 'member') ...[
               const SizedBox(height: 10),
               StandardCard(
                 icon: Icons.person_add,

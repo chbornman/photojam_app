@@ -26,7 +26,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider<AuthAPI>(create: (_) => AuthAPI(client)),
         ChangeNotifierProvider<UserDataProvider>(
-            create: (_) => UserDataProvider()), // Add UserDataProvider here
+            create: (_) => UserDataProvider()),
         Provider<DatabaseAPI>(create: (_) => DatabaseAPI(client)),
         Provider<StorageAPI>(create: (_) => StorageAPI(client)),
       ],
@@ -35,15 +35,8 @@ void main() async {
   );
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  @override
-  _MyAppState createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  bool _isUserDataInitialized = false;
 
   @override
   Widget build(BuildContext context) {
@@ -55,16 +48,19 @@ class _MyAppState extends State<MyApp> {
       home: Consumer<AuthAPI>(
         builder: (context, authAPI, child) {
           if (authAPI.status == AuthStatus.authenticated) {
-            if (!_isUserDataInitialized) {
-              // Delay initializeUserData until after the current frame is built
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                context.read<UserDataProvider>().initializeUserData(authAPI);
-                setState(() {
-                  _isUserDataInitialized = true; // Ensure this runs only once
-                });
-              });
-            }
-            return Mainframe();
+            return FutureBuilder(
+              future:
+                  context.read<UserDataProvider>().initializeUserData(authAPI),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator(); // Show a loading indicator while initializing
+                } else if (snapshot.hasError) {
+                  return Center(child: Text("Error loading user data."));
+                } else {
+                  return Mainframe(); // Proceed to main content when initialization is complete
+                }
+              },
+            );
           } else {
             return LoginPage();
           }

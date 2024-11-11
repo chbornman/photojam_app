@@ -3,6 +3,7 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/admin/facilitator_page.dart';
 import 'package:photojam_app/pages/jams/jams_page.dart';
 import 'package:photojam_app/utilities/standard_appbar.dart';
+import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/pages/account_page.dart';
 import 'package:photojam_app/pages/home/home_page.dart';
@@ -19,33 +20,8 @@ class Mainframe extends StatefulWidget {
 
 class _MainframeState extends State<Mainframe> {
   int _currentIndex = 0;
-  String? userRole;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchUserRole());
-  }
-
-  void _fetchUserRole() async {
-    final authAPI = Provider.of<AuthAPI>(context, listen: false);
-    try {
-      final role = await authAPI.getUserRole();
-      if (mounted) {
-        setState(() {
-          userRole = role;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          userRole = null;
-        });
-      }
-    }
-  }
-
-  List<Widget> getScreens() {
+  List<Widget> getScreens(String userRole) {
     return [
       HomePage(),
       JamPage(),
@@ -57,22 +33,25 @@ class _MainframeState extends State<Mainframe> {
     ];
   }
 
-  signOut() {
+  void signOut() {
     context.read<AuthAPI>().signOut();
   }
 
   @override
   Widget build(BuildContext context) {
+    final userRole = context.watch<UserDataProvider>().userRole;
+
+    // Show a loading indicator if userRole is not yet loaded
     if (userRole == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    List<Widget> screens = getScreens();
+    List<Widget> screens = getScreens(userRole);
 
     return Scaffold(
       appBar: StandardAppBar(
         title: getTitleForIndex(_currentIndex),
-        actions: _currentIndex == 4 // Show sign-out button only on AccountPage
+        actions: _currentIndex == 4
             ? [
                 IconButton(
                   icon: Icon(Icons.logout,
@@ -98,9 +77,11 @@ class _MainframeState extends State<Mainframe> {
         selectedItemColor: Theme.of(context).colorScheme.onSurface,
         unselectedItemColor: Theme.of(context).colorScheme.surface,
         onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          if (mounted) {
+            setState(() {
+              _currentIndex = index;
+            });
+          }
         },
         items: [
           BottomNavigationBarItem(
