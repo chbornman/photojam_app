@@ -104,6 +104,9 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
   }
 
   void _fetchAndOpenUpdateJamDialog() async {
+    // Capture the stable parent context
+    final parentContext = context;
+
     setState(() => isLoading = true);
     try {
       DocumentList jamList = await database.listJams();
@@ -112,7 +115,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
       };
 
       showDialog(
-        context: context,
+        context: parentContext, // Use parentContext here
         builder: (context) {
           String? selectedJamTitle;
 
@@ -140,14 +143,15 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () =>
+                    Navigator.of(parentContext).pop(), // Use parentContext
                 child: Text("Cancel"),
               ),
               TextButton(
                 onPressed: () async {
                   if (selectedJamTitle != null) {
                     final jamId = jamMap[selectedJamTitle]!;
-                    Navigator.of(context).pop();
+                    Navigator.of(parentContext).pop(); // Close selection dialog
 
                     try {
                       final jamDoc = await database.getJamById(jamId);
@@ -157,8 +161,9 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                         "zoom_link": jamDoc.data['zoom_link'] ?? '',
                       };
 
+                      // Use parentContext for the next dialog
                       showDialog(
-                        context: context,
+                        context: parentContext,
                         builder: (context) => UpdateJamDialog(
                           jamId: jamId,
                           initialData: initialData,
@@ -312,8 +317,11 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
   void _openUpdateJourneyDialog(Map<String, String> journeyMap) {
     String? selectedTitle;
 
+    // Capture the parent context
+    final parentContext = context;
+
     showDialog(
-      context: context,
+      context: parentContext, // Use parentContext here
       builder: (context) {
         return AlertDialog(
           title: Text("Select Journey to Update"),
@@ -338,14 +346,15 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(), // Close dialog
+              onPressed: () =>
+                  Navigator.of(parentContext).pop(), // Close dialog
               child: Text("Cancel"),
             ),
             TextButton(
               onPressed: () async {
                 if (selectedTitle != null) {
                   final journeyId = journeyMap[selectedTitle]!;
-                  Navigator.of(context).pop(); // Close selection dialog
+                  Navigator.of(parentContext).pop(); // Close selection dialog
 
                   try {
                     final journeyDoc = await database.getJourneyById(journeyId);
@@ -355,8 +364,9 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                       "active": journeyDoc.data['active'] ?? false,
                     };
 
+                    // Use parentContext when showing the next dialog
                     showDialog(
-                      context: context,
+                      context: parentContext,
                       builder: (context) => UpdateJourneyDialog(
                         journeyId: journeyId,
                         initialData: initialData,
@@ -370,6 +380,8 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                       ),
                     );
                   } catch (e) {
+                    LogService.instance
+                        .error("Error fetching journey details: $e");
                     _showMessage("Error fetching journey details: $e",
                         isError: true);
                   }
@@ -508,49 +520,42 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
           crossAxisCount: 1, // Set to single column for better readability
           crossAxisSpacing: 8.0,
           mainAxisSpacing: 8.0,
-          childAspectRatio: 4,
+          childAspectRatio: 6,
           shrinkWrap: true,
           children: [
             StandardCard(
               icon: Icons.add,
               title: "Create Journey",
-              subtitle: "Start a new journey",
               onTap: _openCreateJourneyDialog,
             ),
             StandardCard(
               icon: Icons.edit,
               title: "Update Journey",
-              subtitle: "Modify an existing journey",
               onTap: _fetchAndOpenUpdateJourneyDialog,
             ),
             StandardCard(
               icon: Icons.list,
               title: "Update Journey Lessons",
-              subtitle: "Reorder, add, or delete lessons in a journey",
               onTap: _fetchAndOpenUpdateJourneyLessonsPage,
             ),
             StandardCard(
               icon: Icons.delete,
               title: "Delete Journey",
-              subtitle: "Remove a journey",
               onTap: _fetchAndOpenDeleteJourneyDialog,
             ),
             StandardCard(
               icon: Icons.add,
               title: "Create Jam",
-              subtitle: "Start a new jam session",
               onTap: _openCreateJamDialog,
             ),
             StandardCard(
               icon: Icons.edit,
               title: "Update Jam",
-              subtitle: "Modify an existing jam session",
               onTap: _fetchAndOpenUpdateJamDialog,
             ),
             StandardCard(
               icon: Icons.delete,
               title: "Delete Jam",
-              subtitle: "Remove a jam session",
               onTap: _fetchAndOpenDeleteJamDialog,
             ),
           ],
