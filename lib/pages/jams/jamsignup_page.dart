@@ -74,51 +74,27 @@ class _JamSignupPageState extends State<JamSignupPage> {
 
           return DropdownMenuItem<String>(
             value: doc.$id,
-            child: Container(
-              decoration: BoxDecoration(
-                color:
-                    index % 2 == 0 ? backgroundColor : alternateBackgroundColor,
-                borderRadius: BorderRadius.circular(12.0),
-                boxShadow: [
-                  if (index % 2 == 0) // Shadow only for items with background
-                    BoxShadow(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withOpacity(0.2),
-                      blurRadius: 6.0,
-                      offset: Offset(0, 3),
-                    ),
-                ],
-              ),
-              margin:
-                  EdgeInsets.symmetric(vertical: 4.0), // Space between items
-              padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    fit: FlexFit.loose,
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
-                  SizedBox(width: 10),
-                  Text(
-                    formattedDateTime,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
+                ),
+                SizedBox(width: 10),
+                Text(
+                  formattedDateTime,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         }).toList();
@@ -248,7 +224,8 @@ class _JamSignupPageState extends State<JamSignupPage> {
         for (String url in existingSubmission.data['photos']) {
           final fileId = extractFileIdFromUrl(url);
           await storage.deletePhoto(fileId);
-          LogService.instance.info("Deleted existing photo with file ID: $fileId");
+          LogService.instance
+              .info("Deleted existing photo with file ID: $fileId");
         }
 
         // Update submission with new photos
@@ -258,10 +235,13 @@ class _JamSignupPageState extends State<JamSignupPage> {
           DateTime.now().toIso8601String(),
           _commentController.text,
         );
-        LogService.instance.info("Submission updated successfully for Jam: $selectedJamId");
+        LogService.instance
+            .info("Submission updated successfully for Jam: $selectedJamId");
       } else {
-        await database.createSubmission(selectedJamId!, photoUrls, userId, _commentController.text);
-        LogService.instance.error("Submission created successfully for Jam: $selectedJamId");
+        await database.createSubmission(
+            selectedJamId!, photoUrls, userId, _commentController.text);
+        LogService.instance
+            .error("Submission created successfully for Jam: $selectedJamId");
       }
 
       // Step 4: Hide loading spinner and show confirmation dialog
@@ -342,7 +322,8 @@ class _JamSignupPageState extends State<JamSignupPage> {
 
         // Delete the submission itself
         await database.deleteSubmission(existingSubmission.$id);
-        LogService.instance.info("Existing submission deleted for Jam: $selectedJamId");
+        LogService.instance
+            .info("Existing submission deleted for Jam: $selectedJamId");
       }
     }
 
@@ -402,13 +383,12 @@ class _JamSignupPageState extends State<JamSignupPage> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                Flexible(
+                SizedBox(
+                  width: double.infinity,
                   child: DropdownButtonFormField<String>(
                     decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
                       contentPadding:
-                          EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                          EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16.0),
                       ),
@@ -446,7 +426,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
                             ),
                             child: photos[index] == null
                                 ? Icon(Icons.photo,
-                                    size: 50.0, color: Colors.grey)
+                                    size: 50.0, color: Colors.grey[600])
                                 : null,
                           ),
                         ),
@@ -461,12 +441,18 @@ class _JamSignupPageState extends State<JamSignupPage> {
                     controller: _commentController,
                     decoration: InputDecoration(
                       labelText: 'Note to facilitator (optional)',
-                      border: OutlineInputBorder(),
+                      labelStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16.0),
+                      ),
                     ),
                   ),
                 ),
                 StandardButton(
-                    label: Text("Submit Photos"), onPressed: () {
+                    label: Text("Submit Photos"),
+                    onPressed: () {
                       _submitPhotos();
                     }),
               ],

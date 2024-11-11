@@ -172,7 +172,7 @@ class _JamPrepPageState extends State<JamPrepPage>  with WidgetsBindingObserver 
                                       width: 100,
                                       height: 100,
                                       color: const Color.fromARGB(255, 106, 35, 35),
-                                      child: const Icon(Icons.image_not_supported, color: Colors.white),
+                                      child: Icon(Icons.image_not_supported, color: Theme.of(context).colorScheme.onSurface),
                                     ),
                             ),
                           ),

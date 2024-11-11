@@ -55,7 +55,6 @@ class _JamPageState extends State<JamPage> {
             StandardCard(
               icon: Icons.add_circle_outline,
               title: "Sign Up for a Jam",
-              subtitle: "Experience the world's nicest photo community",
               onTap: () {
                 Navigator.push(
                   context,
@@ -80,7 +79,7 @@ class _JamPageState extends State<JamPage> {
                         style: Theme.of(context)
                             .textTheme
                             .bodyLarge
-                            ?.copyWith(color: Colors.grey),
+                            ?.copyWith(color: Colors.grey[600]),
                       ),
                     )
                   : ListView.builder(
