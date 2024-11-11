@@ -467,7 +467,6 @@ class _JamSignupPageState extends State<JamSignupPage> {
                 ),
                 StandardButton(
                     label: Text("Submit Photos"), onPressed: () {
-                      final comment = _commentController.text;
                       _submitPhotos();
                     }),
               ],

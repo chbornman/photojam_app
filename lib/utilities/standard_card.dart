@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 class StandardCard extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String subtitle;
+  final String? subtitle; // Make subtitle optional
   final VoidCallback onTap;
 
   const StandardCard({
     super.key,
     required this.icon,
     required this.title,
-    required this.subtitle,
+    this.subtitle, // Make subtitle optional
     required this.onTap,
   });
 
@@ -33,12 +33,14 @@ class StandardCard extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        subtitle: Text(
-          subtitle,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onPrimary.withOpacity(0.8),
-          ),
-        ),
+        subtitle: subtitle != null && subtitle!.isNotEmpty
+            ? Text(
+                subtitle!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onPrimary.withOpacity(0.8),
+                ),
+              )
+            : null,
         onTap: onTap,
       ),
     );
