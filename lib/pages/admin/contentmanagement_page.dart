@@ -428,7 +428,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     );
   }
 
-  void _fetchAndOpenUpdateJourneyLessonsPage() async {
+  void _fetchAndOpenUpdateJourneyPage() async {
     setState(() => isLoading = true);
     try {
       // Fetch the list of journeys
@@ -484,7 +484,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                   // Get the journeyId from the selectedTitle
                   final journeyId = journeyMap[selectedTitle]!;
                   Navigator.of(context).pop(); // Close dialog
-                  _openUpdateJourneyLessonsPage(journeyId, selectedTitle!);
+                  _openUpdateJourneyPage(journeyId, selectedTitle!);
                 }
               },
               child: Text("Open"),
@@ -495,10 +495,10 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     );
   }
 
-  void _openUpdateJourneyLessonsPage(String journeyId, String journeyTitle) {
+  void _openUpdateJourneyPage(String journeyId, String journeyTitle) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => JourneyLessonsPage(
+        builder: (context) => JourneyPage(
           journeyId: journeyId,
           journeyTitle: journeyTitle,
           database: database,
@@ -536,7 +536,7 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
             StandardCard(
               icon: Icons.list,
               title: "Update Journey Lessons",
-              onTap: _fetchAndOpenUpdateJourneyLessonsPage,
+              onTap: _fetchAndOpenUpdateJourneyPage,
             ),
             StandardCard(
               icon: Icons.delete,

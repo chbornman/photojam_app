@@ -6,13 +6,13 @@ import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/utilities/markdown_utilities.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
 
-class JourneyLessonsPage extends StatefulWidget {
+class JourneyPage extends StatefulWidget {
   final String journeyId;
   final String journeyTitle;
   final DatabaseAPI database;
   final StorageAPI storage;
 
-  const JourneyLessonsPage({super.key, 
+  const JourneyPage({super.key, 
     required this.journeyId,
     required this.journeyTitle,
     required this.database,
@@ -20,10 +20,10 @@ class JourneyLessonsPage extends StatefulWidget {
   });
 
   @override
-  _JourneyLessonsPageState createState() => _JourneyLessonsPageState();
+  _JourneyPageState createState() => _JourneyPageState();
 }
 
-class _JourneyLessonsPageState extends State<JourneyLessonsPage> {
+class _JourneyPageState extends State<JourneyPage> {
   List<String> lessonTitles = [];
   List<String> lessonUrls = [];
   bool isLoading = false;
