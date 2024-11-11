@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/utilities/standard_dialog.dart';
 
 class CreateJamDialog extends StatefulWidget {
@@ -108,9 +109,24 @@ class _CreateJamDialogState extends State<CreateJamDialog> {
                   }
                 },
               ),
-              TextField(
-                controller: _zoomLinkController,
-                decoration: InputDecoration(labelText: "Zoom Link"),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _zoomLinkController,
+                      decoration: InputDecoration(labelText: "Zoom Link"),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.link),
+                    tooltip: "Use default Zoom link",
+                    onPressed: () {
+                      setState(() {
+                        _zoomLinkController.text = zoomLinkUrl;
+                      });
+                    },
+                  ),
+                ],
               ),
             ],
           );
