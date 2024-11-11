@@ -1,6 +1,8 @@
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/constants/constants.dart';
+import 'package:photojam_app/dialogs/delete_journey_dialog.dart';
+import 'package:photojam_app/dialogs/update_journey_dialog.dart';
 import 'package:photojam_app/log_service.dart';
 import 'package:photojam_app/pages/admin/journeylessons_edit.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
@@ -11,6 +13,7 @@ import 'package:photojam_app/utilities/standard_dialog.dart';
 import 'package:provider/provider.dart';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
+import 'package:photojam_app/dialogs/create_journey_dialog.dart'; // Import the new dialog
 
 class ContentManagementPage extends StatefulWidget {
   const ContentManagementPage({super.key});
@@ -69,20 +72,33 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     }
   }
 
-  void _fetchAndOpenDeleteJourneyDialog() async {
-    setState(() => isLoading = true);
-    try {
-      DocumentList journeyList = await database.listJourneys();
-      Map<String, String> journeyMap = {
-        for (var doc in journeyList.documents) doc.data['title']: doc.$id
-      };
-      _openDeleteJourneyDialog(journeyMap);
-    } catch (e) {
-      _showMessage("Error fetching journeys: $e", isError: true);
-    } finally {
-      setState(() => isLoading = false);
-    }
+void _fetchAndOpenDeleteJourneyDialog() async {
+  setState(() => isLoading = true);
+  try {
+    DocumentList journeyList = await database.listJourneys();
+    Map<String, String> journeyMap = {
+      for (var doc in journeyList.documents) doc.data['title']: doc.$id
+    };
+
+    showDialog(
+      context: context,
+      builder: (context) => DeleteJourneyDialog(
+        journeyMap: journeyMap,
+        onJourneyDeleted: (journeyId) async {
+          await _executeAction(
+            database.deleteJourney,
+            {"journeyId": journeyId},
+            "Journey deleted successfully",
+          );
+        },
+      ),
+    );
+  } catch (e) {
+    _showMessage("Error fetching journeys: $e", isError: true);
+  } finally {
+    setState(() => isLoading = false);
   }
+}
 
   void _fetchAndOpenUpdateJamDialog() async {
     setState(() => isLoading = true);
@@ -165,7 +181,8 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
                         LogService.instance.info(
                             "File selected: $selectedFileName - ${selectedFileBytes?.lengthInBytes ?? 0} bytes");
                       } else {
-                        LogService.instance.error("No file selected or file has no bytes.");
+                        LogService.instance
+                            .error("No file selected or file has no bytes.");
                       }
                     },
                   ),
@@ -468,363 +485,91 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
   }
 
   void _openUpdateJourneyDialog(Map<String, String> journeyMap) {
-    String? selectedTitle; // No initial selection
-    final TextEditingController titleController = TextEditingController();
-    DateTime? journeyStartDate;
-    TimeOfDay? journeyStartTime;
-    bool isActive = false;
-
-    Future<void> loadJourneyDetails(String journeyId) async {
-      try {
-        final Document selectedJourney =
-            await database.getJourneyById(journeyId);
-        titleController.text = selectedJourney.data['title'] ?? '';
-        isActive = selectedJourney.data['active'] ?? false;
-
-        if (selectedJourney.data['start_date'] != null) {
-          DateTime journeyDateTime =
-              DateTime.parse(selectedJourney.data['start_date']);
-          journeyStartDate = journeyDateTime;
-          journeyStartTime = TimeOfDay.fromDateTime(journeyDateTime);
-        }
-      } catch (e) {
-        _showMessage("Error fetching journey details: $e", isError: true);
-      }
-    }
+    String? selectedTitle;
 
     showDialog(
       context: context,
       builder: (context) {
-        return StandardDialog(
-          title: "Update Journey",
+        return AlertDialog(
+          title: Text("Select Journey to Update"),
           content: StatefulBuilder(
             builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: selectedTitle,
-                    hint: Text("Select Journey"),
-                    items: journeyMap.keys.map((title) {
-                      return DropdownMenuItem(
-                        value: title,
-                        child: Text(title),
-                      );
-                    }).toList(),
-                    onChanged: (value) async {
-                      if (value != null) {
-                        setState(() {
-                          selectedTitle = value;
-                          titleController.clear();
-                          journeyStartDate = null;
-                          journeyStartTime = null;
-                          isActive = false;
-                        });
-                        await loadJourneyDetails(journeyMap[selectedTitle]!);
-                        setState(() {}); // Refresh the form with loaded data
-                      }
-                    },
-                    decoration: InputDecoration(labelText: "Select Journey"),
-                  ),
-                  TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(labelText: "Journey Title"),
-                  ),
-                  SizedBox(height: 16),
-                  ListTile(
-                    title: Text(
-                      journeyStartDate == null
-                          ? "Select Start Date"
-                          : "Start Date: ${journeyStartDate?.toLocal().toString().split(' ')[0]}",
-                    ),
-                    trailing: Icon(Icons.calendar_today),
-                    onTap: () async {
-                      DateTime? pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: journeyStartDate ?? DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-                      if (pickedDate != null) {
-                        setState(() {
-                          journeyStartDate = pickedDate;
-                        });
-                      }
-                    },
-                  ),
-                  ListTile(
-                    title: Text(
-                      journeyStartTime == null
-                          ? "Select Start Time"
-                          : "Start Time: ${journeyStartTime?.format(context)}",
-                    ),
-                    trailing: Icon(Icons.access_time),
-                    onTap: () async {
-                      TimeOfDay? pickedTime = await showTimePicker(
-                        context: context,
-                        initialTime: journeyStartTime ?? TimeOfDay.now(),
-                      );
-                      if (pickedTime != null) {
-                        setState(() {
-                          journeyStartTime = pickedTime;
-                        });
-                      }
-                    },
-                  ),
-                  SwitchListTile(
-                    title: Text("Active"),
-                    value: isActive,
-                    onChanged: (value) {
-                      setState(() {
-                        isActive = value;
-                      });
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
-          submitButtonLabel: "Update",
-          submitButtonOnPressed: () {
-            if (!mounted) return; // Ensure widget is still mounted
-            if (titleController.text.isEmpty ||
-                journeyStartDate == null ||
-                journeyStartTime == null) {
-              _showMessage(
-                  "Please enter all fields, including the start date and time.",
-                  isError: true);
-              return;
-            }
-            DateTime journeyDateTime = DateTime(
-              journeyStartDate!.year,
-              journeyStartDate!.month,
-              journeyStartDate!.day,
-              journeyStartTime!.hour,
-              journeyStartTime!.minute,
-            );
-            Map<String, dynamic> journeyData = {
-              "journeyId": journeyMap[selectedTitle]!,
-              "title": titleController.text,
-              "start_date": journeyDateTime.toIso8601String(),
-              "active": isActive,
-            };
-            Navigator.of(context).pop();
-            _executeAction(database.updateJourney, journeyData,
-                "Journey updated successfully");
-          },
-        );
-      },
-    );
-  }
-
-  void _openDeleteJourneyDialog(Map<String, String> journeyMap) {
-    String? selectedTitle; // No initial selection
-    String? journeyTitle;
-    DateTime? journeyStartDate;
-
-    Future<void> loadJourneyDetails(String journeyId) async {
-      try {
-        final Document selectedJourney =
-            await database.getJourneyById(journeyId);
-        journeyTitle = selectedJourney.data['title'] ?? '';
-        if (selectedJourney.data['start_date'] != null) {
-          journeyStartDate = DateTime.parse(selectedJourney.data['start_date']);
-        }
-      } catch (e) {
-        _showMessage("Error fetching journey details: $e", isError: true);
-      }
-    }
-
-    void showConfirmationDialog() {
-      final dateStr = journeyStartDate != null
-          ? journeyStartDate!.toLocal().toString().split(' ')[0]
-          : "N/A";
-      final timeStr = journeyStartDate != null
-          ? TimeOfDay.fromDateTime(journeyStartDate!).format(context)
-          : "N/A";
-
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text("Confirm Deletion"),
-            content: Text(
-              "Are you sure you want to delete the following journey?\n\n"
-              "Title: $journeyTitle\n"
-              "Date: $dateStr\n"
-              "Time: $timeStr",
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(), // Cancel deletion
-                child: Text("Cancel"),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close confirmation dialog
-                  Navigator.of(context).pop(); // Close delete dialog
-                  _executeAction(
-                    database.deleteJourney,
-                    {"journeyId": journeyMap[selectedTitle]!},
-                    "Journey deleted successfully",
+              return DropdownButtonFormField<String>(
+                value: selectedTitle,
+                hint: Text("Select Journey"),
+                items: journeyMap.keys.map((title) {
+                  return DropdownMenuItem(
+                    value: title,
+                    child: Text(title),
                   );
+                }).toList(),
+                onChanged: (value) async {
+                  setState(() {
+                    selectedTitle = value;
+                  });
                 },
-                child: Text("Delete"),
-              ),
-            ],
-          );
-        },
-      );
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StandardDialog(
-          title: "Delete Journey",
-          content: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: selectedTitle,
-                    hint: Text("Select Journey"),
-                    items: journeyMap.keys.map((title) {
-                      return DropdownMenuItem(
-                        value: title,
-                        child: Text(title),
-                      );
-                    }).toList(),
-                    onChanged: (value) async {
-                      if (value != null) {
-                        setState(() {
-                          selectedTitle = value;
-                          journeyTitle = null;
-                          journeyStartDate = null;
-                        });
-                        await loadJourneyDetails(journeyMap[selectedTitle]!);
-                        setState(() {}); // Refresh the form with loaded data
-                      }
-                    },
-                    decoration: InputDecoration(labelText: "Select Journey"),
-                  ),
-                ],
               );
             },
           ),
-          submitButtonLabel: "Delete",
-          submitButtonOnPressed: () {
-            if (selectedTitle == null) {
-              _showMessage("Please select a journey to delete.", isError: true);
-              return;
-            }
-            showConfirmationDialog(); // Show confirmation dialog before deletion
-          },
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(), // Close dialog
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (selectedTitle != null) {
+                  final journeyId = journeyMap[selectedTitle]!;
+                  Navigator.of(context).pop(); // Close selection dialog
+
+                  try {
+                    final journeyDoc = await database.getJourneyById(journeyId);
+                    Map<String, dynamic> initialData = {
+                      "title": journeyDoc.data['title'] ?? '',
+                      "start_date": journeyDoc.data['start_date'] ?? '',
+                      "active": journeyDoc.data['active'] ?? false,
+                    };
+
+                    showDialog(
+                      context: context,
+                      builder: (context) => UpdateJourneyDialog(
+                        journeyId: journeyId,
+                        initialData: initialData,
+                        onJourneyUpdated: (updatedData) async {
+                          await _executeAction(
+                            database.updateJourney,
+                            updatedData,
+                            "Journey updated successfully",
+                          );
+                        },
+                      ),
+                    );
+                  } catch (e) {
+                    _showMessage("Error fetching journey details: $e",
+                        isError: true);
+                  }
+                }
+              },
+              child: Text("Update"),
+            ),
+          ],
         );
       },
     );
   }
 
   void _openCreateJourneyDialog() {
-    final TextEditingController titleController = TextEditingController();
-    DateTime? startDate;
-    TimeOfDay? startTime;
-    bool isActive = false;
-
     showDialog(
       context: context,
       builder: (context) {
-        return StandardDialog(
-          title: "Create Journey",
-          content: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(labelText: "Journey Title"),
-                  ),
-                  SizedBox(height: 16),
-                  ListTile(
-                    title: Text(
-                      startDate == null
-                          ? "Select Start Date"
-                          : "Start Date: ${startDate?.toLocal().toString().split(' ')[0]}",
-                    ),
-                    trailing: Icon(Icons.calendar_today),
-                    onTap: () async {
-                      DateTime? pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-                      if (pickedDate != null) {
-                        setState(() {
-                          startDate = pickedDate;
-                        });
-                      }
-                    },
-                  ),
-                  ListTile(
-                    title: Text(
-                      startTime == null
-                          ? "Select Start Time"
-                          : "Start Time: ${startTime?.format(context)}",
-                    ),
-                    trailing: Icon(Icons.access_time),
-                    onTap: () async {
-                      TimeOfDay? pickedTime = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.now(),
-                      );
-                      if (pickedTime != null) {
-                        setState(() {
-                          startTime = pickedTime;
-                        });
-                      }
-                    },
-                  ),
-                  SwitchListTile(
-                    title: Text("Active"),
-                    value: isActive,
-                    onChanged: (value) {
-                      setState(() {
-                        isActive = value;
-                      });
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
-          submitButtonLabel: "Create",
-          submitButtonOnPressed: () {
-            if (!mounted) return; // Ensure widget is still mounted
-            if (titleController.text.isEmpty ||
-                startDate == null ||
-                startTime == null) {
-              _showMessage("Please enter a title, start date, and time.",
-                  isError: true);
-              return;
-            }
-            DateTime journeyDateTime = DateTime(
-              startDate!.year,
-              startDate!.month,
-              startDate!.day,
-              startTime!.hour,
-              startTime!.minute,
+        return CreateJourneyDialog(
+          onJourneyCreated: (journeyData) async {
+            // Call the `createJourney` method on the database API
+            await _executeAction(
+              database.createJourney,
+              journeyData,
+              "Journey created successfully",
             );
-            Map<String, dynamic> journeyData = {
-              "title": titleController.text,
-              "start_date": journeyDateTime.toIso8601String(),
-              "active": isActive,
-            };
-            Navigator.of(context).pop();
-            _executeAction(database.createJourney, journeyData,
-                "Journey created successfully");
           },
         );
       },
