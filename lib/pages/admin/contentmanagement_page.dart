@@ -1,7 +1,10 @@
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/constants/constants.dart';
+import 'package:photojam_app/dialogs/create_jam_dialog.dart';
+import 'package:photojam_app/dialogs/delete_jam_dialog.dart';
 import 'package:photojam_app/dialogs/delete_journey_dialog.dart';
+import 'package:photojam_app/dialogs/update_jam_dialog.dart';
 import 'package:photojam_app/dialogs/update_journey_dialog.dart';
 import 'package:photojam_app/log_service.dart';
 import 'package:photojam_app/pages/admin/journeylessons_edit.dart';
@@ -72,33 +75,33 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     }
   }
 
-void _fetchAndOpenDeleteJourneyDialog() async {
-  setState(() => isLoading = true);
-  try {
-    DocumentList journeyList = await database.listJourneys();
-    Map<String, String> journeyMap = {
-      for (var doc in journeyList.documents) doc.data['title']: doc.$id
-    };
+  void _fetchAndOpenDeleteJourneyDialog() async {
+    setState(() => isLoading = true);
+    try {
+      DocumentList journeyList = await database.listJourneys();
+      Map<String, String> journeyMap = {
+        for (var doc in journeyList.documents) doc.data['title']: doc.$id
+      };
 
-    showDialog(
-      context: context,
-      builder: (context) => DeleteJourneyDialog(
-        journeyMap: journeyMap,
-        onJourneyDeleted: (journeyId) async {
-          await _executeAction(
-            database.deleteJourney,
-            {"journeyId": journeyId},
-            "Journey deleted successfully",
-          );
-        },
-      ),
-    );
-  } catch (e) {
-    _showMessage("Error fetching journeys: $e", isError: true);
-  } finally {
-    setState(() => isLoading = false);
+      showDialog(
+        context: context,
+        builder: (context) => DeleteJourneyDialog(
+          journeyMap: journeyMap,
+          onJourneyDeleted: (journeyId) async {
+            await _executeAction(
+              database.deleteJourney,
+              {"journeyId": journeyId},
+              "Journey deleted successfully",
+            );
+          },
+        ),
+      );
+    } catch (e) {
+      _showMessage("Error fetching journeys: $e", isError: true);
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
-}
 
   void _fetchAndOpenUpdateJamDialog() async {
     setState(() => isLoading = true);
@@ -107,7 +110,79 @@ void _fetchAndOpenDeleteJourneyDialog() async {
       Map<String, String> jamMap = {
         for (var doc in jamList.documents) doc.data['title']: doc.$id
       };
-      _openUpdateJamDialog(jamMap);
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          String? selectedJamTitle;
+
+          return AlertDialog(
+            title: Text("Select Jam to Update"),
+            content: StatefulBuilder(
+              builder: (context, setState) {
+                return DropdownButtonFormField<String>(
+                  value: selectedJamTitle,
+                  hint: Text("Select Jam"),
+                  items: jamMap.keys.map((title) {
+                    return DropdownMenuItem(
+                      value: title,
+                      child: Text(title),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedJamTitle = value;
+                    });
+                  },
+                  decoration: InputDecoration(labelText: "Select Jam"),
+                );
+              },
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  if (selectedJamTitle != null) {
+                    final jamId = jamMap[selectedJamTitle]!;
+                    Navigator.of(context).pop();
+
+                    try {
+                      final jamDoc = await database.getJamById(jamId);
+                      Map<String, dynamic> initialData = {
+                        "title": jamDoc.data['title'] ?? '',
+                        "date": jamDoc.data['date'] ?? '',
+                        "zoom_link": jamDoc.data['zoom_link'] ?? '',
+                      };
+
+                      showDialog(
+                        context: context,
+                        builder: (context) => UpdateJamDialog(
+                          jamId: jamId,
+                          initialData: initialData,
+                          onJamUpdated: (updatedData) async {
+                            await _executeAction(
+                              database.updateJam,
+                              updatedData,
+                              "Jam updated successfully",
+                            );
+                          },
+                        ),
+                      );
+                    } catch (e) {
+                      _showMessage("Error fetching jam details: $e",
+                          isError: true);
+                    }
+                  }
+                },
+                child: Text("Update"),
+              ),
+            ],
+          );
+        },
+      );
     } catch (e) {
       _showMessage("Error fetching jams: $e", isError: true);
     } finally {
@@ -122,7 +197,20 @@ void _fetchAndOpenDeleteJourneyDialog() async {
       Map<String, String> jamMap = {
         for (var doc in jamList.documents) doc.data['title']: doc.$id
       };
-      _openDeleteJamDialog(jamMap);
+
+      showDialog(
+        context: context,
+        builder: (context) => DeleteJamDialog(
+          jamMap: jamMap,
+          onJamDeleted: (jamId) async {
+            await _executeAction(
+              database.deleteJam,
+              {"jamId": jamId},
+              "Jam deleted successfully",
+            );
+          },
+        ),
+      );
     } catch (e) {
       _showMessage("Error fetching jams: $e", isError: true);
     } finally {
@@ -215,269 +303,6 @@ void _fetchAndOpenDeleteJourneyDialog() async {
               LogService.instance.error("Error uploading lesson: $e");
               _showMessage("Error uploading lesson: $e", isError: true);
             }
-          },
-        );
-      },
-    );
-  }
-
-  void _openUpdateJamDialog(Map<String, String> jamMap) {
-    String? selectedTitle;
-    final TextEditingController titleController = TextEditingController();
-    final TextEditingController zoomLinkController = TextEditingController();
-    DateTime? jamDate;
-    TimeOfDay? jamTime;
-
-    Future<void> loadJamDetails(String jamId) async {
-      try {
-        final Document selectedJam = await database.getJamById(jamId);
-        titleController.text = selectedJam.data['title'] ?? '';
-        zoomLinkController.text = selectedJam.data['zoom_link'] ?? '';
-        if (selectedJam.data['date'] != null) {
-          DateTime jamDateTime = DateTime.parse(selectedJam.data['date']);
-          jamDate = jamDateTime;
-          jamTime = TimeOfDay.fromDateTime(jamDateTime);
-        }
-      } catch (e) {
-        _showMessage("Error fetching jam details: $e", isError: true);
-      }
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StandardDialog(
-          title: "Update Jam",
-          content: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: selectedTitle,
-                    items: jamMap.keys.map((title) {
-                      return DropdownMenuItem(
-                        value: title,
-                        child: Text(title),
-                      );
-                    }).toList(),
-                    onChanged: (value) async {
-                      if (value != null) {
-                        setState(() {
-                          selectedTitle = value;
-                        });
-                        // Clear current field values before loading new data
-                        titleController.clear();
-                        zoomLinkController.clear();
-                        jamDate = null;
-                        jamTime = null;
-                        await loadJamDetails(jamMap[selectedTitle]!);
-                        setState(() {}); // Refresh the form with loaded data
-                      }
-                    },
-                    decoration: InputDecoration(labelText: "Select Jam"),
-                  ),
-                  TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(labelText: "Jam Title"),
-                  ),
-                  SizedBox(height: 16),
-                  ListTile(
-                    title: Text(
-                      jamDate == null
-                          ? "Select Jam Date"
-                          : "Jam Date: ${jamDate?.toLocal().toString().split(' ')[0]}",
-                    ),
-                    trailing: Icon(Icons.calendar_today),
-                    onTap: () async {
-                      DateTime? pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: jamDate ?? DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-                      if (pickedDate != null) {
-                        setState(() {
-                          jamDate = pickedDate;
-                        });
-                      }
-                    },
-                  ),
-                  ListTile(
-                    title: Text(
-                      jamTime == null
-                          ? "Select Jam Time"
-                          : "Jam Time: ${jamTime?.format(context)}",
-                    ),
-                    trailing: Icon(Icons.access_time),
-                    onTap: () async {
-                      TimeOfDay? pickedTime = await showTimePicker(
-                        context: context,
-                        initialTime: jamTime ?? TimeOfDay.now(),
-                      );
-                      if (pickedTime != null) {
-                        setState(() {
-                          jamTime = pickedTime;
-                        });
-                      }
-                    },
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: zoomLinkController,
-                          decoration: InputDecoration(labelText: "Zoom Link"),
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.input),
-                        tooltip: "Use default Zoom link",
-                        onPressed: () {
-                          zoomLinkController.text = zoomLinkUrl;
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
-          submitButtonLabel: "Update",
-          submitButtonOnPressed: () {
-            if (!mounted) return; // Ensure widget is still mounted
-            if (titleController.text.isEmpty ||
-                jamDate == null ||
-                jamTime == null ||
-                zoomLinkController.text.isEmpty) {
-              _showMessage(
-                  "Please enter all required fields, including the Zoom link.",
-                  isError: true);
-              return;
-            }
-            DateTime jamDateTime = DateTime(
-              jamDate!.year,
-              jamDate!.month,
-              jamDate!.day,
-              jamTime!.hour,
-              jamTime!.minute,
-            );
-            Map<String, dynamic> jamData = {
-              "jamId": jamMap[selectedTitle]!,
-              "title": titleController.text,
-              "date": jamDateTime.toIso8601String(),
-              "zoom_link": zoomLinkController.text,
-            };
-            Navigator.of(context).pop();
-            _executeAction(
-                database.updateJam, jamData, "Jam updated successfully");
-          },
-        );
-      },
-    );
-  }
-
-  void _openDeleteJamDialog(Map<String, String> jamMap) {
-    String? selectedTitle; // No initial selection
-    String? jamTitle;
-    DateTime? jamDate;
-
-    Future<void> loadJamDetails(String jamId) async {
-      try {
-        final Document selectedJam = await database.getJamById(jamId);
-        jamTitle = selectedJam.data['title'] ?? '';
-        if (selectedJam.data['date'] != null) {
-          jamDate = DateTime.parse(selectedJam.data['date']);
-        }
-      } catch (e) {
-        _showMessage("Error fetching jam details: $e", isError: true);
-      }
-    }
-
-    void showConfirmationDialog() {
-      final dateStr =
-          jamDate != null ? jamDate!.toLocal().toString().split(' ')[0] : "N/A";
-      final timeStr = jamDate != null
-          ? TimeOfDay.fromDateTime(jamDate!).format(context)
-          : "N/A";
-
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text("Confirm Deletion"),
-            content: Text(
-              "Are you sure you want to delete the following jam?\n\n"
-              "Title: $jamTitle\n"
-              "Date: $dateStr\n"
-              "Time: $timeStr",
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(), // Cancel deletion
-                child: Text("Cancel"),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close confirmation dialog
-                  Navigator.of(context).pop(); // Close delete dialog
-                  _executeAction(
-                    database.deleteJam,
-                    {"jamId": jamMap[selectedTitle]!},
-                    "Jam deleted successfully",
-                  );
-                },
-                child: Text("Delete"),
-              ),
-            ],
-          );
-        },
-      );
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StandardDialog(
-          title: "Delete Jam",
-          content: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: selectedTitle,
-                    hint: Text("Select Jam"),
-                    items: jamMap.keys.map((title) {
-                      return DropdownMenuItem(
-                        value: title,
-                        child: Text(title),
-                      );
-                    }).toList(),
-                    onChanged: (value) async {
-                      if (value != null) {
-                        setState(() {
-                          selectedTitle = value;
-                          jamTitle = null;
-                          jamDate = null;
-                        });
-                        await loadJamDetails(jamMap[selectedTitle]!);
-                        setState(() {}); // Refresh the form with loaded data
-                      }
-                    },
-                    decoration: InputDecoration(labelText: "Select Jam"),
-                  ),
-                ],
-              );
-            },
-          ),
-          submitButtonLabel: "Delete",
-          submitButtonOnPressed: () {
-            if (selectedTitle == null) {
-              _showMessage("Please select a jam to delete.", isError: true);
-              return;
-            }
-            showConfirmationDialog(); // Show confirmation dialog before deletion
           },
         );
       },
@@ -577,117 +402,17 @@ void _fetchAndOpenDeleteJourneyDialog() async {
   }
 
   void _openCreateJamDialog() {
-    final TextEditingController titleController = TextEditingController();
-    final TextEditingController zoomLinkController = TextEditingController();
-    DateTime? jamDate;
-    TimeOfDay? jamTime;
-
     showDialog(
       context: context,
-      builder: (context) {
-        return StandardDialog(
-          title: "Create Jam",
-          content: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(labelText: "Jam Title"),
-                  ),
-                  SizedBox(height: 16),
-                  ListTile(
-                    title: Text(
-                      jamDate == null
-                          ? "Select Jam Date"
-                          : "Jam Date: ${jamDate?.toLocal().toString().split(' ')[0]}",
-                    ),
-                    trailing: Icon(Icons.calendar_today),
-                    onTap: () async {
-                      DateTime? pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-                      if (pickedDate != null) {
-                        setState(() {
-                          jamDate = pickedDate;
-                        });
-                      }
-                    },
-                  ),
-                  ListTile(
-                    title: Text(
-                      jamTime == null
-                          ? "Select Jam Time"
-                          : "Jam Time: ${jamTime?.format(context)}",
-                    ),
-                    trailing: Icon(Icons.access_time),
-                    onTap: () async {
-                      TimeOfDay? pickedTime = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.now(),
-                      );
-                      if (pickedTime != null) {
-                        setState(() {
-                          jamTime = pickedTime;
-                        });
-                      }
-                    },
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: zoomLinkController,
-                          decoration: InputDecoration(labelText: "Zoom Link"),
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.input),
-                        tooltip: "Use default Zoom link",
-                        onPressed: () {
-                          zoomLinkController.text = zoomLinkUrl;
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
-          submitButtonLabel: "Create",
-          submitButtonOnPressed: () {
-            if (!mounted) return; // Ensure widget is still mounted
-            if (titleController.text.isEmpty ||
-                jamDate == null ||
-                jamTime == null ||
-                zoomLinkController.text.isEmpty) {
-              _showMessage(
-                  "Please enter all required fields, including the Zoom link.",
-                  isError: true);
-              return;
-            }
-            DateTime jamDateTime = DateTime(
-              jamDate!.year,
-              jamDate!.month,
-              jamDate!.day,
-              jamTime!.hour,
-              jamTime!.minute,
-            );
-            Map<String, dynamic> jamData = {
-              "title": titleController.text,
-              "date": jamDateTime.toIso8601String(),
-              "zoom_link": zoomLinkController.text,
-            };
-            Navigator.of(context).pop();
-            _executeAction(
-                database.createJam, jamData, "Jam created successfully");
-          },
-        );
-      },
+      builder: (context) => CreateJamDialog(
+        onJamCreated: (jamData) async {
+          await _executeAction(
+            database.createJam,
+            jamData,
+            "Jam created successfully",
+          );
+        },
+      ),
     );
   }
 
