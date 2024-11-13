@@ -1,5 +1,6 @@
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/log_service.dart';
@@ -97,8 +98,7 @@ class _JamPageState extends State<JamPage> {
                           final jam = upcomingJams[index];
                           final jamData = jam.data;
                           final jamTitle = jamData['title'] ?? 'Untitled Jam';
-                          final jamDescription = jamData['description'] ??
-                              'Join us for a memorable event!';
+
                           final jamDateStr = jamData['date'] ?? '';
                           DateTime? jamDate;
 
@@ -138,18 +138,12 @@ class _JamPageState extends State<JamPage> {
                                   const SizedBox(height: 4),
                                   Text(
                                     jamDate != null
-                                        ? 'Date: ${jamDate.toLocal()}'
+                                        ? 'Date: ${DateFormat('MMM dd, yyyy - hh:mm a').format(jamDate)}'
                                         : 'Date unavailable',
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
                                         ?.copyWith(color: Colors.grey[600]),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    jamDescription,
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
                                   ),
                                 ],
                               ),

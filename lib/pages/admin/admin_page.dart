@@ -18,15 +18,6 @@ class AdminPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 8),
-            Text(
-              'This page allows administrators to manage users, content, and view system logs.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 20),
-
             // Jam Calendar Section
             StandardCard(
               icon: Icons.calendar_month,
