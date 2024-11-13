@@ -1,19 +1,169 @@
-import 'package:appwrite/models.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/appwrite/database_api.dart';
+import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/utilities/standard_submissioncard.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 
-class JamDetailsPage extends StatelessWidget {
-  final Document jam;
-
+class JamDetailsPage extends StatefulWidget {
+  final dynamic jam;
   const JamDetailsPage({super.key, required this.jam});
 
   @override
+  _JamDetailsPageState createState() => _JamDetailsPageState();
+}
+
+class _JamDetailsPageState extends State<JamDetailsPage>
+    with WidgetsBindingObserver {
+  bool isLoading = true;
+  bool _isDisposed = false;
+  List<Uint8List?> photos = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _fetchSubmission();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  void _fetchSubmission() async {
+    final auth = Provider.of<AuthAPI>(context, listen: false);
+    final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
+    final storageApi = Provider.of<StorageAPI>(context, listen: false);
+
+    try {
+      final userId = auth.userid;
+      final authToken = await auth.getToken();
+
+      if (userId == null || userId.isEmpty || authToken == null) {
+        throw Exception("User ID or auth token is not available.");
+      }
+
+      LogService.instance.info('Fetching submission for user: $userId');
+      final submission =
+          await databaseApi.getSubmissionByJamAndUser(widget.jam.$id, userId);
+
+      if (!_isDisposed) {
+        final photoUrls =
+            List<String>.from(submission.data['photos'] ?? []).take(3).toList();
+        LogService.instance.info('Retrieved photo URLs: $photoUrls');
+
+        List<Uint8List?> photos = [];
+        for (var photoUrl in photoUrls) {
+          if (_isDisposed) return;
+          LogService.instance.info('Fetching image for URL: $photoUrl');
+          final imageData =
+              await _fetchAndCacheImage(photoUrl, authToken, storageApi);
+          if (imageData != null) {
+            photos.add(imageData);
+            LogService.instance.info('Image data added for URL: $photoUrl');
+          } else {
+            LogService.instance
+                .info('Image data could not be fetched for URL: $photoUrl');
+          }
+        }
+
+        if (!_isDisposed) {
+          setState(() {
+            isLoading = false;
+            this.photos = photos; // Update the photos list in the state
+          });
+          LogService.instance
+              .info('All images have been fetched and loaded into the UI');
+        }
+      }
+    } catch (e) {
+      LogService.instance.error('Error fetching submission: $e');
+      if (!_isDisposed) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<Uint8List?> _fetchAndCacheImage(
+      String photoUrl, String authToken, StorageAPI storageApi) async {
+    final cacheFile = await _getImageCacheFile(photoUrl);
+
+    if (await cacheFile.exists()) {
+      LogService.instance.info('Loading image from cache for URL: $photoUrl');
+      return await cacheFile.readAsBytes();
+    }
+
+    try {
+      LogService.instance
+          .info('Downloading image from network for URL: $photoUrl');
+      final imageData =
+          await storageApi.fetchAuthenticatedImage(photoUrl, authToken);
+      if (imageData != null) {
+        await cacheFile.writeAsBytes(imageData);
+        LogService.instance.info('Image cached for URL: $photoUrl');
+      } else {
+        LogService.instance
+            .info('No image data received from network for URL: $photoUrl');
+      }
+      return imageData;
+    } catch (e) {
+      LogService.instance
+          .error('Error fetching image from network for URL $photoUrl: $e');
+      return null;
+    }
+  }
+
+  Future<File> _getImageCacheFile(String photoUrl) async {
+    final cacheDir = await getTemporaryDirectory();
+    final sanitizedFileName = sha256.convert(utf8.encode(photoUrl)).toString();
+    return File('${cacheDir.path}/$sanitizedFileName.jpg');
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final jamDate = DateTime.parse(jam.data['date']);
-    final title = jam.data['title'];
-    final description = jam.data['description'] ?? "No description available.";
-    final zoomLink = jam.data['zoom_link'];
+    final jamDate = DateTime.parse(widget.jam.data['date']);
+    final title = widget.jam.data['title'];
+    final zoomLink = widget.jam.data['zoom_link'];
+    final formattedDate = DateFormat('MMM dd, yyyy - hh:mm a').format(jamDate);
+
+    final photoWidgets = [
+      Row(
+        children: photos.asMap().entries.map((entry) {
+          Uint8List? photoData = entry.value;
+          return GestureDetector(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8.0),
+                child: photoData != null
+                    ? Image.memory(photoData,
+                        width: 100, height: 100, fit: BoxFit.cover)
+                    : Container(
+                        width: 100,
+                        height: 100,
+                        color: const Color.fromARGB(255, 106, 35, 35),
+                        child: const Icon(Icons.image_not_supported,
+                            color: Colors.white),
+                      ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -37,7 +187,7 @@ class JamDetailsPage extends StatelessWidget {
                 Icon(Icons.calendar_today, color: Colors.grey[600]),
                 const SizedBox(width: 8),
                 Text(
-                  'Date: ${jamDate.toLocal()}',
+                  'Date: $formattedDate',
                   style: Theme.of(context)
                       .textTheme
                       .bodyMedium
@@ -46,16 +196,8 @@ class JamDetailsPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            Text(
-              "Description",
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const Spacer(),
+            SubmissionCard(
+                title: "Your submitted photos", photoWidgets: photoWidgets)
           ],
         ),
       ),
@@ -76,7 +218,8 @@ class JamDetailsPage extends StatelessWidget {
             heroTag: 'addToCalendar',
             icon: Icon(Icons.calendar_today),
             label: Text("Add to Calendar"),
-            onPressed: () => _addToGoogleCalendar(jamDate, title, description),
+            onPressed: () =>
+                _addToGoogleCalendar(jamDate, title, 'no description'),
           ),
         ],
       ),

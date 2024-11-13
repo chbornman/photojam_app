@@ -331,6 +331,29 @@ class DatabaseAPI {
     }
   }
 
+  /// Retrieve a single submission by associated jam and user
+  Future<Document> getSubmissionByJamAndUser(String jamId, String userId) async {
+    try {
+      final response = await databases.listDocuments(
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionSubmissions,
+        queries: [
+          Query.equal('jam', jamId),
+          Query.equal('user_id', userId),
+        ],
+      );
+
+      if (response.documents.isNotEmpty) {
+        return response.documents.first;
+      } else {
+        throw Exception('No submission found for jam $jamId and user $userId');
+      }
+    } catch (e) {
+      LogService.instance.error('Error fetching submission for jam $jamId and user $userId: $e');
+      rethrow;
+    }
+  }
+
   // Updates an existing submission with new photos and date
   Future<void> updateSubmission(
       String submissionId, List<String> photoUrls, String date, String comment) async {
