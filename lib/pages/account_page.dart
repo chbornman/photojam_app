@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/constants/constants.dart';
+import 'package:photojam_app/log_service.dart';
 import 'package:photojam_app/pages/facilitator_signup_page.dart';
 import 'package:photojam_app/pages/membership_signup_page.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
 import 'package:photojam_app/utilities/standard_dialog.dart';
 import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -15,7 +18,6 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-
   @override
   void initState() {
     super.initState();
@@ -47,6 +49,15 @@ class _AccountPageState extends State<AccountPage> {
         },
       ),
     );
+  }
+
+  void _goToExternalLink(String url) {
+    final Uri zoomUri = Uri.parse(url);
+    if (zoomUri.hasScheme) {
+      launchUrl(zoomUri);
+    } else {
+      LogService.instance.info("Invalid Zoom URL");
+    }
   }
 
   void showUpdateEmailDialog() {
@@ -204,6 +215,7 @@ class _AccountPageState extends State<AccountPage> {
                 },
               ),
             ]
+
             // Become a facilitator Card
             else if (userData.userRole == 'member') ...[
               const SizedBox(height: 10),
@@ -218,6 +230,18 @@ class _AccountPageState extends State<AccountPage> {
                     MaterialPageRoute(
                         builder: (context) => FacilitatorSignupPage()),
                   );
+                },
+              ),
+            ],
+
+            // Signal link Card
+            if (userData.userRole != 'nonmember') ...[
+              const SizedBox(height: 10),
+              StandardCard(
+                icon: Icons.chat,
+                title: "Go to the Signal Chat",
+                onTap: () {
+                  _goToExternalLink(signalGroupUrl);
                 },
               ),
             ],

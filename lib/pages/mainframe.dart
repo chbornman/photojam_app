@@ -6,7 +6,6 @@ import 'package:photojam_app/utilities/standard_appbar.dart';
 import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/pages/account_page.dart';
-import 'package:photojam_app/pages/home/home_page.dart';
 import 'package:photojam_app/pages/journeys/journey_page.dart';
 import 'package:photojam_app/pages/admin/admin_page.dart';
 import 'package:photojam_app/pages/photos_tab/photos_page.dart';
@@ -23,7 +22,6 @@ class _MainframeState extends State<Mainframe> {
 
   List<Widget> getScreens(String userRole) {
     return [
-      HomePage(),
       JamPage(),
       JourneyPage(),
       PhotosPage(),
@@ -84,11 +82,6 @@ class _MainframeState extends State<Mainframe> {
           }
         },
         items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-            backgroundColor: Theme.of(context).colorScheme.primary,
-          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.camera_alt),
             label: 'Jams',
