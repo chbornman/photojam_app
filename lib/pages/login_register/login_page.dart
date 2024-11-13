@@ -1,5 +1,4 @@
 import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/enums.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/login_register/register_page.dart';
 import 'package:flutter/material.dart';
@@ -66,13 +65,13 @@ class _LoginPageState extends State<LoginPage> {
         });
   }
 
-  signInWithProvider(OAuthProvider provider) {
-    try {
-      context.read<AuthAPI>().signInWithProvider(provider: provider);
-    } on AppwriteException catch (e) {
-      showAlert(title: 'Login failed', text: e.message.toString());
-    }
-  }
+  // signInWithProvider(OAuthProvider provider) {
+  //   try {
+  //     context.read<AuthAPI>().signInWithProvider(provider: provider);
+  //   } on AppwriteException catch (e) {
+  //     showAlert(title: 'Login failed', text: e.message.toString());
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {

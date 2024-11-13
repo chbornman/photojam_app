@@ -46,9 +46,11 @@ class _JamPageState extends State<JamPage> {
           return dateA.compareTo(dateB);
         });
 
-        setState(() {
-          upcomingJams = validJams;
-        });
+        if (mounted) {
+          setState(() {
+            upcomingJams = validJams;
+          });
+        }
       }
     } catch (e) {
       LogService.instance.error('Error fetching upcoming jams: $e');

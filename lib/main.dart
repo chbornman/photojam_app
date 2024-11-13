@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:appwrite/appwrite.dart';
-import 'package:photojam_app/constants/constants.dart';
-import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
+import 'package:photojam_app/constants/constants.dart';
+import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/constants/custom_theme.dart';
 import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/splashscreen.dart';
 import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/pages/login_register/login_page.dart';
@@ -15,7 +16,6 @@ void main() async {
   LogService.instance.info("App started");
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize and configure Appwrite Client
   final Client client = Client()
       .setEndpoint(appwriteEndpointId)
       .setProject(appwriteProjectId)
@@ -40,6 +40,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    LogService.instance.info("Building MyApp widget");
+
     return MaterialApp(
       title: 'PhotoJam',
       theme: getLightTheme(),
@@ -51,10 +53,10 @@ class MyApp extends StatelessWidget {
             return FutureBuilder(
               future:
                   context.read<UserDataProvider>().initializeUserData(authAPI),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const CircularProgressIndicator(); // Show a loading indicator while initializing
-                } else if (snapshot.hasError) {
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return SplashScreen(); // Show splash screen until initialization is complete
+          } else if (snapshot.hasError) {
                   return Center(child: Text("Error loading user data."));
                 } else {
                   return Mainframe(); // Proceed to main content when initialization is complete
