@@ -166,91 +166,122 @@ class _JamSignupPageState extends State<JamSignupPage> {
     return "${jamName}_${date}_${username}_photo${index + 1}.jpg";
   }
 
-  Future<void> _submitPhotos() async {
-    // Step 1: Ensure a Jam is selected
-    if (selectedJamId == null || selectedJamName == null) {
-      await _showSelectJamWarningDialog();
-      return;
-    }
+Future<bool> _showOverwriteConfirmationDialog() async {
+  return showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text("Existing Submission"),
+        content: Text(
+            "You have already submitted photos for this Jam. Submitting again will overwrite your previous submission. Do you want to proceed?"),
+        actions: [
+          StandardButton(
+            onPressed: () {
+              Navigator.pop(context, false); // Cancel overwrite
+            },
+            label: Text("Cancel"),
+          ),
+          StandardButton(
+            onPressed: () {
+              Navigator.pop(context, true); // Confirm overwrite
+            },
+            label: Text("Overwrite"),
+          ),
+        ],
+      );
+    },
+  ).then((value) => value ?? false);
+}
 
-    // Step 2: Check if any photos are selected
-    bool noPhotosSelected = photos.every((photo) => photo == null);
-    if (noPhotosSelected) {
-      bool shouldDelete = await _showDeleteWarningDialog();
-      if (shouldDelete) {
-        await _deleteExistingSubmission();
-      }
-      return;
-    }
-
-    // Step 3: Show loading spinner
-    setState(() {
-      isLoading = true;
-    });
-
-    try {
-      final userId = await auth.fetchUserId();
-      if (userId == null) {
-        LogService.instance.info("User ID not found. Please log in.");
-        return;
-      }
-
-      List<String> photoUrls = [];
-      for (int i = 0; i < photos.length; i++) {
-        final photo = photos[i];
-        if (photo != null) {
-          String fileName = formatFileName(i, selectedJamName!, userId);
-          try {
-            final photoId =
-                await storage.uploadPhoto(await photo.readAsBytes(), fileName);
-            final photoUrl = await storage.getPhotoUrl(photoId);
-            photoUrls.add(photoUrl);
-            LogService.instance.info("Uploaded photo $i with name $fileName");
-          } catch (e) {
-            LogService.instance.error("Failed to upload photo $i: $e");
-          }
-        }
-      }
-
-      final existingSubmission =
-          await database.getUserSubmissionForJam(selectedJamId!, userId);
-      if (existingSubmission != null) {
-        // Delete existing photos
-        for (String url in existingSubmission.data['photos']) {
-          final fileId = extractFileIdFromUrl(url);
-          await storage.deletePhoto(fileId);
-          LogService.instance
-              .info("Deleted existing photo with file ID: $fileId");
-        }
-
-        // Update submission with new photos
-        await database.updateSubmission(
-          existingSubmission.$id,
-          photoUrls,
-          DateTime.now().toIso8601String(),
-          _commentController.text,
-        );
-        LogService.instance
-            .info("Submission updated successfully for Jam: $selectedJamId");
-      } else {
-        await database.createSubmission(
-            selectedJamId!, photoUrls, userId, _commentController.text);
-        LogService.instance
-            .error("Submission created successfully for Jam: $selectedJamId");
-      }
-
-      // Step 4: Hide loading spinner and show confirmation dialog
-      setState(() {
-        isLoading = false;
-      });
-      _showConfirmationDialog();
-    } catch (e) {
-      LogService.instance.error("Error during photo submission: $e");
-      setState(() {
-        isLoading = false; // Ensure spinner is hidden if an error occurs
-      });
-    }
+Future<void> _submitPhotos() async {
+  // Step 1: Ensure a Jam is selected
+  if (selectedJamId == null || selectedJamName == null) {
+    await _showSelectJamWarningDialog();
+    return;
   }
+
+  // Step 2: Check if any photos are selected
+  bool noPhotosSelected = photos.every((photo) => photo == null);
+  if (noPhotosSelected) {
+    bool shouldDelete = await _showDeleteWarningDialog();
+    if (shouldDelete) {
+      await _deleteExistingSubmission();
+    }
+    return;
+  }
+
+  setState(() {
+    isLoading = true;
+  });
+
+  try {
+    final userId = await auth.fetchUserId();
+    if (userId == null) {
+      LogService.instance.info("User ID not found. Please log in.");
+      return;
+    }
+
+    // Check for existing submission
+    final existingSubmission = await database.getUserSubmissionForJam(selectedJamId!, userId);
+    if (existingSubmission != null) {
+      bool shouldOverwrite = await _showOverwriteConfirmationDialog();
+      if (!shouldOverwrite) {
+        setState(() {
+          isLoading = false;
+        });
+        return; // Exit if user chose not to overwrite
+      }
+    }
+
+    // Proceed with submission...
+    List<String> photoUrls = [];
+    for (int i = 0; i < photos.length; i++) {
+      final photo = photos[i];
+      if (photo != null) {
+        String fileName = formatFileName(i, selectedJamName!, userId);
+        try {
+          //TODO delete old photos before uploading new photos!
+          final photoId = await storage.uploadPhoto(await photo.readAsBytes(), fileName);
+          final photoUrl = await storage.getPhotoUrl(photoId);
+          photoUrls.add(photoUrl);
+          LogService.instance.info("Uploaded photo $i with name $fileName");
+        } catch (e) {
+          LogService.instance.error("Failed to upload photo $i: $e");
+        }
+      }
+    }
+
+    if (existingSubmission != null) {
+      // Update submission with new photos
+      await database.updateSubmission(
+        existingSubmission.$id,
+        photoUrls,
+        DateTime.now().toIso8601String(),
+        _commentController.text,
+      );
+      LogService.instance.info("Submission updated successfully for Jam: $selectedJamId");
+    } else {
+      // Create a new submission
+      await database.createSubmission(
+        selectedJamId!,
+        photoUrls,
+        userId,
+        _commentController.text,
+      );
+      LogService.instance.info("Submission created successfully for Jam: $selectedJamId");
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+    _showConfirmationDialog();
+  } catch (e) {
+    LogService.instance.error("Error during photo submission: $e");
+    setState(() {
+      isLoading = false;
+    });
+  }
+}
 
 // Helper function to show a dialog if no Jam is selected
   Future<void> _showSelectJamWarningDialog() async {
