@@ -49,7 +49,7 @@ class _MainframeState extends State<Mainframe> {
     return Scaffold(
       appBar: StandardAppBar(
         title: getTitleForIndex(_currentIndex),
-        actions: _currentIndex == 4
+        actions: _currentIndex == 3
             ? [
                 IconButton(
                   icon: Icon(Icons.logout,
@@ -122,18 +122,16 @@ class _MainframeState extends State<Mainframe> {
   String getTitleForIndex(int index) {
     switch (index) {
       case 0:
-        return 'Home';
-      case 1:
         return 'Jams';
-      case 2:
+      case 1:
         return 'Journeys';
+      case 2:
+        return 'Photos';
       case 3:
-        return 'My Photos';
-      case 4:
         return 'Account';
-      case 5:
+      case 4:
         return 'Facilitator Dashboard';
-      case 6:
+      case 5:
         return 'Admin Dashboard';
       default:
         return 'PhotoJam';

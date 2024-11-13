@@ -388,11 +388,17 @@ class _JamSignupPageState extends State<JamSignupPage> {
                         borderRadius: BorderRadius.circular(16.0),
                       ),
                     ),
-                    hint: Text("Select Jam Event"),
+                    hint: Text(
+                      jamEvents.isEmpty
+                          ? "No jams available"
+                          : "Select Jam Event",
+                    ),
                     value: selectedJamId,
-                    onChanged: (String? newValue) async {
-                      await _onJamSelected(newValue);
-                    },
+                    onChanged: jamEvents.isEmpty
+                        ? null
+                        : (String? newValue) async {
+                            await _onJamSelected(newValue);
+                          },
                     items: jamEvents,
                   ),
                 ),
@@ -404,25 +410,53 @@ class _JamSignupPageState extends State<JamSignupPage> {
                       return Flexible(
                         child: InkWell(
                           onTap: () => _selectPhoto(index),
-                          child: Container(
-                            width: 100.0,
-                            height: 100.0,
-                            margin: EdgeInsets.symmetric(horizontal: 8.0),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16.0),
-                              border: Border.all(color: Colors.grey),
-                              image: photos[index] != null
-                                  ? DecorationImage(
-                                      image: FileImage(photos[index]!),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
-                            ),
-                            child: photos[index] == null
-                                ? Icon(Icons.photo,
-                                    size: 50.0, color: Colors.grey[600])
-                                : null,
+                          child: Stack(
+                            children: [
+                              Container(
+                                width: 100.0,
+                                height: 100.0,
+                                margin: EdgeInsets.symmetric(horizontal: 8.0),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16.0),
+                                  border: Border.all(color: Colors.grey),
+                                  image: photos[index] != null
+                                      ? DecorationImage(
+                                          image: FileImage(photos[index]!),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null,
+                                ),
+                                child: photos[index] == null
+                                    ? Icon(Icons.photo,
+                                        size: 50.0, color: Colors.grey[600])
+                                    : null,
+                              ),
+                              // "X" Icon for Deselecting the Photo
+                              if (photos[index] != null)
+                                Positioned(
+                                  top: 6,
+                                  right: 12,
+                                  child: InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        photos[index] = null; // Deselect photo
+                                      });
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.6),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 26,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       );
@@ -446,10 +480,15 @@ class _JamSignupPageState extends State<JamSignupPage> {
                   ),
                 ),
                 StandardButton(
-                    label: Text("Submit Photos"),
-                    onPressed: () {
-                      _submitPhotos();
-                    }),
+                  label: Text("Submit Photos"),
+                  onPressed: (selectedJamId == null ||
+                          jamEvents.isEmpty ||
+                          photos.every((photo) => photo == null))
+                      ? null // Disable the button if no jam is selected, no jams exist, or no photos are selected
+                      : () {
+                          _submitPhotos();
+                        },
+                ),
               ],
             ),
           ),
