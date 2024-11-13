@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/pages/journeys/alljourneys_page.dart';
 import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
@@ -110,26 +111,41 @@ class _JourneyPageState extends State<JourneyPage> {
     final theme = Theme.of(context);
     final userRole = context.watch<UserDataProvider>().userRole;
 
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Expanded(
-              // Wrap MyJourneysPage with Expanded to prevent unbounded height errors
-              child: MyJourneysPage(userId: auth.userid ?? ''),
-            ),
-            const SizedBox(height: 20),
-            if (userRole == 'nonmember')
+    if (userRole == 'nonmember') {
+      return Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Expanded(
+                // Wrap MyJourneysPage with Expanded to prevent unbounded height errors
+                child: MyJourneysPage(userId: auth.userid ?? ''),
+              ),
+              const SizedBox(height: 20),
               StandardCard(
                 icon: Icons.add_circle_outline,
                 title: "Sign Up for a Journey",
                 onTap: _openSignUpForJourneyDialog,
               ),
-          ],
+            ],
+          ),
         ),
-      ),
-      backgroundColor: theme.colorScheme.surface,
-    );
+        backgroundColor: theme.colorScheme.surface,
+      );
+    } else {
+      return Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Expanded(
+                child: AllJourneysPage(userId: auth.userid ?? ''),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: theme.colorScheme.surface,
+      );
+    }
   }
 }

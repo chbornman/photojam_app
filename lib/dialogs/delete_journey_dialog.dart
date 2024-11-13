@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:photojam_app/utilities/standard_button.dart';
 import 'package:photojam_app/utilities/standard_dialog.dart';
 
 class DeleteJourneyDialog extends StatefulWidget {
@@ -55,17 +56,17 @@ class _DeleteJourneyDialogState extends State<DeleteJourneyDialog> {
             "Date: $dateStr",
           ),
           actions: [
-            TextButton(
+            StandardButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text("Cancel"),
+              label: Text("Cancel"),
             ),
-            TextButton(
+            StandardButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Close confirmation dialog
                 Navigator.of(context).pop(); // Close delete journey dialog
                 widget.onJourneyDeleted(_selectedJourneyId!);
               },
-              child: Text("Delete"),
+              label: Text("Delete"),
             ),
           ],
         );
