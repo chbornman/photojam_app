@@ -3,7 +3,6 @@ import 'package:appwrite/enums.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/login_register/register_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:photojam_app/utilities/standard_appbar.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
 import 'package:provider/provider.dart';
@@ -155,35 +154,35 @@ class _LoginPageState extends State<LoginPage> {
                             builder: (context) => const RegisterPage()));
                   },
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Expanded(
-                      child: StandardButton(
-                        label: SvgPicture.asset(
-                          'assets/google_icon.svg',
-                          width: 24,
-                          color: Theme.of(context).colorScheme.onPrimary,
-                        ),
-                        onPressed: () =>
-                            signInWithProvider(OAuthProvider.google),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: StandardButton(
-                        label: SvgPicture.asset(
-                          'assets/apple_icon.svg',
-                          width: 24,
-                          color: Theme.of(context).colorScheme.onPrimary,
-                        ),
-                        onPressed: () =>
-                            signInWithProvider(OAuthProvider.apple),
-                      ),
-                    ),
-                  ],
-                ),
+                // const SizedBox(height: 16),
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                //   children: [
+                //     Expanded(
+                //       child: StandardButton(
+                //         label: SvgPicture.asset(
+                //           'assets/google_icon.svg',
+                //           width: 24,
+                //           color: Theme.of(context).colorScheme.onPrimary,
+                //         ),
+                //         onPressed: () =>
+                //             signInWithProvider(OAuthProvider.google),
+                //       ),
+                //     ),
+                //     const SizedBox(width: 16),
+                //     Expanded(
+                //       child: StandardButton(
+                //         label: SvgPicture.asset(
+                //           'assets/apple_icon.svg',
+                //           width: 24,
+                //           color: Theme.of(context).colorScheme.onPrimary,
+                //         ),
+                //         onPressed: () =>
+                //             signInWithProvider(OAuthProvider.apple),
+                //       ),
+                //     ),
+                //   ],
+                // ),
               ],
             ),
           ),

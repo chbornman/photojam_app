@@ -16,9 +16,6 @@ class _RegisterPageState extends State<RegisterPage> {
   final emailTextController = TextEditingController();
   final passwordTextController = TextEditingController();
   final confirmPasswordTextController = TextEditingController();
-  String? selectedRole = 'nonmember';
-
-  final List<String> roles = ['nonmember', 'member', 'facilitator', 'admin'];
 
   createAccount() async {
     if (passwordTextController.text != confirmPasswordTextController.text) {
@@ -42,9 +39,7 @@ class _RegisterPageState extends State<RegisterPage> {
         password: passwordTextController.text,
       );
 
-      if (selectedRole != null) {
-        await authAPI.setRole(selectedRole!);
-      }
+      await authAPI.setRole('nonmember');
 
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -162,30 +157,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   obscureText: true,
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: selectedRole,
-                  items: roles
-                      .map((role) => DropdownMenuItem(
-                            value: role,
-                            child: Text(role),
-                          ))
-                      .toList(),
-                  decoration: InputDecoration(
-                    labelText: 'Role',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                    contentPadding: const EdgeInsets.all(20.0),
-                    filled: true,
-                    fillColor: Theme.of(context).colorScheme.surface,
-                  ),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedRole = value;
-                    });
-                  },
-                ),
-                const SizedBox(height: 26),
                 StandardButton(
                   label: const Text("Sign up", style: TextStyle(fontSize: 18)),
                   icon: Icon(

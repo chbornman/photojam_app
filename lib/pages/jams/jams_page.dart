@@ -35,26 +35,19 @@ class _JamPageState extends State<JamPage> {
         final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
         final response = await databaseApi.getUpcomingJamsByUser(userId);
 
-        if (response != null && response.documents != null) {
-          final validJams = response.documents
-              .where((doc) => doc.data != null && doc.data['date'] != null)
-              .toList();
+        final validJams = response.documents
+            .where((doc) => doc.data['date'] != null)
+            .toList();
 
-          validJams.sort((a, b) {
-            final dateA = DateTime.tryParse(a.data['date']) ?? DateTime.now();
-            final dateB = DateTime.tryParse(b.data['date']) ?? DateTime.now();
-            return dateA.compareTo(dateB);
-          });
+        validJams.sort((a, b) {
+          final dateA = DateTime.tryParse(a.data['date']) ?? DateTime.now();
+          final dateB = DateTime.tryParse(b.data['date']) ?? DateTime.now();
+          return dateA.compareTo(dateB);
+        });
 
-          setState(() {
-            upcomingJams = validJams;
-          });
-        } else {
-          LogService.instance.info('No documents found or response is null.');
-          setState(() {
-            upcomingJams = []; // Empty list if no valid documents are found
-          });
-        }
+        setState(() {
+          upcomingJams = validJams;
+        });
       }
     } catch (e) {
       LogService.instance.error('Error fetching upcoming jams: $e');
@@ -103,8 +96,7 @@ class _JamPageState extends State<JamPage> {
                         itemCount: upcomingJams.length,
                         itemBuilder: (context, index) {
                           final jam = upcomingJams[index];
-                          final jamData = jam.data ??
-                              {}; // Provide an empty map as fallback
+                          final jamData = jam.data;
                           final jamTitle = jamData['title'] ?? 'Untitled Jam';
                           final jamDescription = jamData['description'] ??
                               'Join us for a memorable event!';
