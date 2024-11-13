@@ -61,17 +61,14 @@ class _JamDetailsPageState extends State<JamDetailsPage>
       if (!_isDisposed) {
         final photoUrls =
             List<String>.from(submission.data['photos'] ?? []).take(3).toList();
-        LogService.instance.info('Retrieved photo URLs: $photoUrls');
 
         List<Uint8List?> photos = [];
         for (var photoUrl in photoUrls) {
           if (_isDisposed) return;
-          LogService.instance.info('Fetching image for URL: $photoUrl');
           final imageData =
               await _fetchAndCacheImage(photoUrl, authToken, storageApi);
           if (imageData != null) {
             photos.add(imageData);
-            LogService.instance.info('Image data added for URL: $photoUrl');
           } else {
             LogService.instance
                 .info('Image data could not be fetched for URL: $photoUrl');
@@ -83,8 +80,6 @@ class _JamDetailsPageState extends State<JamDetailsPage>
             isLoading = false;
             this.photos = photos; // Update the photos list in the state
           });
-          LogService.instance
-              .info('All images have been fetched and loaded into the UI');
         }
       }
     } catch (e) {

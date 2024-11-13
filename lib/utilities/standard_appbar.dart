@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/pages/mainframe.dart';
 
 class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
-  final bool enableLeadingGesture; // New parameter to control leading icon tap
+  final bool enableLeadingGesture;
+  final VoidCallback? onLogoTap; // New parameter for logo tap callback
 
-  const StandardAppBar({super.key, 
+  const StandardAppBar({
+    super.key,
     required this.title,
     this.actions,
-    this.enableLeadingGesture = true, // Default to true for other pages
+    this.enableLeadingGesture = true,
+    this.onLogoTap, // Initialize the new parameter
   });
 
   @override
@@ -26,10 +28,7 @@ class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
           ? Padding(
               padding: const EdgeInsets.only(left: 8.0),
               child: GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Mainframe()),
-                ),
+                onTap: onLogoTap, // Use the callback function
                 child: Image.asset('assets/icon/app_icon_transparent.png'),
               ),
             )

@@ -244,7 +244,7 @@ Future<void> _submitPhotos() async {
           final photoId = await storage.uploadPhoto(await photo.readAsBytes(), fileName);
           final photoUrl = await storage.getPhotoUrl(photoId);
           photoUrls.add(photoUrl);
-          LogService.instance.info("Uploaded photo $i with name $fileName");
+          LogService.instance.info("Uploaded photo ${i+1} with name $fileName");
         } catch (e) {
           LogService.instance.error("Failed to upload photo $i: $e");
         }

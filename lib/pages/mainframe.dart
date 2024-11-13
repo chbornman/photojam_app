@@ -64,6 +64,11 @@ class _MainframeState extends State<Mainframe> {
                 ),
               ]
             : null,
+        onLogoTap: () {
+          setState(() {
+            _currentIndex = 0;
+          });
+        },
       ),
       body: IndexedStack(
         index: _currentIndex,
