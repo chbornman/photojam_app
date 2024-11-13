@@ -61,7 +61,8 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
         if (_isDisposed) return;
 
         final date = doc.data['date'] ?? 'Unknown Date';
-        final photoUrls = List<String>.from(doc.data['photos'] ?? []).take(3).toList();
+        final photoUrls =
+            List<String>.from(doc.data['photos'] ?? []).take(3).toList();
 
         String jamTitle = 'Untitled';
         final jamData = doc.data['jam'];
@@ -72,7 +73,8 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
         List<Uint8List?> photos = [];
         for (var photoUrl in photoUrls) {
           if (_isDisposed) return;
-          final imageData = await _fetchAndCacheImage(photoUrl, authToken, storageApi);
+          final imageData =
+              await _fetchAndCacheImage(photoUrl, authToken, storageApi);
           photos.add(imageData);
         }
 
@@ -97,7 +99,8 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
     }
   }
 
-  Future<Uint8List?> _fetchAndCacheImage(String photoUrl, String authToken, StorageAPI storageApi) async {
+  Future<Uint8List?> _fetchAndCacheImage(
+      String photoUrl, String authToken, StorageAPI storageApi) async {
     final cacheFile = await _getImageCacheFile(photoUrl);
 
     if (await cacheFile.exists()) {
@@ -105,7 +108,8 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
     }
 
     try {
-      final imageData = await storageApi.fetchAuthenticatedImage(photoUrl, authToken);
+      final imageData =
+          await storageApi.fetchAuthenticatedImage(photoUrl, authToken);
       if (imageData != null) {
         await cacheFile.writeAsBytes(imageData);
       }
@@ -137,8 +141,7 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
     }
   }
 
-  
- @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -146,50 +149,65 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
         onRefresh: _fetchAllSubmissions,
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
-            : ListView.builder(
-                itemCount: allSubmissions.length,
-                padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                itemBuilder: (context, index) {
-                  final submission = allSubmissions[index];
-                  final jamTitle = submission['jamTitle'];
-                  final date = submission['date'];
-                  final photos = submission['photos'] as List<Uint8List?>;
-
-                  // Define how each photo should appear
-                  final photoWidgets = [
-                    Row(
-                      children: photos.asMap().entries.map((entry) {
-                        int photoIndex = entry.key;
-                        Uint8List? photoData = entry.value;
-                        return GestureDetector(
-                          onTap: () => _navigateToPhotoScrollPage(index, photoIndex),
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8.0),
-                              child: photoData != null
-                                  ? Image.memory(photoData, width: 100, height: 100, fit: BoxFit.cover)
-                                  : Container(
-                                      width: 100,
-                                      height: 100,
-                                      color: const Color.fromARGB(255, 106, 35, 35),
-                                      child: const Icon(Icons.image_not_supported, color: Colors.white),
-                                    ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
+            : allSubmissions.isEmpty
+                ? Center(
+                    child: Text(
+                      "No submitted photos yet!",
+                      style: TextStyle(fontSize: 18.0, color: Theme.of(context).colorScheme.onSurface),
                     ),
-                  ];
+                  )
+                : ListView.builder(
+                    itemCount: allSubmissions.length,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 8.0, horizontal: 16.0),
+                    itemBuilder: (context, index) {
+                      final submission = allSubmissions[index];
+                      final jamTitle = submission['jamTitle'];
+                      final date = submission['date'];
+                      final photos = submission['photos'] as List<Uint8List?>;
 
-                  // Pass photoWidgets to PhotoCard
-                  return PhotoCard(
-                    title: jamTitle,
-                    date: date,
-                    photoWidgets: photoWidgets,
-                  );
-                },
-              ),
+                      // Define how each photo should appear
+                      final photoWidgets = [
+                        Row(
+                          children: photos.asMap().entries.map((entry) {
+                            int photoIndex = entry.key;
+                            Uint8List? photoData = entry.value;
+                            return GestureDetector(
+                              onTap: () =>
+                                  _navigateToPhotoScrollPage(index, photoIndex),
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8.0),
+                                  child: photoData != null
+                                      ? Image.memory(photoData,
+                                          width: 100,
+                                          height: 100,
+                                          fit: BoxFit.cover)
+                                      : Container(
+                                          width: 100,
+                                          height: 100,
+                                          color: const Color.fromARGB(
+                                              255, 106, 35, 35),
+                                          child: const Icon(
+                                              Icons.image_not_supported,
+                                              color: Colors.white),
+                                        ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ];
+
+                      // Pass photoWidgets to PhotoCard
+                      return PhotoCard(
+                        title: jamTitle,
+                        date: date,
+                        photoWidgets: photoWidgets,
+                      );
+                    },
+                  ),
       ),
     );
   }

@@ -85,11 +85,10 @@ class _JamPageState extends State<JamPage> {
                 child: upcomingJams.isEmpty
                     ? Center(
                         child: Text(
-                          "No upcoming jams.",
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(color: Colors.grey[600]),
+                          "No upcoming jams available",
+                          style: TextStyle(
+                              fontSize: 18.0,
+                              color: Theme.of(context).colorScheme.onSurface),
                         ),
                       )
                     : ListView.builder(

@@ -1,6 +1,5 @@
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
-import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/dialogs/create_jam_dialog.dart';
 import 'package:photojam_app/dialogs/delete_jam_dialog.dart';
 import 'package:photojam_app/dialogs/delete_journey_dialog.dart';

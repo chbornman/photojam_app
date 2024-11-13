@@ -78,7 +78,13 @@ class AllJourneysPage extends StatelessWidget {
             return Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text("No journeys available."));
+            return Center(
+                child: Text(
+              "No journeys currently available",
+              style: TextStyle(
+                  fontSize: 18.0,
+                  color: Theme.of(context).colorScheme.onSurface),
+            ));
           }
           final userJourneys = snapshot.data!;
           return SingleChildScrollView(
