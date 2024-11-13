@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:photojam_app/log_service.dart';
 
-class PhotoCard extends StatelessWidget {
+class SubmissionCard extends StatelessWidget {
   final String title;
   final String? date;
   final List<Widget> photoWidgets;
 
-  const PhotoCard({
+  const SubmissionCard({
     super.key,
     required this.title,
     this.date, // Making date optional

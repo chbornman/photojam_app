@@ -10,7 +10,7 @@ import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/log_service.dart';
 import 'package:photojam_app/pages/admin/photoselect_page.dart';
 import 'package:provider/provider.dart';
-import 'package:photojam_app/utilities/standard_photocard.dart';
+import 'package:photojam_app/utilities/standard_submissioncard.dart';
 
 class JamPrepPage extends StatefulWidget {
   const JamPrepPage({super.key});
@@ -181,8 +181,8 @@ class _JamPrepPageState extends State<JamPrepPage>  with WidgetsBindingObserver 
                     ),
                   ];
 
-                  // Pass photoWidgets to PhotoCard
-                  return PhotoCard(
+                  // Pass photoWidgets to SubmissionCard
+                  return SubmissionCard(
                     title: jamTitle,
                     date: date,
                     photoWidgets: photoWidgets,

@@ -8,7 +8,7 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/log_service.dart';
 import 'package:photojam_app/pages/photos_tab/photoscroll_page.dart';
-import 'package:photojam_app/utilities/standard_photocard.dart';
+import 'package:photojam_app/utilities/standard_submissioncard.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
@@ -200,8 +200,8 @@ class _PhotosPageState extends State<PhotosPage> with WidgetsBindingObserver {
                         ),
                       ];
 
-                      // Pass photoWidgets to PhotoCard
-                      return PhotoCard(
+                      // Pass photoWidgets to SubmissionCard
+                      return SubmissionCard(
                         title: jamTitle,
                         date: date,
                         photoWidgets: photoWidgets,
