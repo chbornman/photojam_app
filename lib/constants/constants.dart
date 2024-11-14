@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 
 
 //Appwrite Project
-const String appwriteEndpointId = "https://cloud.appwrite.io/v1";
-const String appwriteProjectId = "67252f310033542bb23f";
+//const String appwriteEndpointId = "https://cloud.appwrite.io/v1";
+//const String appwriteProjectId = "67252f310033542bb23f";
+
+//Localhost
+const String appwriteEndpointId = "http://192.168.0.51/v1";
+const String appwriteProjectId = "6720f5ca0032a3b05710";
 
 //Database
 const String appwriteDatabaseId = "photojam-database";

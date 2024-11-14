@@ -7,11 +7,11 @@ class UpdateJourneyDialog extends StatefulWidget {
   final Function(Map<String, dynamic>) onJourneyUpdated;
 
   const UpdateJourneyDialog({
-    Key? key,
+    super.key,
     required this.journeyId,
     required this.initialData,
     required this.onJourneyUpdated,
-  }) : super(key: key);
+  });
 
   @override
   _UpdateJourneyDialogState createState() => _UpdateJourneyDialogState();

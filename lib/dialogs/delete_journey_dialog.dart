@@ -7,10 +7,10 @@ class DeleteJourneyDialog extends StatefulWidget {
   final Function(String) onJourneyDeleted;
 
   const DeleteJourneyDialog({
-    Key? key,
+    super.key,
     required this.journeyMap,
     required this.onJourneyDeleted,
-  }) : super(key: key);
+  });
 
   @override
   _DeleteJourneyDialogState createState() => _DeleteJourneyDialogState();

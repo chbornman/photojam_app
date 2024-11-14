@@ -7,10 +7,10 @@ class DeleteJamDialog extends StatefulWidget {
   final Function(String) onJamDeleted;
 
   const DeleteJamDialog({
-    Key? key,
+    super.key,
     required this.jamMap,
     required this.onJamDeleted,
-  }) : super(key: key);
+  });
 
   @override
   _DeleteJamDialogState createState() => _DeleteJamDialogState();

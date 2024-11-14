@@ -5,9 +5,9 @@ class CreateJourneyDialog extends StatefulWidget {
   final Function(Map<String, dynamic>) onJourneyCreated;
 
   const CreateJourneyDialog({
-    Key? key,
+    super.key,
     required this.onJourneyCreated,
-  }) : super(key: key);
+  });
 
   @override
   _CreateJourneyDialogState createState() => _CreateJourneyDialogState();

@@ -6,9 +6,9 @@ class CreateJamDialog extends StatefulWidget {
   final Function(Map<String, dynamic>) onJamCreated;
 
   const CreateJamDialog({
-    Key? key,
+    super.key,
     required this.onJamCreated,
-  }) : super(key: key);
+  });
 
   @override
   _CreateJamDialogState createState() => _CreateJamDialogState();

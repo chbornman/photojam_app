@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/main.dart';
 
 class SplashScreen extends StatefulWidget {
+  final VoidCallback onAnimationComplete;
+
+  const SplashScreen({super.key, required this.onAnimationComplete});
+
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }
@@ -47,13 +50,13 @@ class _SplashScreenState extends State<SplashScreen>
     // Rotation animation for a twist effect
     _rotationAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: 0.12)
-          .chain(CurveTween(curve: Curves.easeOut)), // Rotate to quarter turn
-        weight: 50),
+          tween: Tween(begin: 0.0, end: 0.12).chain(
+              CurveTween(curve: Curves.easeOut)), // Rotate to quarter turn
+          weight: 50),
       TweenSequenceItem(
-        tween: Tween(begin: 0.12, end: 0.0)
-          .chain(CurveTween(curve: Curves.easeIn)), // Rotate back to center
-        weight: 50),
+          tween: Tween(begin: 0.12, end: 0.0)
+              .chain(CurveTween(curve: Curves.easeIn)), // Rotate back to center
+          weight: 50),
     ]).animate(_controller);
 
     // Color animation for background color transition
@@ -66,25 +69,15 @@ class _SplashScreenState extends State<SplashScreen>
         curve: Curves.easeInOut,
       ),
     );
+    // Start the animation
+    _controller.forward();
 
-    // Start the animation and navigate after resting for 1 second
-    _startAnimation();
-  }
-
-  Future<void> _startAnimation() async {
-    await _controller.forward(); // Play animation over 2 seconds
-    await Future.delayed(const Duration(seconds: 1)); // Rest for 1 second
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => MyApp()),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+    // Add a listener to handle the callback when the animation completes
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        widget.onAnimationComplete();
+      }
+    });
   }
 
   @override
@@ -98,7 +91,8 @@ class _SplashScreenState extends State<SplashScreen>
             child: FadeTransition(
               opacity: _fadeAnimation,
               child: Transform.rotate(
-                angle: _rotationAnimation.value * 3.14159, // Converting to radians
+                angle:
+                    _rotationAnimation.value * 3.14159, // Converting to radians
                 child: ScaleTransition(
                   scale: _scaleAnimation,
                   child: Image.asset(

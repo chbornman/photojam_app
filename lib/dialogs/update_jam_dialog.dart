@@ -7,11 +7,11 @@ class UpdateJamDialog extends StatefulWidget {
   final Function(Map<String, dynamic>) onJamUpdated;
 
   const UpdateJamDialog({
-    Key? key,
+    super.key,
     required this.jamId,
     required this.initialData,
     required this.onJamUpdated,
-  }) : super(key: key);
+  });
 
   @override
   _UpdateJamDialogState createState() => _UpdateJamDialogState();

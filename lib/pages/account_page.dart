@@ -19,12 +19,142 @@ class AccountPage extends StatefulWidget {
 
 class _AccountPageState extends State<AccountPage> {
   @override
-  void initState() {
-    super.initState();
+  Widget build(BuildContext context) {
+    return Consumer<UserDataProvider>(
+      builder: (context, userData, _) {
+        // Show loading indicator if user data isn't loaded
+        if (userData.username == null ||
+            userData.email == null ||
+            userData.userRole == null) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        return Scaffold(
+          body: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildUserInfo(context, userData),
+                  const SizedBox(height: 20),
+                  _buildAccountManagementCards(userData),
+                  const SizedBox(height: 10),
+                  _buildRoleBasedCards(context, userData),
+                ],
+              ),
+            ),
+          ),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+        );
+      },
+    );
   }
 
-  void showUpdateNameDialog() {
-    final userData = context.read<UserDataProvider>();
+  Widget _buildUserInfo(BuildContext context, UserDataProvider userData) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Welcome back, ${userData.username}!',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        Text(
+          userData.email ?? 'No email available',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAccountManagementCards(UserDataProvider userData) {
+    return Column(
+      children: [
+        StandardCard(
+          icon: Icons.person,
+          title: "Change Name",
+          onTap: () => _showUpdateNameDialog(userData),
+        ),
+        const SizedBox(height: 10),
+        StandardCard(
+          icon: Icons.email,
+          title: "Change Email",
+          onTap: () => _showUpdateEmailDialog(userData),
+        ),
+        const SizedBox(height: 10),
+        if (!(userData.isOAuthUser ?? true))
+          StandardCard(
+            icon: Icons.lock,
+            title: "Change Password",
+            onTap: () => _showUpdatePasswordDialog(),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildRoleBasedCards(BuildContext context, UserDataProvider userData) {
+    return Column(
+      children: [
+        if (userData.userRole == 'nonmember')
+          StandardCard(
+            icon: Icons.person_add,
+            title: "Become a Member",
+            subtitle: "Join our community and enjoy exclusive benefits",
+            onTap: () => _navigateToMembershipSignup(context),
+          )
+        else if (userData.userRole == 'member')
+          StandardCard(
+            icon: Icons.person_add,
+            title: "Become a Facilitator",
+            subtitle: "Lead Jams and share your photography passion",
+            onTap: () => _navigateToFacilitatorSignup(context),
+          ),
+        if (userData.userRole != 'nonmember') ...[
+          const SizedBox(height: 10),
+          StandardCard(
+            icon: Icons.chat,
+            title: "Go to the Signal Chat",
+            onTap: () => _goToExternalLink(signalGroupUrl),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _navigateToMembershipSignup(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MembershipSignupPage()),
+    );
+  }
+
+  void _navigateToFacilitatorSignup(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => FacilitatorSignupPage()),
+    );
+  }
+
+  Future<void> _goToExternalLink(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        LogService.instance.error("Could not launch URL: $url");
+        if (!mounted) return;
+        _showErrorSnackBar("Could not open the link");
+      }
+    } catch (e) {
+      LogService.instance.error("Error launching URL: $e");
+      if (!mounted) return;
+      _showErrorSnackBar("Error opening the link");
+    }
+  }
+
+  void _showUpdateNameDialog(UserDataProvider userData) {
     final nameController = TextEditingController(text: userData.username);
 
     showDialog(
@@ -37,33 +167,26 @@ class _AccountPageState extends State<AccountPage> {
         ),
         submitButtonLabel: "Save",
         submitButtonOnPressed: () async {
-          await context.read<AuthAPI>().updateName(nameController.text);
-          if (!mounted) return;
-          Navigator.of(context).pop();
-          setState(() {
+          try {
+            await context.read<AuthAPI>().updateName(nameController.text);
             userData.username = nameController.text;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Name updated successfully!")),
-          );
+            if (!mounted) return;
+            Navigator.of(context).pop();
+            _showSuccessSnackBar("Name updated successfully!");
+          } catch (e) {
+            LogService.instance.error("Error updating name: $e");
+            if (!mounted) return;
+            _showErrorSnackBar("Failed to update name");
+          }
         },
       ),
     );
   }
 
-  void _goToExternalLink(String url) {
-    final Uri zoomUri = Uri.parse(url);
-    if (zoomUri.hasScheme) {
-      launchUrl(zoomUri);
-    } else {
-      LogService.instance.info("Invalid Zoom URL");
-    }
-  }
-
-  void showUpdateEmailDialog() {
-    final userData = context.read<UserDataProvider>();
+  void _showUpdateEmailDialog(UserDataProvider userData) {
     final emailController = TextEditingController(text: userData.email);
     final passwordController = TextEditingController();
+
     showDialog(
       context: context,
       builder: (context) => StandardDialog(
@@ -74,6 +197,7 @@ class _AccountPageState extends State<AccountPage> {
             TextField(
               controller: emailController,
               decoration: const InputDecoration(labelText: 'New Email'),
+              keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 10),
             TextField(
@@ -85,23 +209,25 @@ class _AccountPageState extends State<AccountPage> {
         ),
         submitButtonLabel: "Save",
         submitButtonOnPressed: () async {
-          await context
-              .read<AuthAPI>()
-              .updateEmail(emailController.text, passwordController.text);
-          if (!mounted) return;
-          Navigator.of(context).pop();
-          setState(() {
+          try {
+            await context
+                .read<AuthAPI>()
+                .updateEmail(emailController.text, passwordController.text);
             userData.email = emailController.text;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Email updated successfully!")),
-          );
+            if (!mounted) return;
+            Navigator.of(context).pop();
+            _showSuccessSnackBar("Email updated successfully!");
+          } catch (e) {
+            LogService.instance.error("Error updating email: $e");
+            if (!mounted) return;
+            _showErrorSnackBar("Failed to update email");
+          }
         },
       ),
     );
   }
 
-  void showUpdatePasswordDialog() {
+  void _showUpdatePasswordDialog() {
     final currentPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
@@ -136,119 +262,41 @@ class _AccountPageState extends State<AccountPage> {
         submitButtonLabel: "Save",
         submitButtonOnPressed: () async {
           if (newPasswordController.text != confirmPasswordController.text) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Passwords do not match!")),
-            );
+            _showErrorSnackBar("Passwords do not match!");
             return;
           }
 
-          await context.read<AuthAPI>().updatePassword(
-              currentPasswordController.text, newPasswordController.text);
-
-          if (!mounted) return;
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Password updated successfully!")),
-          );
+          try {
+            await context.read<AuthAPI>().updatePassword(
+                currentPasswordController.text, newPasswordController.text);
+            if (!mounted) return;
+            Navigator.of(context).pop();
+            _showSuccessSnackBar("Password updated successfully!");
+          } catch (e) {
+            LogService.instance.error("Error updating password: $e");
+            if (!mounted) return;
+            _showErrorSnackBar("Failed to update password");
+          }
         },
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final userData = context.watch<UserDataProvider>();
-
-    return Scaffold(
-      body: Padding(
-        padding:
-            const EdgeInsets.all(16.0), // Consistent padding around the page
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Welcome back, ${userData.username}!',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            Text(
-              '${userData.email}',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-            ),
-            const SizedBox(height: 20),
-            StandardCard(
-              icon: Icons.person,
-              title: "Change Name",
-              onTap: showUpdateNameDialog,
-            ),
-            const SizedBox(height: 10), // Consistent spacing between cards
-            userData.isOAuthUser
-                ? Text(
-                    "Email updates are managed through your OAuth provider.",
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.secondary),
-                  )
-                : StandardCard(
-                    icon: Icons.email,
-                    title: "Change Email",
-                    onTap: showUpdateEmailDialog,
-                  ),
-            const SizedBox(height: 10),
-            StandardCard(
-              icon: Icons.lock,
-              title: "Change Password",
-              onTap: showUpdatePasswordDialog,
-            ),
-            // Become a member Card
-            if (userData.userRole == 'nonmember') ...[
-              const SizedBox(height: 10),
-              StandardCard(
-                icon: Icons.person_add,
-                title: "Become a Member",
-                subtitle: "Join our community and enjoy exclusive benefits",
-                onTap: () {
-                  // Navigate to membership signup page
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => MembershipSignupPage()),
-                  );
-                },
-              ),
-            ]
-
-            // Become a facilitator Card
-            else if (userData.userRole == 'member') ...[
-              const SizedBox(height: 10),
-              StandardCard(
-                icon: Icons.person_add,
-                title: "Become a Facilitator",
-                subtitle: "Lead Jams and share your photography passion",
-                onTap: () {
-                  // Navigate to facilitator signup page
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => FacilitatorSignupPage()),
-                  );
-                },
-              ),
-            ],
-
-            // Signal link Card
-            if (userData.userRole != 'nonmember') ...[
-              const SizedBox(height: 10),
-              StandardCard(
-                icon: Icons.chat,
-                title: "Go to the Signal Chat",
-                onTap: () {
-                  _goToExternalLink(signalGroupUrl);
-                },
-              ),
-            ],
-          ],
-        ),
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
       ),
-      backgroundColor: Theme.of(context).colorScheme.surface,
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
     );
   }
 }
