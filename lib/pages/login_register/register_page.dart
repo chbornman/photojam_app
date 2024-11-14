@@ -2,6 +2,8 @@ import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
+import 'package:photojam_app/utilities/userdataprovider.dart';
+import 'package:photojam_app/log_service.dart';
 import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -16,8 +18,11 @@ class _RegisterPageState extends State<RegisterPage> {
   final emailTextController = TextEditingController();
   final passwordTextController = TextEditingController();
   final confirmPasswordTextController = TextEditingController();
+  bool _isLoading = false;
 
-  createAccount() async {
+  Future<void> createAccount() async {
+    if (_isLoading) return;
+
     if (passwordTextController.text != confirmPasswordTextController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Passwords do not match!")),
@@ -25,54 +30,98 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       final authAPI = context.read<AuthAPI>();
+      final userDataProvider = context.read<UserDataProvider>();
 
+      LogService.instance.info("Creating new user account");
+
+      // First create the user
       await authAPI.createUser(
         name: nameTextController.text,
         email: emailTextController.text,
         password: passwordTextController.text,
       );
 
+      LogService.instance.info("User created, creating temporary session");
+
+      // Create a temporary session to set the role
       await authAPI.createEmailPasswordSession(
         email: emailTextController.text,
         password: passwordTextController.text,
       );
 
+      LogService.instance.info("Temporary session created, setting role");
+
+      // Set the role
       await authAPI.setRole('nonmember');
 
-      Navigator.pop(context);
+      LogService.instance.info("Role set, signing out");
+
+      // Sign out the user
+      await authAPI.signOut();
+
+      LogService.instance.info("User signed out, clearing data");
+
+      // Clear any existing user data
+      userDataProvider.clearUserRole();
+
+      LogService.instance
+          .info("Registration complete, returning to login page");
+
+      // Pop back to login page
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
+
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account created and role set!')));
+        const SnackBar(
+          content: Text('Account created successfully! Please sign in.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
     } on AppwriteException catch (e) {
+      LogService.instance.error("Account creation failed: ${e.message}");
+      if (!mounted) return;
       showAlert(
         title: 'Account creation failed',
         text: e.message.toString(),
       );
     } catch (e) {
+      LogService.instance.error("Unexpected error during account creation: $e");
+      if (!mounted) return;
       showAlert(
         title: 'Unexpected Error',
         text: 'An unexpected error occurred. Please try again.',
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  showAlert({required String title, required String text}) {
+  void showAlert({required String title, required String text}) {
     showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text(title),
-            content: Text(text),
-            actions: [
-              ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Ok'))
-            ],
-          );
-        });
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(text),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Ok'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -83,94 +132,123 @@ class _RegisterPageState extends State<RegisterPage> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextField(
-                  controller: nameTextController,
-                  decoration: InputDecoration(
-                    labelText: 'Name',
-                    labelStyle: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
+      body: Stack(
+        children: [
+          GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextField(
+                      controller: nameTextController,
+                      enabled: !_isLoading,
+                      decoration: InputDecoration(
+                        labelText: 'Name',
+                        labelStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16.0),
+                        ),
+                        contentPadding: const EdgeInsets.all(20.0),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surface,
+                      ),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16.0),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: emailTextController,
+                      enabled: !_isLoading,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        labelStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16.0),
+                        ),
+                        contentPadding: const EdgeInsets.all(20.0),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surface,
+                      ),
                     ),
-                    contentPadding: const EdgeInsets.all(20.0),
-                    filled: true,
-                    fillColor: Theme.of(context).colorScheme.surface,
-                  ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: passwordTextController,
+                      enabled: !_isLoading,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        labelStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16.0),
+                        ),
+                        contentPadding: const EdgeInsets.all(20.0),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surface,
+                      ),
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: confirmPasswordTextController,
+                      enabled: !_isLoading,
+                      decoration: InputDecoration(
+                        labelText: 'Confirm Password',
+                        labelStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16.0),
+                        ),
+                        contentPadding: const EdgeInsets.all(20.0),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surface,
+                      ),
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 16),
+                    StandardButton(
+                      label: Text(
+                        _isLoading ? "Creating Account..." : "Sign up",
+                        style: TextStyle(fontSize: 18),
+                      ),
+                      icon: Icon(
+                        Icons.app_registration,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                      onPressed: _isLoading ? null : createAccount,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: emailTextController,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    labelStyle: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                    contentPadding: const EdgeInsets.all(20.0),
-                    filled: true,
-                    fillColor: Theme.of(context).colorScheme.surface,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: passwordTextController,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    labelStyle: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                    contentPadding: const EdgeInsets.all(20.0),
-                    filled: true,
-                    fillColor: Theme.of(context).colorScheme.surface,
-                  ),
-                  obscureText: true,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: confirmPasswordTextController,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    labelStyle: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                    contentPadding: const EdgeInsets.all(20.0),
-                    filled: true,
-                    fillColor: Theme.of(context).colorScheme.surface,
-                  ),
-                  obscureText: true,
-                ),
-                const SizedBox(height: 16),
-                StandardButton(
-                  label: const Text("Sign up", style: TextStyle(fontSize: 18)),
-                  icon: Icon(
-                    Icons.app_registration,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                  onPressed: createAccount,
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+        ],
       ),
       backgroundColor: Theme.of(context).colorScheme.surface,
     );
+  }
+
+  @override
+  void dispose() {
+    nameTextController.dispose();
+    emailTextController.dispose();
+    passwordTextController.dispose();
+    confirmPasswordTextController.dispose();
+    super.dispose();
   }
 }

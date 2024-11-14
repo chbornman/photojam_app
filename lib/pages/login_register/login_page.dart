@@ -4,7 +4,9 @@ import 'package:photojam_app/pages/login_register/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/utilities/standard_appbar.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
+import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
+import 'package:photojam_app/log_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,178 +18,179 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final emailTextController = TextEditingController();
   final passwordTextController = TextEditingController();
-  bool loading = false;
+  bool _isLoading = false;
 
-  signIn() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Center(
-            child: CircularProgressIndicator(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        );
-      },
-    );
+  Future<void> signIn() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      final AuthAPI appwrite = context.read<AuthAPI>();
-      await appwrite.createEmailPasswordSession(
+      final authAPI = context.read<AuthAPI>();
+      final userDataProvider = context.read<UserDataProvider>();
+
+      LogService.instance.info("Attempting to sign in");
+
+      // Create session
+      await authAPI.createEmailPasswordSession(
         email: emailTextController.text,
         password: passwordTextController.text,
       );
-      Navigator.pop(context);
+
+      // Load user role
+      LogService.instance.info("Session created, loading user role");
+      await userDataProvider.loadUserRole();
+      LogService.instance.info("User role loaded: ${userDataProvider.userRole}");
+
     } on AppwriteException catch (e) {
-      Navigator.pop(context);
+      LogService.instance.error("Login failed: ${e.message}");
+      if (!mounted) return;
       showAlert(title: 'Login failed', text: e.message.toString());
+    } catch (e) {
+      LogService.instance.error("Unexpected error during login: $e");
+      if (!mounted) return;
+      showAlert(title: 'Login failed', text: 'An unexpected error occurred');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  showAlert({required String title, required String text}) {
+  void showAlert({required String title, required String text}) {
     showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text(title),
-            content: Text(text),
-            actions: [
-              ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Ok'))
-            ],
-          );
-        });
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(text),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Ok'),
+            ),
+          ],
+        );
+      },
+    );
   }
-
-  // signInWithProvider(OAuthProvider provider) {
-  //   try {
-  //     context.read<AuthAPI>().signInWithProvider(provider: provider);
-  //   } on AppwriteException catch (e) {
-  //     showAlert(title: 'Login failed', text: e.message.toString());
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: StandardAppBar(
         title: 'Photo Jam',
-        enableLeadingGesture: false, // Disable leading gesture on login page
+        enableLeadingGesture: false,
       ),
       body: GestureDetector(
-        onTap: () {
-          // Dismiss the keyboard when tapping outside of a TextField
-          FocusScope.of(context).unfocus();
-        },
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextField(
-                  controller: emailTextController,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    labelStyle: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16.0),
-                      borderSide: BorderSide(
-                        color: Theme.of(context).colorScheme.onSurface,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Stack(
+          children: [
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextField(
+                      controller: emailTextController,
+                      enabled: !_isLoading,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        labelStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16.0),
+                          borderSide: BorderSide(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.all(20.0),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surface,
                       ),
                     ),
-                    contentPadding: const EdgeInsets.all(20.0),
-                    filled: true,
-                    fillColor: Theme.of(context).colorScheme.surface,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                TextField(
-                  controller: passwordTextController,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    labelStyle: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
+                    const SizedBox(height: 18),
+                    TextField(
+                      controller: passwordTextController,
+                      enabled: !_isLoading,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        labelStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16.0),
+                          borderSide: BorderSide(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.all(20.0),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surface,
+                      ),
+                      obscureText: true,
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16.0),
-                      borderSide: BorderSide(
-                        color: Theme.of(context).colorScheme.onSurface,
+                    const SizedBox(height: 26),
+                    StandardButton(
+                      label: Text(
+                        _isLoading ? "Signing In..." : "Sign In",
+                        style: TextStyle(fontSize: 18),
+                      ),
+                      onPressed: _isLoading ? null : signIn,
+                      icon: Icon(
+                        Icons.login,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ),
-                    contentPadding: const EdgeInsets.all(20.0),
-                    filled: true,
-                    fillColor: Theme.of(context).colorScheme.surface,
-                  ),
-                  obscureText: true,
+                    const SizedBox(height: 16),
+                    StandardButton(
+                      label: const Text("Create Account",
+                          style: TextStyle(fontSize: 18)),
+                      icon: Icon(
+                        Icons.app_registration,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const RegisterPage(),
+                                ),
+                              );
+                            },
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 26),
-                StandardButton(
-                  label: const Text("Sign In", style: TextStyle(fontSize: 18)),
-                  onPressed: signIn,
-                  icon: Icon(
-                    Icons.login,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                StandardButton(
-                  label: const Text("Create Account",
-                      style: TextStyle(fontSize: 18)),
-                  icon: Icon(
-                    Icons.app_registration,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const RegisterPage()));
-                  },
-                ),
-                // const SizedBox(height: 16),
-                // Row(
-                //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                //   children: [
-                //     Expanded(
-                //       child: StandardButton(
-                //         label: SvgPicture.asset(
-                //           'assets/google_icon.svg',
-                //           width: 24,
-                //           color: Theme.of(context).colorScheme.onPrimary,
-                //         ),
-                //         onPressed: () =>
-                //             signInWithProvider(OAuthProvider.google),
-                //       ),
-                //     ),
-                //     const SizedBox(width: 16),
-                //     Expanded(
-                //       child: StandardButton(
-                //         label: SvgPicture.asset(
-                //           'assets/apple_icon.svg',
-                //           width: 24,
-                //           color: Theme.of(context).colorScheme.onPrimary,
-                //         ),
-                //         onPressed: () =>
-                //             signInWithProvider(OAuthProvider.apple),
-                //       ),
-                //     ),
-                //   ],
-                // ),
-              ],
+              ),
             ),
-          ),
+            if (_isLoading)
+              Container(
+                color: Colors.black.withOpacity(0.3),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
       backgroundColor: Theme.of(context).colorScheme.surface,
     );
+  }
+
+  @override
+  void dispose() {
+    emailTextController.dispose();
+    passwordTextController.dispose();
+    super.dispose();
   }
 }
