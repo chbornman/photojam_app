@@ -1,22 +1,18 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/pages/photos_tab/submission.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:flutter/services.dart';
 
 class PhotoScrollPage extends StatefulWidget {
-  final List<Map<String, dynamic>> allSubmissions;
-  final int initialSubmissionIndex;
-  final int initialPhotoIndex;
+  final List<Submission> submissions;
 
   const PhotoScrollPage({
     super.key,
-    required this.allSubmissions,
-    required this.initialSubmissionIndex,
-    required this.initialPhotoIndex,
+    required this.submissions,
   });
 
   @override
@@ -26,8 +22,8 @@ class PhotoScrollPage extends StatefulWidget {
 class _PhotoScrollPageState extends State<PhotoScrollPage>
     with AutomaticKeepAliveClientMixin {
   bool isLoading = true;
-  List<Map<String, dynamic>> loadedSubmissions = [];
-  Uint8List? activePhotoData; // Track the currently pressed photo
+  List<Submission> loadedSubmissions = [];
+  Uint8List? activePhotoData;
 
   @override
   bool get wantKeepAlive => true;
@@ -40,9 +36,10 @@ class _PhotoScrollPageState extends State<PhotoScrollPage>
 
   Future<void> _loadAllPhotos() async {
     try {
-      for (var submission in widget.allSubmissions) {
-        loadedSubmissions.add(submission);
-      }
+      // Sort submissions by date (most recent first)
+      loadedSubmissions = List.from(widget.submissions)
+        ..sort((a, b) => DateTime.parse(b.date).compareTo(DateTime.parse(a.date)));
+      
       setState(() {
         isLoading = false;
       });
@@ -54,29 +51,26 @@ class _PhotoScrollPageState extends State<PhotoScrollPage>
     }
   }
 
-  // Helper function to share image
   Future<void> _shareImage(Uint8List photoData) async {
     try {
-      // Haptic feedback on long press
       HapticFeedback.mediumImpact();
       LogService.instance.info("Sharing photo...");
       
-      // Save the image temporarily to share
       final tempDir = await getTemporaryDirectory();
       final filePath = '${tempDir.path}/shared_image.png';
       final file = await File(filePath).writeAsBytes(photoData);
 
-      // Use share_plus to trigger iOS share sheet
       await Share.shareXFiles([XFile(file.path)], text: 'Check out my PhotoJam submission!');
     } catch (e) {
       LogService.instance.error("Error sharing photo: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error sharing photo.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error sharing photo.')),
+        );
+      }
     }
   }
 
-  // Helper function to format date and time
   String formatDate(String dateString) {
     try {
       DateTime date = DateTime.parse(dateString);
@@ -87,137 +81,131 @@ class _PhotoScrollPageState extends State<PhotoScrollPage>
     }
   }
 
+  Widget _buildPhotoCard(Uint8List? photoData) {
+    return GestureDetector(
+      onLongPressStart: (_) {
+        setState(() {
+          activePhotoData = photoData;
+        });
+      },
+      onLongPressEnd: (_) async {
+        setState(() {
+          activePhotoData = null;
+        });
+        if (photoData != null) {
+          await _shareImage(photoData);
+        }
+      },
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8.0),
+              child: photoData != null
+                  ? Image.memory(
+                      photoData,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                    )
+                  : Container(
+                      width: double.infinity,
+                      height: 200,
+                      color: const Color.fromARGB(255, 16, 104, 82),
+                      child: const Center(
+                        child: Icon(
+                          Icons.image_not_supported,
+                          color: Color.fromARGB(255, 228, 224, 224),
+                          size: 50,
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+          if (activePhotoData == photoData)
+            Positioned.fill(
+              child: Container(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Photo Scroll"),
+        title: const Text("All Photos"),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              key: const PageStorageKey('photoScrollPageListView'),
-              itemCount: loadedSubmissions.length,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-              itemBuilder: (context, index) {
-                final submission = loadedSubmissions[index];
-                final photos = submission['photos'] as List<Uint8List?>;
-                final jamTitle = submission['jamTitle'] ?? 'Untitled';
-                final date = submission['date'] ?? 'Unknown Date';
-
-                return Card(
-                  elevation: 10,
-                  color: Theme.of(context).colorScheme.surface.withOpacity(0.1),
-                  shadowColor:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-                  margin: const EdgeInsets.only(bottom: 16.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
+          : loadedSubmissions.isEmpty
+              ? Center(
+                  child: Text(
+                    'No photos yet',
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              jamTitle,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                  ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              formatDate(date),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withOpacity(0.7),
-                                  ),
-                            ),
-                          ],
-                        ),
+                )
+              : ListView.builder(
+                  key: const PageStorageKey('photoScrollPageListView'),
+                  itemCount: loadedSubmissions.length,
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                  itemBuilder: (context, index) {
+                    final submission = loadedSubmissions[index];
+                    
+                    return Card(
+                      elevation: 10,
+                      color: Theme.of(context).colorScheme.surface.withOpacity(0.1),
+                      shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                      margin: const EdgeInsets.only(bottom: 16.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.0),
                       ),
-                      Column(
-                        children: photos.map((photoData) {
-                          return GestureDetector(
-                            onLongPressStart: (_) {
-                              setState(() {
-                                activePhotoData = photoData;
-                              });
-                            },
-                            onLongPressEnd: (_) async {
-                              setState(() {
-                                activePhotoData = null;
-                              });
-                              if (photoData != null) {
-                                await _shareImage(photoData);
-                              }
-                            },
-                            child: Stack(
-                              alignment: Alignment.center,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16.0, vertical: 8.0),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8.0),
-                                    child: photoData != null
-                                        ? Image.memory(
-                                            photoData,
-                                            width: double.infinity,
-                                            fit: BoxFit.contain,
-                                          )
-                                        : Container(
-                                            width: double.infinity,
-                                            height: 200,
-                                            color: const Color.fromARGB(
-                                                255, 16, 104, 82),
-                                            child: const Center(
-                                              child: Icon(
-                                                  Icons.image_not_supported,
-                                                  color: Color.fromARGB(
-                                                      255, 228, 224, 224),
-                                                  size: 50),
-                                            ),
-                                          ),
+                                Text(
+                                  submission.jamTitle,
+                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
-                                if (activePhotoData == photoData)
-                                  Positioned.fill(
-                                    child: Container(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withOpacity(0.5),
-                                    ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  formatDate(submission.date),
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                   ),
+                                ),
                               ],
                             ),
-                          );
-                        }).toList(),
+                          ),
+                          Column(
+                            children: submission.photos
+                                .map((photoData) => _buildPhotoCard(photoData))
+                                .toList(),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                    );
+                  },
+                ),
       backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
