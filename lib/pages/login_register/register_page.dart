@@ -123,6 +123,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     TextField(
                       controller: nameTextController,
                       enabled: !_isLoading,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: 'Name',
                         labelStyle: TextStyle(
@@ -140,6 +142,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     TextField(
                       controller: emailTextController,
                       enabled: !_isLoading,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: 'Email',
                         labelStyle: TextStyle(
@@ -157,6 +161,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     TextField(
                       controller: passwordTextController,
                       enabled: !_isLoading,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: 'Password',
                         labelStyle: TextStyle(
@@ -188,6 +194,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     TextField(
                       controller: confirmPasswordTextController,
                       enabled: !_isLoading,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: 'Confirm Password',
                         labelStyle: TextStyle(
@@ -208,7 +216,8 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           onPressed: () {
                             setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
                             });
                           },
                         ),

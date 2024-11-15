@@ -18,7 +18,8 @@ class _LoginPageState extends State<LoginPage> {
   final emailTextController = TextEditingController();
   final passwordTextController = TextEditingController();
   bool _isLoading = false;
-  bool _obscurePassword = true; // Add this line to track password visibility state
+  bool _obscurePassword =
+      true; // Add this line to track password visibility state
 
   Future<void> signIn() async {
     if (_isLoading) return;
@@ -93,6 +94,8 @@ class _LoginPageState extends State<LoginPage> {
                     TextField(
                       controller: emailTextController,
                       enabled: !_isLoading,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: 'Email',
                         labelStyle: TextStyle(
@@ -113,6 +116,8 @@ class _LoginPageState extends State<LoginPage> {
                     TextField(
                       controller: passwordTextController,
                       enabled: !_isLoading,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: 'Password',
                         labelStyle: TextStyle(
@@ -142,7 +147,8 @@ class _LoginPageState extends State<LoginPage> {
                           },
                         ),
                       ),
-                      obscureText: _obscurePassword, // Use the state variable here
+                      obscureText:
+                          _obscurePassword, // Use the state variable here
                     ),
                     const SizedBox(height: 26),
                     StandardButton(
