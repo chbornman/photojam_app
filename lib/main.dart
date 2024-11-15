@@ -11,7 +11,9 @@ import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/features/auth/screens/login_screen.dart';
 import 'package:photojam_app/app.dart';
 import 'package:photojam_app/core/services/role_service.dart';
-import 'package:photojam_app/splashscreen.dart';
+import 'package:photojam_app/features/journeys/models/journey_repository.dart';
+import 'package:photojam_app/features/journeys/providers/journey_provider.dart';
+import 'package:photojam_app/features/splashscreen.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
@@ -38,6 +40,13 @@ void main() async {
         Provider<DatabaseAPI>(create: (_) => DatabaseAPI(client)),
         Provider<StorageAPI>(create: (_) => StorageAPI(client)),
         Provider<RoleService>(create: (_) => roleService),
+        ChangeNotifierProvider(
+          create: (context) => JourneyProvider(
+            JourneyRepository(
+              Provider.of<DatabaseAPI>(context, listen: false),
+            ),
+          ),
+        ),
       ],
       child: MyApp(),
     ),
