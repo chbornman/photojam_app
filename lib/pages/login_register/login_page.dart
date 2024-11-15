@@ -18,6 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   final emailTextController = TextEditingController();
   final passwordTextController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true; // Add this line to track password visibility state
 
   Future<void> signIn() async {
     if (_isLoading) return;
@@ -31,7 +32,6 @@ class _LoginPageState extends State<LoginPage> {
 
       LogService.instance.info("Attempting to sign in");
 
-      // Create session - the main.dart FutureBuilder will handle role loading
       await authAPI.createEmailPasswordSession(
         email: emailTextController.text,
         password: passwordTextController.text,
@@ -127,8 +127,22 @@ class _LoginPageState extends State<LoginPage> {
                         contentPadding: const EdgeInsets.all(20.0),
                         filled: true,
                         fillColor: Theme.of(context).colorScheme.surface,
+                        // Add suffix icon for password visibility toggle
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
                       ),
-                      obscureText: true,
+                      obscureText: _obscurePassword, // Use the state variable here
                     ),
                     const SizedBox(height: 26),
                     StandardButton(

@@ -178,7 +178,6 @@ class _AccountPageState extends State<AccountPage> {
             },
           ),
         if (userData['role'] != 'nonmember') ...[
-          const SizedBox(height: 10),
           StandardCard(
             icon: Icons.chat,
             title: "Go to the Signal Chat",

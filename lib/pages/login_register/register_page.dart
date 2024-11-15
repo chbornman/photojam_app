@@ -1,6 +1,5 @@
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:flutter/material.dart';
-import 'package:photojam_app/role_service.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
 import 'package:photojam_app/log_service.dart';
 import 'package:provider/provider.dart';
@@ -18,8 +17,9 @@ class _RegisterPageState extends State<RegisterPage> {
   final passwordTextController = TextEditingController();
   final confirmPasswordTextController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
-// in RegisterPage's createAccount method:
   Future<void> createAccount() async {
     if (_isLoading) return;
 
@@ -36,11 +36,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
     try {
       final authAPI = context.read<AuthAPI>();
-      final roleService = context.read<RoleService>();
 
       LogService.instance.info("Creating new user account");
 
-      // Create the user
       await authAPI.createUser(
         name: nameTextController.text,
         email: emailTextController.text,
@@ -49,16 +47,13 @@ class _RegisterPageState extends State<RegisterPage> {
 
       LogService.instance.info("User created, creating temporary session");
 
-      // Create a temporary session
       await authAPI.createEmailPasswordSession(
         email: emailTextController.text,
         password: passwordTextController.text,
       );
 
-      // User starts as nonmember (no team membership needed)
       LogService.instance.info("User created as nonmember");
 
-      // Sign out the user
       await authAPI.signOut();
 
       LogService.instance
@@ -173,8 +168,21 @@ class _RegisterPageState extends State<RegisterPage> {
                         contentPadding: const EdgeInsets.all(20.0),
                         filled: true,
                         fillColor: Theme.of(context).colorScheme.surface,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
                       ),
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                     ),
                     const SizedBox(height: 16),
                     TextField(
@@ -191,8 +199,21 @@ class _RegisterPageState extends State<RegisterPage> {
                         contentPadding: const EdgeInsets.all(20.0),
                         filled: true,
                         fillColor: Theme.of(context).colorScheme.surface,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureConfirmPassword = !_obscureConfirmPassword;
+                            });
+                          },
+                        ),
                       ),
-                      obscureText: true,
+                      obscureText: _obscureConfirmPassword,
                     ),
                     const SizedBox(height: 16),
                     StandardButton(
