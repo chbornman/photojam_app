@@ -1,11 +1,11 @@
 import 'package:appwrite/appwrite.dart';
-import 'package:photojam_app/constants/constants.dart';
+import 'package:photojam_app/config/app_constants.dart';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'dart:io';
 
-import 'package:photojam_app/services/log_service.dart';
+import 'package:photojam_app/core/services/log_service.dart';
 
 class StorageAPI {
   final Client client;

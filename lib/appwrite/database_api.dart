@@ -1,7 +1,7 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
-import 'package:photojam_app/constants/constants.dart';
-import 'package:photojam_app/services/log_service.dart';
+import 'package:photojam_app/config/app_constants.dart';
+import 'package:photojam_app/core/services/log_service.dart';
 
 class DatabaseAPI {
   final Client client;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/utilities/standard_dialog.dart';
+import 'package:photojam_app/core/widgets/standard_dialog.dart';
 
 class UpdateJamDialog extends StatefulWidget {
   final String jamId;

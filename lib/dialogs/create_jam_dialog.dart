@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/constants/constants.dart';
-import 'package:photojam_app/utilities/standard_dialog.dart';
+import 'package:photojam_app/config/app_constants.dart';
+import 'package:photojam_app/core/widgets/standard_dialog.dart';
 
 class CreateJamDialog extends StatefulWidget {
   final Function(Map<String, dynamic>) onJamCreated;

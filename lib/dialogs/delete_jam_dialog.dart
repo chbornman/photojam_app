@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/utilities/standard_button.dart';
-import 'package:photojam_app/utilities/standard_dialog.dart';
+import 'package:photojam_app/core/widgets/standard_button.dart';
+import 'package:photojam_app/core/widgets/standard_dialog.dart';
 
 class DeleteJamDialog extends StatefulWidget {
   final Map<String, String> jamMap;
