@@ -27,11 +27,13 @@ class RoleService {
     try {
       LogService.instance.info("Getting current user role");
       final memberships = await teams.listMemberships(
-        teamId: appwriteTeamId,  // Use your constant
+        teamId: appwriteTeamId,
       );
 
       if (memberships.memberships.isEmpty) {
-        LogService.instance.info("No team memberships found - user is nonmember");
+        LogService.instance.info("No team memberships found - adding user as nonmember");
+        // Add user to team as nonmember
+        await _addUserToTeam();
         return 'nonmember';
       }
 
@@ -52,8 +54,30 @@ class RoleService {
       LogService.instance.info("Current user role: $highestRole");
       return highestRole;
     } catch (e) {
+      if (e is AppwriteException && e.code == 404) {
+        LogService.instance.info("Team not found - adding user as nonmember");
+        // Add user to team as nonmember
+        await _addUserToTeam();
+        return 'nonmember';
+      }
       LogService.instance.error("Error getting user role: $e");
-      return 'nonmember';
+      throw e; // Rethrow to handle in UI layer
+    }
+  }
+
+  // Private method to add user to team
+  Future<void> _addUserToTeam() async {
+    try {
+      final user = await account.get();
+      await teams.createMembership(
+        teamId: appwriteTeamId,
+        roles: ['nonmember'],
+        userId: user.$id,
+      );
+      LogService.instance.info("User added to team as nonmember");
+    } catch (e) {
+      LogService.instance.error("Error adding user to team: $e");
+      throw e;
     }
   }
 
@@ -79,10 +103,16 @@ class RoleService {
         throw Exception('User already has a role higher than nonmember');
       }
 
-      await teams.createMembership(
-        teamId: appwriteTeamId,
-        roles: ['member'],
-      );
+      // Update existing membership instead of creating new one
+      final memberships = await teams.listMemberships(teamId: appwriteTeamId);
+      if (memberships.memberships.isNotEmpty) {
+        final membershipId = memberships.memberships.first.$id;
+        await teams.updateMembership(
+          teamId: appwriteTeamId,
+          membershipId: membershipId,
+          roles: ['member'],
+        );
+      }
       LogService.instance.info("Member role granted successfully");
     } catch (e) {
       LogService.instance.error("Error requesting member role: $e");
