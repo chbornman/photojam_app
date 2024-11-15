@@ -1,3 +1,4 @@
+// main.dart
 import 'package:flutter/material.dart';
 import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
@@ -8,8 +9,8 @@ import 'package:photojam_app/constants/custom_theme.dart';
 import 'package:photojam_app/log_service.dart';
 import 'package:photojam_app/pages/login_register/login_page.dart';
 import 'package:photojam_app/pages/mainframe.dart';
+import 'package:photojam_app/role_service.dart';
 import 'package:photojam_app/splashscreen.dart';
-import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
@@ -22,15 +23,15 @@ void main() async {
       .setSelfSigned();
 
   final authAPI = AuthAPI(client);
-  final userDataProvider = UserDataProvider(authAPI);
+  final roleService = RoleService(client);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<AuthAPI>(create: (_) => authAPI),
-        ChangeNotifierProvider<UserDataProvider>(create: (_) => userDataProvider),
         Provider<DatabaseAPI>(create: (_) => DatabaseAPI(client)),
         Provider<StorageAPI>(create: (_) => StorageAPI(client)),
+        Provider<RoleService>(create: (_) => roleService),
       ],
       child: MyApp(),
     ),
@@ -55,34 +56,26 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initializeApp() async {
     try {
       final authAPI = Provider.of<AuthAPI>(context, listen: false);
-      final userDataProvider = Provider.of<UserDataProvider>(context, listen: false);
-
+      
       LogService.instance.info("Starting app initialization");
       
-      // First load authentication
+      // Load authentication
       await authAPI.loadUser();
       
-      // If authenticated, load user role
-      if (authAPI.status == AuthStatus.authenticated) {
-        LogService.instance.info("User authenticated, loading user role");
-        await userDataProvider.loadUserRole();
-        LogService.instance.info("User role loaded: ${userDataProvider.userRole}");
-      }
+      LogService.instance.info("Authentication loaded");
 
       setState(() {
         _isInitialized = true;
       });
-      
     } catch (e) {
       LogService.instance.error("Error during initialization: $e");
       setState(() {
-        _isInitialized = true; // Still mark as initialized so we can show error state if needed
+        _isInitialized = true;
       });
     }
   }
 
   void _onSplashComplete() {
-    // Only hide splash if initialization is complete
     if (_isInitialized) {
       setState(() {
         _showSplash = false;
@@ -99,27 +92,30 @@ class _MyAppState extends State<MyApp> {
       home: _showSplash
           ? SplashScreen(
               onAnimationComplete: _onSplashComplete,
-              // If animation completes before initialization, it will wait
-              // If initialization completes first, splash will continue until animation completes
             )
-          : Consumer2<AuthAPI, UserDataProvider>(
-              builder: (context, authAPI, userDataProvider, _) {
+          : Consumer<AuthAPI>(
+              builder: (context, authAPI, _) {
                 // Check authentication status
                 if (authAPI.status != AuthStatus.authenticated) {
                   return LoginPage();
                 }
-                
-                // Double check user role is loaded
-                if (userDataProvider.userRole == null) {
-                  return const Scaffold(
-                    body: Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
-                }
-                
-                // All data is loaded, show main app
-                return Mainframe();
+
+                return FutureBuilder<String>(
+                  future: Provider.of<RoleService>(context, listen: false)
+                      .getCurrentUserRole(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Scaffold(
+                        body: Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
+
+                    // All data is loaded, show main app
+                    return Mainframe(userRole: snapshot.data ?? 'nonmember');
+                  },
+                );
               },
             ),
     );

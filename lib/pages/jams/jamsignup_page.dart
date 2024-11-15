@@ -10,6 +10,7 @@ import 'package:photojam_app/utilities/standard_button.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
+import 'package:photojam_app/role_service.dart';
 
 class JamSignupPage extends StatefulWidget {
   const JamSignupPage({super.key});
@@ -29,6 +30,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
   late DatabaseAPI database;
   late StorageAPI storage;
   late AuthAPI auth;
+  late RoleService roleService;
   bool hasInitializedDependencies = false;
 
   @override
@@ -38,14 +40,10 @@ class _JamSignupPageState extends State<JamSignupPage> {
       database = Provider.of<DatabaseAPI>(context, listen: false);
       storage = Provider.of<StorageAPI>(context, listen: false);
       auth = Provider.of<AuthAPI>(context, listen: false);
+      roleService = Provider.of<RoleService>(context, listen: false);
       hasInitializedDependencies = true;
       _fetchJamEvents();
     }
-  }
-
-  @override
-  void initState() {
-    super.initState();
   }
 
   @override
@@ -57,15 +55,16 @@ class _JamSignupPageState extends State<JamSignupPage> {
   Future<void> _fetchJamEvents() async {
     try {
       final response = await database.getJams();
+      if (!mounted) return;
+
       setState(() {
         jamEvents = response.documents.asMap().entries.map((entry) {
           var doc = entry.value;
 
           String title = doc.data['title'];
-          DateTime dateTime =
-              DateTime.parse(doc.data['date']); // Assumes ISO 8601
-          String formattedDateTime = DateFormat('MMM dd, yyyy • hh:mm a')
-              .format(dateTime); // Example: "Oct 15, 2024 • 02:30 PM"
+          DateTime dateTime = DateTime.parse(doc.data['date']);
+          String formattedDateTime =
+              DateFormat('MMM dd, yyyy • hh:mm a').format(dateTime);
 
           return DropdownMenuItem<String>(
             value: doc.$id,
@@ -108,7 +107,6 @@ class _JamSignupPageState extends State<JamSignupPage> {
       final fileSize = await file.length();
 
       if (fileSize > 50 * 1024 * 1024) {
-        // Check if file is greater than 50MB
         _showSizeWarningDialog();
         return;
       }
@@ -129,9 +127,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
               "Selected photo exceeds the 50MB size limit. Please choose a smaller photo."),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close the dialog
-              },
+              onPressed: () => Navigator.pop(context),
               child: Text("OK"),
             ),
           ],
@@ -147,15 +143,9 @@ class _JamSignupPageState extends State<JamSignupPage> {
       selectedJamId = jamId;
     });
 
-    @override
-    void didChangeDependencies() {
-      super.didChangeDependencies();
-      database = Provider.of<DatabaseAPI>(context, listen: false);
-      storage = Provider.of<StorageAPI>(context, listen: false);
-      auth = Provider.of<AuthAPI>(context, listen: false);
-    }
-
     final jamData = await database.getJamById(jamId);
+    if (!mounted) return;
+
     setState(() {
       selectedJamName = jamData.data['title'] ?? "UnknownJam";
     });
@@ -166,124 +156,127 @@ class _JamSignupPageState extends State<JamSignupPage> {
     return "${jamName}_${date}_${username}_photo${index + 1}.jpg";
   }
 
-Future<bool> _showOverwriteConfirmationDialog() async {
-  return showDialog<bool>(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text("Existing Submission"),
-        content: Text(
-            "You have already submitted photos for this Jam. Submitting again will overwrite your previous submission. Do you want to proceed?"),
-        actions: [
-          StandardButton(
-            onPressed: () {
-              Navigator.pop(context, false); // Cancel overwrite
-            },
-            label: Text("Cancel"),
-          ),
-          StandardButton(
-            onPressed: () {
-              Navigator.pop(context, true); // Confirm overwrite
-            },
-            label: Text("Overwrite"),
-          ),
-        ],
-      );
-    },
-  ).then((value) => value ?? false);
-}
-
-Future<void> _submitPhotos() async {
-  // Step 1: Ensure a Jam is selected
-  if (selectedJamId == null || selectedJamName == null) {
-    await _showSelectJamWarningDialog();
-    return;
+  Future<bool> _showOverwriteConfirmationDialog() async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Existing Submission"),
+          content: Text(
+              "You have already submitted photos for this Jam. Submitting again will overwrite your previous submission. Do you want to proceed?"),
+          actions: [
+            StandardButton(
+              onPressed: () => Navigator.pop(context, false),
+              label: Text("Cancel"),
+            ),
+            StandardButton(
+              onPressed: () => Navigator.pop(context, true),
+              label: Text("Overwrite"),
+            ),
+          ],
+        );
+      },
+    ).then((value) => value ?? false);
   }
 
-  // Step 2: Check if any photos are selected
-  bool noPhotosSelected = photos.every((photo) => photo == null);
-  if (noPhotosSelected) {
-    bool shouldDelete = await _showDeleteWarningDialog();
-    if (shouldDelete) {
-      await _deleteExistingSubmission();
-    }
-    return;
-  }
-
-  setState(() {
-    isLoading = true;
-  });
-
-  try {
-    final userId = await auth.fetchUserId();
-    if (userId == null) {
-      LogService.instance.info("User ID not found. Please log in.");
+  Future<void> _submitPhotos() async {
+    if (selectedJamId == null || selectedJamName == null) {
+      await _showSelectJamWarningDialog();
       return;
     }
 
-    // Check for existing submission
-    final existingSubmission = await database.getUserSubmissionForJam(selectedJamId!, userId);
-    if (existingSubmission != null) {
-      bool shouldOverwrite = await _showOverwriteConfirmationDialog();
-      if (!shouldOverwrite) {
-        setState(() {
-          isLoading = false;
-        });
-        return; // Exit if user chose not to overwrite
+    bool noPhotosSelected = photos.every((photo) => photo == null);
+    if (noPhotosSelected) {
+      bool shouldDelete = await _showDeleteWarningDialog();
+      if (shouldDelete) {
+        await _deleteExistingSubmission();
       }
+      return;
     }
 
-    // Proceed with submission...
-    List<String> photoUrls = [];
-    for (int i = 0; i < photos.length; i++) {
-      final photo = photos[i];
-      if (photo != null) {
-        String fileName = formatFileName(i, selectedJamName!, userId);
-        try {
-          //TODO delete old photos before uploading new photos!
-          final photoId = await storage.uploadPhoto(await photo.readAsBytes(), fileName);
-          final photoUrl = await storage.getPhotoUrl(photoId);
-          photoUrls.add(photoUrl);
-          LogService.instance.info("Uploaded photo ${i+1} with name $fileName");
-        } catch (e) {
-          LogService.instance.error("Failed to upload photo $i: $e");
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final userId = await auth.fetchUserId();
+      if (userId == null) {
+        LogService.instance.info("User ID not found. Please log in.");
+        return;
+      }
+
+      final existingSubmission =
+          await database.getUserSubmissionForJam(selectedJamId!, userId);
+      if (existingSubmission != null) {
+        bool shouldOverwrite = await _showOverwriteConfirmationDialog();
+        if (!shouldOverwrite) {
+          setState(() {
+            isLoading = false;
+          });
+          return;
         }
       }
-    }
 
-    if (existingSubmission != null) {
-      // Update submission with new photos
-      await database.updateSubmission(
-        existingSubmission.$id,
-        photoUrls,
-        DateTime.now().toIso8601String(),
-        _commentController.text,
-      );
-      LogService.instance.info("Submission updated successfully for Jam: $selectedJamId");
-    } else {
-      // Create a new submission
-      await database.createSubmission(
-        selectedJamId!,
-        photoUrls,
-        userId,
-        _commentController.text,
-      );
-      LogService.instance.info("Submission created successfully for Jam: $selectedJamId");
-    }
+      List<String> photoUrls = [];
+      for (int i = 0; i < photos.length; i++) {
+        final photo = photos[i];
+        if (photo != null) {
+          String fileName = formatFileName(i, selectedJamName!, userId);
+          try {
+            if (existingSubmission != null) {
+              // Delete old photo if it exists
+              if (i < existingSubmission.data['photos'].length) {
+                final oldUrl = existingSubmission.data['photos'][i];
+                final fileId = extractFileIdFromUrl(oldUrl);
+                await storage.deletePhoto(fileId);
+              }
+            }
+            final photoId =
+                await storage.uploadPhoto(await photo.readAsBytes(), fileName);
+            final photoUrl = await storage.getPhotoUrl(photoId);
+            photoUrls.add(photoUrl);
+            LogService.instance
+                .info("Uploaded photo ${i + 1} with name $fileName");
+          } catch (e) {
+            LogService.instance.error("Failed to upload photo $i: $e");
+          }
+        }
+      }
 
-    setState(() {
-      isLoading = false;
-    });
-    _showConfirmationDialog();
-  } catch (e) {
-    LogService.instance.error("Error during photo submission: $e");
-    setState(() {
-      isLoading = false;
-    });
+      if (existingSubmission != null) {
+        await database.updateSubmission(
+          existingSubmission.$id,
+          photoUrls,
+          DateTime.now().toIso8601String(),
+          _commentController.text,
+        );
+        LogService.instance
+            .info("Submission updated successfully for Jam: $selectedJamId");
+      } else {
+        await database.createSubmission(
+          selectedJamId!,
+          photoUrls,
+          userId,
+          _commentController.text,
+        );
+        LogService.instance
+            .info("Submission created successfully for Jam: $selectedJamId");
+      }
+
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+      });
+      _showConfirmationDialog();
+    } catch (e) {
+      LogService.instance.error("Error during photo submission: $e");
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
-}
 
-// Helper function to show a dialog if no Jam is selected
   Future<void> _showSelectJamWarningDialog() async {
     showDialog(
       context: context,
@@ -293,9 +286,7 @@ Future<void> _submitPhotos() async {
           content: Text("Please select a Jam event before submitting photos."),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close the dialog
-              },
+              onPressed: () => Navigator.pop(context),
               child: Text("OK"),
             ),
           ],
@@ -304,7 +295,6 @@ Future<void> _submitPhotos() async {
     );
   }
 
-// Helper function to show delete warning dialog if no photos are selected
   Future<bool> _showDeleteWarningDialog() async {
     return showDialog<bool>(
       context: context,
@@ -315,55 +305,43 @@ Future<void> _submitPhotos() async {
               "You have not selected any photos. Submitting will delete your existing submission and its photos. Do you want to proceed?"),
           submitButtonLabel: "Delete Submission",
           submitButtonOnPressed: () {
-            if (!mounted) return; // Ensure widget is still mounted
-            Navigator.pop(context, true); // Confirm deletion
+            if (!mounted) return;
+            Navigator.pop(context, true);
           },
         );
       },
     ).then((value) => value ?? false);
   }
 
-// Helper function to delete the existing submission and its associated photos
   Future<void> _deleteExistingSubmission() async {
-    @override
-    void didChangeDependencies() {
-      super.didChangeDependencies();
-      database = Provider.of<DatabaseAPI>(context, listen: false);
-      storage = Provider.of<StorageAPI>(context, listen: false);
-      auth = Provider.of<AuthAPI>(context, listen: false);
-    }
-
     final userId = await auth.fetchUserId();
 
     if (userId != null) {
       final existingSubmission =
           await database.getUserSubmissionForJam(selectedJamId!, userId);
       if (existingSubmission != null) {
-        // Delete associated photos
         for (String url in existingSubmission.data['photos']) {
           final fileId = extractFileIdFromUrl(url);
           await storage.deletePhoto(fileId);
           LogService.instance.info("Deleted photo with file ID: $fileId");
         }
 
-        // Delete the submission itself
         await database.deleteSubmission(existingSubmission.$id);
         LogService.instance
             .info("Existing submission deleted for Jam: $selectedJamId");
       }
     }
 
-    // Navigate back to the home page after deletion
+    if (!mounted) return;
     Navigator.pop(context);
   }
 
   String extractFileIdFromUrl(String url) {
-    // Using RegExp to match the fileId in the URL pattern
     final regex = RegExp(r'/files/([^/]+)/view');
     final match = regex.firstMatch(url);
 
     if (match != null && match.groupCount >= 1) {
-      return match.group(1)!; // Return the fileId
+      return match.group(1)!;
     } else {
       throw Exception('Invalid URL format: Unable to extract file ID');
     }
@@ -378,19 +356,22 @@ Future<void> _submitPhotos() async {
           content: Text("Your photos have been submitted successfully."),
           submitButtonLabel: "OK",
           submitButtonOnPressed: () async {
-            if (!mounted) return; // Ensure widget is still mounted
-            Navigator.pop(context); // Close the dialog
-            // Navigate to Mainframe with the resolved user role
+            if (!mounted) return;
+            Navigator.pop(context);
+
+            // Get the user's role before navigation
+            final userRole = await roleService.getCurrentUserRole();
+
+            if (!mounted) return;
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
-                builder: (context) => Mainframe(),
+                builder: (context) => Mainframe(userRole: userRole),
               ),
-              (route) =>
-                  false, // This removes all routes until the specified route
+              (route) => false,
             );
           },
-          showCancelButton: false, // Hide the Cancel button
+          showCancelButton: false,
         );
       },
     );
@@ -425,11 +406,7 @@ Future<void> _submitPhotos() async {
                           : "Select Jam Event",
                     ),
                     value: selectedJamId,
-                    onChanged: jamEvents.isEmpty
-                        ? null
-                        : (String? newValue) async {
-                            await _onJamSelected(newValue);
-                          },
+                    onChanged: jamEvents.isEmpty ? null : _onJamSelected,
                     items: jamEvents,
                   ),
                 ),
@@ -463,7 +440,6 @@ Future<void> _submitPhotos() async {
                                         size: 50.0, color: Colors.grey[600])
                                     : null,
                               ),
-                              // "X" Icon for Deselecting the Photo
                               if (photos[index] != null)
                                 Positioned(
                                   top: 6,
@@ -471,7 +447,7 @@ Future<void> _submitPhotos() async {
                                   child: InkWell(
                                     onTap: () {
                                       setState(() {
-                                        photos[index] = null; // Deselect photo
+                                        photos[index] = null;
                                       });
                                     },
                                     child: Container(

@@ -13,13 +13,17 @@ enum AuthStatus {
 class AuthAPI extends ChangeNotifier {
   final Client client;
   final Account account;
+  final Teams teams;
+  static const String ADMIN_TEAM_ID = 'photojam_admin_team'; // Set this
 
   User? _currentUser;
   AuthStatus _status = AuthStatus.uninitialized;
-  String? _authToken; // Add a field to store the token
+  String? _authToken;
 
   // Constructor with injected client
-  AuthAPI(this.client) : account = Account(client) {
+  AuthAPI(this.client)
+      : account = Account(client),
+        teams = Teams(client) {
     loadUser().then((_) {
       LogService.instance.info('Authenticated user ID: $userid');
       LogService.instance.info('username: $username');
@@ -71,7 +75,8 @@ class AuthAPI extends ChangeNotifier {
         name: name,
       );
 
-      LogService.instance.info("User created successfully with ID: ${user.$id}");
+      LogService.instance
+          .info("User created successfully with ID: ${user.$id}");
 
       // Return the created user without setting a role
       return user;
@@ -98,7 +103,8 @@ class AuthAPI extends ChangeNotifier {
       return role;
     } catch (e) {
       // Debug: Role retrieval failed or not set
-      LogService.instance.error("Error retrieving user role or role not set in preferences.");
+      LogService.instance
+          .error("Error retrieving user role or role not set in preferences.");
       return null;
     }
   }
@@ -118,9 +124,11 @@ class AuthAPI extends ChangeNotifier {
       // Verify that the role was saved correctly
       final prefs = await account.getPrefs();
       if (prefs.data['role'] == role) {
-        LogService.instance.info("Role set successfully: ${prefs.data['role']}");
+        LogService.instance
+            .info("Role set successfully: ${prefs.data['role']}");
       } else {
-        LogService.instance.info("Role verification failed. Expected: $role, Found: ${prefs.data['role']}");
+        LogService.instance.info(
+            "Role verification failed. Expected: $role, Found: ${prefs.data['role']}");
         throw Exception("Role verification failed after setting.");
       }
     } on AppwriteException catch (e) {
@@ -144,7 +152,8 @@ class AuthAPI extends ChangeNotifier {
         await account.deleteSession(sessionId: 'current');
         LogService.instance.info("Existing session deleted.");
       } catch (e) {
-        LogService.instance.error("No existing session to delete or deletion failed: $e");
+        LogService.instance
+            .error("No existing session to delete or deletion failed: $e");
       }
 
       // Create a new session
@@ -152,12 +161,15 @@ class AuthAPI extends ChangeNotifier {
         email: email,
         password: password,
       );
-      
+
       // Additional Debug: Print session details to verify session creation
-      LogService.instance.info("Session created successfully: Session ID: ${session.$id}");
-      _currentUser = await account.get(); // Get user details for the new session
+      LogService.instance
+          .info("Session created successfully: Session ID: ${session.$id}");
+      _currentUser =
+          await account.get(); // Get user details for the new session
       _status = AuthStatus.authenticated;
-      LogService.instance.info("User authenticated successfully. User ID: ${_currentUser?.$id}, Status: $_status");
+      LogService.instance.info(
+          "User authenticated successfully. User ID: ${_currentUser?.$id}, Status: $_status");
       return session;
     } on AppwriteException catch (e) {
       LogService.instance.error("Login failed: ${e.message}");
@@ -236,7 +248,7 @@ class AuthAPI extends ChangeNotifier {
   Future<String?> getUsername() async {
     try {
       User user = await account.get();
-      return user.name; 
+      return user.name;
     } catch (e) {
       LogService.instance.error("Error retrieving username: $e");
       return null;
@@ -273,4 +285,78 @@ class AuthAPI extends ChangeNotifier {
     notifyListeners();
     return _authToken;
   }
+
+  Future<bool> isUserAdmin() async {
+    try {
+      final memberships = await teams.listMemberships(
+        teamId: ADMIN_TEAM_ID,
+      );
+      return memberships.memberships.any((m) => m.userId == userid);
+    } catch (e) {
+      LogService.instance.error('Error checking admin status: $e');
+      return false;
+    }
+  }
+
+  Future<List<Membership>> getTeamMembers(String teamId) async {
+    try {
+      final result = await teams.listMemberships(teamId: teamId);
+      return result.memberships;
+    } catch (e) {
+      LogService.instance.error('Error getting team members: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> addUserToTeam({
+    required String email,
+    required String teamId,
+    required List<String> roles,
+  }) async {
+    try {
+      await teams.createMembership(
+        teamId: teamId,
+        email: email,
+        roles: roles,
+      );
+    } catch (e) {
+      LogService.instance.error('Error adding user to team: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> removeUserFromTeam({
+    required String membershipId,
+    required String teamId,
+  }) async {
+    try {
+      await teams.deleteMembership(
+        teamId: teamId,
+        membershipId: membershipId,
+      );
+    } catch (e) {
+      LogService.instance.error('Error removing user from team: $e');
+      rethrow;
+    }
+  }
+
+  Future<User> getCurrentUser() async {
+  try {
+    if (_currentUser == null) {
+      LogService.instance.info("No cached user, fetching from Appwrite");
+      _currentUser = await account.get();
+      LogService.instance.info("User fetched successfully: ${_currentUser?.$id}");
+    }
+    
+    if (_currentUser == null) {
+      LogService.instance.error("No user found after fetch attempt");
+      throw Exception("No authenticated user found");
+    }
+    
+    return _currentUser!;
+  } catch (e) {
+    LogService.instance.error("Error getting current user: $e");
+    rethrow;
+  }
+}
 }

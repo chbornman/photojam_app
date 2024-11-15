@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/log_service.dart';
-import 'package:photojam_app/pages/facilitator_signup_page.dart';
-import 'package:photojam_app/pages/membership_signup_page.dart';
+import 'package:photojam_app/role_service.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
 import 'package:photojam_app/utilities/standard_dialog.dart';
-import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -18,19 +16,62 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
+  late Future<Map<String, dynamic>> _userDataFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the future in initState
+    _userDataFuture = _loadUserData();
+  }
+
+  Future<Map<String, dynamic>> _loadUserData() async {
+    final authAPI = Provider.of<AuthAPI>(context, listen: false);
+    final roleService = Provider.of<RoleService>(context, listen: false);
+
+    try {
+      final user = await authAPI.getCurrentUser();
+      final role = await roleService.getCurrentUserRole();
+
+      // Get the username from the name property instead of $id
+      return {
+        'username': user.name, // Fallback to ID if name is null
+        'email': user.email,
+        'role': role,
+        'isOAuthUser': false //user.oauthProviders.isNotEmpty,
+      };
+    } catch (e) {
+      LogService.instance.error("Error loading user data: $e");
+      rethrow;
+    }
+  }
+
+  void _reloadUserData() {
+    setState(() {
+      _userDataFuture = _loadUserData();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Consumer<UserDataProvider>(
-      builder: (context, userData, _) {
-        // Show loading indicator if user data isn't loaded
-        if (userData.username == null ||
-            userData.email == null ||
-            userData.userRole == null) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _userDataFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(
+              child: Text('Error loading user data: ${snapshot.error}'),
+            ),
+          );
+        }
+
+        final userData = snapshot.data!;
         return Scaffold(
           body: SingleChildScrollView(
             child: Padding(
@@ -53,23 +94,23 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  Widget _buildUserInfo(BuildContext context, UserDataProvider userData) {
+  Widget _buildUserInfo(BuildContext context, Map<String, dynamic> userData) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Welcome back, ${userData.username}!',
+          'Welcome back, ${userData['username']}!',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         Text(
-          userData.email ?? 'No email available',
+          userData['email'] ?? 'No email available',
           style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
         ),
       ],
     );
   }
 
-  Widget _buildAccountManagementCards(UserDataProvider userData) {
+  Widget _buildAccountManagementCards(Map<String, dynamic> userData) {
     return Column(
       children: [
         StandardCard(
@@ -84,7 +125,7 @@ class _AccountPageState extends State<AccountPage> {
           onTap: () => _showUpdateEmailDialog(userData),
         ),
         const SizedBox(height: 10),
-        if (!(userData.isOAuthUser ?? true))
+        if (!userData['isOAuthUser'])
           StandardCard(
             icon: Icons.lock,
             title: "Change Password",
@@ -94,24 +135,49 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  Widget _buildRoleBasedCards(BuildContext context, UserDataProvider userData) {
+  Widget _buildRoleBasedCards(
+      BuildContext context, Map<String, dynamic> userData) {
+    final roleService = Provider.of<RoleService>(context, listen: false);
+
     return Column(
       children: [
-        if (userData.userRole == 'nonmember')
+        if (userData['role'] == 'nonmember')
           StandardCard(
             icon: Icons.person_add,
             title: "Become a Member",
             subtitle: "Join our community and enjoy exclusive benefits",
-            onTap: () => _navigateToMembershipSignup(context),
+            onTap: () async {
+              try {
+                await roleService.requestMemberRole();
+                _loadUserData(); // Reload user data after role change
+                if (!mounted) return;
+                _showSuccessSnackBar("Successfully became a member!");
+              } catch (e) {
+                LogService.instance.error("Error requesting member role: $e");
+                if (!mounted) return;
+                _showErrorSnackBar("Failed to become a member");
+              }
+            },
           )
-        else if (userData.userRole == 'member')
+        else if (userData['role'] == 'member')
           StandardCard(
             icon: Icons.person_add,
             title: "Become a Facilitator",
             subtitle: "Lead Jams and share your photography passion",
-            onTap: () => _navigateToFacilitatorSignup(context),
+            onTap: () async {
+              try {
+                await roleService.requestFacilitatorRole();
+                if (!mounted) return;
+                _showSuccessSnackBar("Facilitator request submitted!");
+              } catch (e) {
+                LogService.instance
+                    .error("Error requesting facilitator role: $e");
+                if (!mounted) return;
+                _showErrorSnackBar("Failed to submit facilitator request");
+              }
+            },
           ),
-        if (userData.userRole != 'nonmember') ...[
+        if (userData['role'] != 'nonmember') ...[
           const SizedBox(height: 10),
           StandardCard(
             icon: Icons.chat,
@@ -120,20 +186,6 @@ class _AccountPageState extends State<AccountPage> {
           ),
         ],
       ],
-    );
-  }
-
-  void _navigateToMembershipSignup(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => MembershipSignupPage()),
-    );
-  }
-
-  void _navigateToFacilitatorSignup(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => FacilitatorSignupPage()),
     );
   }
 
@@ -154,8 +206,8 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
-  void _showUpdateNameDialog(UserDataProvider userData) {
-    final nameController = TextEditingController(text: userData.username);
+  void _showUpdateNameDialog(Map<String, dynamic> userData) {
+    final nameController = TextEditingController(text: userData['username']);
 
     showDialog(
       context: context,
@@ -169,7 +221,7 @@ class _AccountPageState extends State<AccountPage> {
         submitButtonOnPressed: () async {
           try {
             await context.read<AuthAPI>().updateName(nameController.text);
-            userData.username = nameController.text;
+            _loadUserData(); // Reload user data
             if (!mounted) return;
             Navigator.of(context).pop();
             _showSuccessSnackBar("Name updated successfully!");
@@ -183,8 +235,8 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  void _showUpdateEmailDialog(UserDataProvider userData) {
-    final emailController = TextEditingController(text: userData.email);
+  void _showUpdateEmailDialog(Map<String, dynamic> userData) {
+    final emailController = TextEditingController(text: userData['email']);
     final passwordController = TextEditingController();
 
     showDialog(
@@ -213,7 +265,7 @@ class _AccountPageState extends State<AccountPage> {
             await context
                 .read<AuthAPI>()
                 .updateEmail(emailController.text, passwordController.text);
-            userData.email = emailController.text;
+            _loadUserData(); // Reload user data
             if (!mounted) return;
             Navigator.of(context).pop();
             _showSuccessSnackBar("Email updated successfully!");
@@ -223,6 +275,24 @@ class _AccountPageState extends State<AccountPage> {
             _showErrorSnackBar("Failed to update email");
           }
         },
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
       ),
     );
   }
@@ -278,24 +348,6 @@ class _AccountPageState extends State<AccountPage> {
             _showErrorSnackBar("Failed to update password");
           }
         },
-      ),
-    );
-  }
-
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
       ),
     );
   }

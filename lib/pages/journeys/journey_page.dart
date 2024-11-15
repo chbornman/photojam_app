@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/log_service.dart';
 import 'package:photojam_app/pages/journeys/alljourneys_page.dart';
-import 'package:photojam_app/utilities/userdataprovider.dart';
+import 'package:photojam_app/role_service.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
@@ -20,6 +20,7 @@ class _JourneyPageState extends State<JourneyPage> {
   late DatabaseAPI databaseApi;
   late StorageAPI storageApi;
   late AuthAPI auth;
+  late RoleService roleService;
   bool dependenciesInitialized = false;
 
   @override
@@ -29,6 +30,7 @@ class _JourneyPageState extends State<JourneyPage> {
       databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
       storageApi = Provider.of<StorageAPI>(context, listen: false);
       auth = Provider.of<AuthAPI>(context, listen: false);
+      roleService = Provider.of<RoleService>(context, listen: false);
       dependenciesInitialized = true;
     }
   }
@@ -81,11 +83,8 @@ class _JourneyPageState extends State<JourneyPage> {
                         selectedJourneyId!, userId);
                     _showMessage("Successfully signed up for the journey!");
 
-                    Navigator.of(context).pop(); // Close the dialog
-
-                    // Trigger a reload of the page after closing the dialog
+                    Navigator.of(context).pop();
                     setState(() {
-                      // Trigger a refresh
                       dependenciesInitialized = false;
                     });
                   }
@@ -109,43 +108,56 @@ class _JourneyPageState extends State<JourneyPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final userRole = context.watch<UserDataProvider>().userRole;
 
-    if (userRole == 'nonmember') {
-      return Scaffold(
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Expanded(
-                // Wrap MyJourneysPage with Expanded to prevent unbounded height errors
-                child: MyJourneysPage(userId: auth.userid ?? ''),
+    return FutureBuilder<String>(
+      future: roleService.getCurrentUserRole(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error loading role: ${snapshot.error}'));
+        }
+
+        final userRole = snapshot.data ?? 'nonmember';
+
+        if (userRole == 'nonmember') {
+          return Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: MyJourneysPage(userId: auth.userid ?? ''),
+                  ),
+                  const SizedBox(height: 20),
+                  StandardCard(
+                    icon: Icons.add_circle_outline,
+                    title: "Sign Up for a Journey",
+                    onTap: _openSignUpForJourneyDialog,
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              StandardCard(
-                icon: Icons.add_circle_outline,
-                title: "Sign Up for a Journey",
-                onTap: _openSignUpForJourneyDialog,
+            ),
+            backgroundColor: theme.colorScheme.surface,
+          );
+        } else {
+          return Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: AllJourneysPage(userId: auth.userid ?? ''),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        backgroundColor: theme.colorScheme.surface,
-      );
-    } else {
-      return Scaffold(
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Expanded(
-                child: AllJourneysPage(userId: auth.userid ?? ''),
-              ),
-            ],
-          ),
-        ),
-        backgroundColor: theme.colorScheme.surface,
-      );
-    }
+            ),
+            backgroundColor: theme.colorScheme.surface,
+          );
+        }
+      },
+    );
   }
 }

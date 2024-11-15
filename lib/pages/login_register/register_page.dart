@@ -1,8 +1,7 @@
-import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:flutter/material.dart';
+import 'package:photojam_app/role_service.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
-import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:photojam_app/log_service.dart';
 import 'package:provider/provider.dart';
 
@@ -20,6 +19,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final confirmPasswordTextController = TextEditingController();
   bool _isLoading = false;
 
+// in RegisterPage's createAccount method:
   Future<void> createAccount() async {
     if (_isLoading) return;
 
@@ -36,11 +36,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
     try {
       final authAPI = context.read<AuthAPI>();
-      final userDataProvider = context.read<UserDataProvider>();
+      final roleService = context.read<RoleService>();
 
       LogService.instance.info("Creating new user account");
 
-      // First create the user
+      // Create the user
       await authAPI.createUser(
         name: nameTextController.text,
         email: emailTextController.text,
@@ -49,31 +49,21 @@ class _RegisterPageState extends State<RegisterPage> {
 
       LogService.instance.info("User created, creating temporary session");
 
-      // Create a temporary session to set the role
+      // Create a temporary session
       await authAPI.createEmailPasswordSession(
         email: emailTextController.text,
         password: passwordTextController.text,
       );
 
-      LogService.instance.info("Temporary session created, setting role");
-
-      // Set the role
-      await authAPI.setRole('nonmember');
-
-      LogService.instance.info("Role set, signing out");
+      // User starts as nonmember (no team membership needed)
+      LogService.instance.info("User created as nonmember");
 
       // Sign out the user
       await authAPI.signOut();
 
-      LogService.instance.info("User signed out, clearing data");
-
-      // Clear any existing user data
-      userDataProvider.clearUserRole();
-
       LogService.instance
           .info("Registration complete, returning to login page");
 
-      // Pop back to login page
       if (!mounted) return;
       Navigator.of(context).popUntil((route) => route.isFirst);
 
@@ -82,13 +72,6 @@ class _RegisterPageState extends State<RegisterPage> {
           content: Text('Account created successfully! Please sign in.'),
           duration: Duration(seconds: 3),
         ),
-      );
-    } on AppwriteException catch (e) {
-      LogService.instance.error("Account creation failed: ${e.message}");
-      if (!mounted) return;
-      showAlert(
-        title: 'Account creation failed',
-        text: e.message.toString(),
       );
     } catch (e) {
       LogService.instance.error("Unexpected error during account creation: $e");

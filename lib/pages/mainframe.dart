@@ -3,7 +3,6 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/pages/admin/facilitator_page.dart';
 import 'package:photojam_app/pages/jams/jams_page.dart';
 import 'package:photojam_app/utilities/standard_appbar.dart';
-import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/pages/account_page.dart';
 import 'package:photojam_app/pages/journeys/journey_page.dart';
@@ -11,7 +10,12 @@ import 'package:photojam_app/pages/admin/admin_page.dart';
 import 'package:photojam_app/pages/photos_tab/photos_page.dart';
 
 class Mainframe extends StatefulWidget {
-  const Mainframe({super.key});
+  final String userRole;
+
+  const Mainframe({
+    super.key,
+    required this.userRole,
+  });
 
   @override
   _MainframeState createState() => _MainframeState();
@@ -37,14 +41,7 @@ class _MainframeState extends State<Mainframe> {
 
   @override
   Widget build(BuildContext context) {
-    final userRole = context.watch<UserDataProvider>().userRole;
-
-    // Show a loading indicator if userRole is not yet loaded
-    if (userRole == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    List<Widget> screens = getScreens(userRole);
+    List<Widget> screens = getScreens(widget.userRole);
 
     return Scaffold(
       appBar: StandardAppBar(
@@ -107,13 +104,13 @@ class _MainframeState extends State<Mainframe> {
             label: 'Account',
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
-          if (userRole == "facilitator" || userRole == "admin")
+          if (widget.userRole == "facilitator" || widget.userRole == "admin")
             BottomNavigationBarItem(
               icon: Icon(Icons.group),
               label: 'Facilitate',
               backgroundColor: Theme.of(context).colorScheme.primary,
             ),
-          if (userRole == "admin")
+          if (widget.userRole == "admin")
             BottomNavigationBarItem(
               icon: Icon(Icons.admin_panel_settings),
               label: 'Admin',
@@ -124,22 +121,24 @@ class _MainframeState extends State<Mainframe> {
     );
   }
 
-  String getTitleForIndex(int index) {
-    switch (index) {
-      case 0:
-        return 'Jams';
-      case 1:
-        return 'Journeys';
-      case 2:
-        return 'Photos';
-      case 3:
-        return 'Account';
-      case 4:
-        return 'Facilitator Dashboard';
-      case 5:
-        return 'Admin Dashboard';
-      default:
-        return 'PhotoJam';
-    }
+  // ... rest of the code remains the same
+}
+
+String getTitleForIndex(int index) {
+  switch (index) {
+    case 0:
+      return 'Jams';
+    case 1:
+      return 'Journeys';
+    case 2:
+      return 'Photos';
+    case 3:
+      return 'Account';
+    case 4:
+      return 'Facilitator Dashboard';
+    case 5:
+      return 'Admin Dashboard';
+    default:
+      return 'PhotoJam';
   }
 }

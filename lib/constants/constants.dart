@@ -9,6 +9,9 @@ import 'package:flutter/material.dart';
 const String appwriteEndpointId = "http://192.168.0.51/v1";
 const String appwriteProjectId = "6720f5ca0032a3b05710";
 
+//Team
+const String appwriteTeamId = 'photojam-team'; 
+
 //Database
 const String appwriteDatabaseId = "photojam-database";
 const String collectionJams = "photojam-collection-jam";

@@ -4,7 +4,6 @@ import 'package:photojam_app/pages/login_register/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/utilities/standard_appbar.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
-import 'package:photojam_app/utilities/userdataprovider.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/log_service.dart';
 
@@ -29,21 +28,16 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final authAPI = context.read<AuthAPI>();
-      final userDataProvider = context.read<UserDataProvider>();
 
       LogService.instance.info("Attempting to sign in");
 
-      // Create session
+      // Create session - the main.dart FutureBuilder will handle role loading
       await authAPI.createEmailPasswordSession(
         email: emailTextController.text,
         password: passwordTextController.text,
       );
 
-      // Load user role
-      LogService.instance.info("Session created, loading user role");
-      await userDataProvider.loadUserRole();
-      LogService.instance.info("User role loaded: ${userDataProvider.userRole}");
-
+      LogService.instance.info("Login successful");
     } on AppwriteException catch (e) {
       LogService.instance.error("Login failed: ${e.message}");
       if (!mounted) return;
