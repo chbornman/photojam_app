@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/pages/account_controller.dart';
-import 'package:photojam_app/pages/account_management.dart';
+import 'package:photojam_app/pages/account/account_controller.dart';
+import 'package:photojam_app/pages/account/account_management.dart';
 import 'package:photojam_app/pages/role_based_actions.dart';
 import 'package:photojam_app/pages/user_info.dart';
 import 'package:provider/provider.dart';

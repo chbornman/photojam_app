@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/pages/account_controller.dart';
+import 'package:photojam_app/pages/account/account_controller.dart';
 import 'package:photojam_app/pages/update_dialogs.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
