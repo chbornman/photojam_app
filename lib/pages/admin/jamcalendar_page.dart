@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/services/log_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/appwrite/database_api.dart';

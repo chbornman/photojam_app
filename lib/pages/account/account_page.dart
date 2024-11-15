@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/constants/constants.dart';
-import 'package:photojam_app/log_service.dart';
-import 'package:photojam_app/role_service.dart';
+import 'package:photojam_app/services/log_service.dart';
+import 'package:photojam_app/services/role_service.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
 import 'package:photojam_app/utilities/standard_dialog.dart';
 import 'package:provider/provider.dart';

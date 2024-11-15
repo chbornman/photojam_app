@@ -1,7 +1,7 @@
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
-import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/services/log_service.dart';
 import 'package:provider/provider.dart';
 
 class UserManagementPage extends StatefulWidget {

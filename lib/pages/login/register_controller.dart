@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
-import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/services/log_service.dart';
 
 class RegisterController extends ChangeNotifier {
   final AuthAPI _authAPI;

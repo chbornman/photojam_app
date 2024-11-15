@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/services/log_service.dart';
 
 class SubmissionCard extends StatelessWidget {
   final String title;

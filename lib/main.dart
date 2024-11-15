@@ -7,10 +7,10 @@ import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/constants/constants.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/constants/custom_theme.dart';
-import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/services/log_service.dart';
 import 'package:photojam_app/pages/login/login_page.dart';
 import 'package:photojam_app/mainframe.dart';
-import 'package:photojam_app/role_service.dart';
+import 'package:photojam_app/services/role_service.dart';
 import 'package:photojam_app/splashscreen.dart';
 import 'package:provider/provider.dart';
 

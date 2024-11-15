@@ -1,7 +1,7 @@
 // lib/services/role_service.dart
 import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/constants/constants.dart';
-import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/services/log_service.dart';
 
 class RoleService {
   final Client client;

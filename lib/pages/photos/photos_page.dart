@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/pages/photos/photo_cache_service.dart';
+import 'package:photojam_app/services/photo_cache_service.dart';
 import 'package:photojam_app/pages/photos/photos_content.dart';
 import 'package:photojam_app/pages/photos/photos_controller.dart';
 import 'package:provider/provider.dart';

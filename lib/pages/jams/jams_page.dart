@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
-import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/services/log_service.dart';
 import 'package:photojam_app/pages/jams/jamdetails_page.dart';
 import 'package:photojam_app/pages/jams/jamsignup_page.dart';
 import 'package:photojam_app/utilities/standard_card.dart';

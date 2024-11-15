@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
-import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/services/log_service.dart';
 import 'package:photojam_app/pages/admin/photoselect_page.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/utilities/standard_submissioncard.dart';

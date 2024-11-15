@@ -5,7 +5,7 @@ import 'package:photojam_app/dialogs/delete_jam_dialog.dart';
 import 'package:photojam_app/dialogs/delete_journey_dialog.dart';
 import 'package:photojam_app/dialogs/update_jam_dialog.dart';
 import 'package:photojam_app/dialogs/update_journey_dialog.dart';
-import 'package:photojam_app/log_service.dart';
+import 'package:photojam_app/services/log_service.dart';
 import 'package:photojam_app/pages/admin/journeylessons_edit.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
 import 'package:photojam_app/utilities/standard_card.dart';
