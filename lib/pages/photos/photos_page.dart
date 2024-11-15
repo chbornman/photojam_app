@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/pages/photos_tab/photo_cache_service.dart';
-import 'package:photojam_app/pages/photos_tab/photos_content.dart';
-import 'package:photojam_app/pages/photos_tab/photos_controller.dart';
+import 'package:photojam_app/pages/photos/photo_cache_service.dart';
+import 'package:photojam_app/pages/photos/photos_content.dart';
+import 'package:photojam_app/pages/photos/photos_controller.dart';
 import 'package:provider/provider.dart';
 class PhotosPage extends StatelessWidget {
   const PhotosPage({super.key});

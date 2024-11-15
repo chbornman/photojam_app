@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/pages/login_register/loading_overlay.dart';
-import 'package:photojam_app/pages/login_register/register_controller.dart';
+import 'package:photojam_app/pages/login/loading_overlay.dart';
+import 'package:photojam_app/pages/login/register_controller.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
 import 'package:provider/provider.dart';
 

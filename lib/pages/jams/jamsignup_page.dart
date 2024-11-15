@@ -5,7 +5,7 @@ import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photojam_app/log_service.dart';
 import 'package:photojam_app/utilities/standard_dialog.dart';
-import 'package:photojam_app/pages/mainframe.dart';
+import 'package:photojam_app/mainframe.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/log_service.dart';
-import 'package:photojam_app/pages/login_register/login_exception.dart';
+import 'package:photojam_app/pages/login/login_exception.dart';
 
 class LoginController extends ChangeNotifier {
   final AuthAPI _authAPI;

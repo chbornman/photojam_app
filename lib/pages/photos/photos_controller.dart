@@ -4,8 +4,8 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/log_service.dart';
-import 'package:photojam_app/pages/photos_tab/photo_cache_service.dart';
-import 'package:photojam_app/pages/photos_tab/submission.dart';
+import 'package:photojam_app/pages/photos/photo_cache_service.dart';
+import 'package:photojam_app/pages/photos/submission.dart';
 
 class PhotosController extends ChangeNotifier {
   final AuthAPI _authAPI;

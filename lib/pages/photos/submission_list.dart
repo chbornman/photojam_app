@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/pages/photos_tab/submission.dart';
-import 'package:photojam_app/pages/photos_tab/submission_item.dart';
+import 'package:photojam_app/pages/photos/submission.dart';
+import 'package:photojam_app/pages/photos/submission_item.dart';
 
 class SubmissionList extends StatelessWidget {
   final List<Submission> submissions;

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/pages/photos_tab/submission.dart';
+import 'package:photojam_app/pages/photos/submission.dart';
 import 'package:photojam_app/utilities/standard_submissioncard.dart';
-import 'package:photojam_app/pages/photos_tab/photoscroll_page.dart';
-import 'package:photojam_app/pages/photos_tab/photos_controller.dart';
+import 'package:photojam_app/pages/photos/photoscroll_page.dart';
+import 'package:photojam_app/pages/photos/photos_controller.dart';
 import 'package:provider/provider.dart';
 
 class SubmissionItem extends StatelessWidget {

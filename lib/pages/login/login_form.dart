@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/pages/login_register/loading_overlay.dart';
-import 'package:photojam_app/pages/login_register/login_controller.dart';
+import 'package:photojam_app/pages/login/loading_overlay.dart';
+import 'package:photojam_app/pages/login/login_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/utilities/standard_button.dart';
-import 'package:photojam_app/pages/login_register/register_page.dart';
+import 'package:photojam_app/pages/login/register_page.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});

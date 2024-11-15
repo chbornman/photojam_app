@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/pages/login_register/register_controller.dart';
-import 'package:photojam_app/pages/login_register/register_form.dart';
+import 'package:photojam_app/pages/login/register_controller.dart';
+import 'package:photojam_app/pages/login/register_form.dart';
 import 'package:provider/provider.dart';
 
 class RegisterPage extends StatelessWidget {

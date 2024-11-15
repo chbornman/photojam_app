@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photojam_app/log_service.dart';
-import 'package:photojam_app/pages/photos_tab/submission.dart';
+import 'package:photojam_app/pages/photos/submission.dart';
 import 'package:share_plus/share_plus.dart';
 
 class PhotoScrollPage extends StatefulWidget {
