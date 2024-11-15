@@ -1,6 +1,7 @@
 // main.dart
 import 'package:flutter/material.dart';
 import 'package:appwrite/appwrite.dart';
+import 'package:flutter/services.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/constants/constants.dart';
@@ -16,6 +17,11 @@ import 'package:provider/provider.dart';
 void main() async {
   LogService.instance.info("App started");
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Add portrait mode lock
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
 
   final Client client = Client()
       .setEndpoint(appwriteEndpointId)
@@ -56,12 +62,12 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initializeApp() async {
     try {
       final authAPI = Provider.of<AuthAPI>(context, listen: false);
-      
+
       LogService.instance.info("Starting app initialization");
-      
+
       // Load authentication
       await authAPI.loadUser();
-      
+
       LogService.instance.info("Authentication loaded");
 
       setState(() {
