@@ -4,9 +4,10 @@ import 'package:photojam_app/core/services/log_service.dart';
 
 class RegisterController extends ChangeNotifier {
   final AuthAPI _authAPI;
+  final BuildContext context;
   bool _isLoading = false;
 
-  RegisterController(this._authAPI);
+  RegisterController(this._authAPI, this.context);
 
   bool get isLoading => _isLoading;
 
@@ -17,7 +18,7 @@ class RegisterController extends ChangeNotifier {
     required String confirmPassword,
   }) async {
     if (_isLoading) return;
-    
+
     if (password != confirmPassword) {
       throw const FormatException("Passwords do not match!");
     }
@@ -27,7 +28,7 @@ class RegisterController extends ChangeNotifier {
 
     try {
       LogService.instance.info("Creating new user account for: $email");
-      
+
       // Create the account
       await _authAPI.createAccount(
         name: name,
@@ -36,7 +37,7 @@ class RegisterController extends ChangeNotifier {
       );
 
       LogService.instance.info("Account created, signing in");
-      
+
       // Sign in with the new account
       await _authAPI.signIn(
         email: email,
@@ -49,11 +50,16 @@ class RegisterController extends ChangeNotifier {
       }
 
       LogService.instance.info("Initial sign in successful");
-      
+
       // Sign out to force them to the login screen
       await _authAPI.signOut();
-      
+
       LogService.instance.info("Registration process complete");
+
+      // Auto-navigate back to login
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
     } catch (e) {
       LogService.instance.error("Registration failed: $e");
       rethrow;

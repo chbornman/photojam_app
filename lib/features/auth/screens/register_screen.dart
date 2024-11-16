@@ -10,7 +10,10 @@ class RegisterPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: ChangeNotifierProvider(
-        create: (_) => RegisterController(context.read()),
+        create: (context) => RegisterController(
+          context.read(),
+          context,  // Pass BuildContext here
+        ),
         child: const _RegisterContent(),
       ),
     );
