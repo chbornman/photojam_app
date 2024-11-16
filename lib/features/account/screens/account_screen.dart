@@ -21,7 +21,6 @@ class _AccountPageState extends State<AccountPage> {
   @override
   void initState() {
     super.initState();
-    // Initialize the future in initState
     _userDataFuture = _loadUserData();
   }
 
@@ -30,15 +29,12 @@ class _AccountPageState extends State<AccountPage> {
     final roleService = Provider.of<RoleService>(context, listen: false);
 
     try {
-      final user = await authAPI.getCurrentUser();
-      final role = await roleService.getCurrentUserRole();
-
-      // Get the username from the name property instead of $id
+      // Use the new getters from AuthAPI
       return {
-        'username': user.name, // Fallback to ID if name is null
-        'email': user.email,
-        'role': role,
-        'isOAuthUser': false //user.oauthProviders.isNotEmpty,
+        'username': authAPI.username ?? 'Unknown User',
+        'email': authAPI.email ?? 'No email available',
+        'role': await roleService.getCurrentUserRole(),
+        'isOAuthUser': authAPI.isOAuthUser
       };
     } catch (e) {
       LogService.instance.error("Error loading user data: $e");
@@ -54,6 +50,7 @@ class _AccountPageState extends State<AccountPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Rest of the build method remains the same
     return FutureBuilder<Map<String, dynamic>>(
       future: _userDataFuture,
       builder: (context, snapshot) {
@@ -137,8 +134,6 @@ class _AccountPageState extends State<AccountPage> {
 
   Widget _buildRoleBasedCards(
       BuildContext context, Map<String, dynamic> userData) {
-    final roleService = Provider.of<RoleService>(context, listen: false);
-
     return Column(
       children: [
         if (userData['role'] == 'nonmember')
@@ -148,8 +143,8 @@ class _AccountPageState extends State<AccountPage> {
             subtitle: "Join our community and enjoy exclusive benefits",
             onTap: () async {
               try {
-                await roleService.requestMemberRole();
-                _loadUserData(); // Reload user data after role change
+                // await roleService.requestMemberRole(); TODO
+                _reloadUserData(); // Use reload instead of direct load
                 if (!mounted) return;
                 _showSuccessSnackBar("Successfully became a member!");
               } catch (e) {
@@ -166,7 +161,7 @@ class _AccountPageState extends State<AccountPage> {
             subtitle: "Lead Jams and share your photography passion",
             onTap: () async {
               try {
-                await roleService.requestFacilitatorRole();
+                // await roleService.requestFacilitatorRole(); TODO
                 if (!mounted) return;
                 _showSuccessSnackBar("Facilitator request submitted!");
               } catch (e) {
@@ -188,23 +183,6 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  Future<void> _goToExternalLink(String url) async {
-    try {
-      final Uri uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      } else {
-        LogService.instance.error("Could not launch URL: $url");
-        if (!mounted) return;
-        _showErrorSnackBar("Could not open the link");
-      }
-    } catch (e) {
-      LogService.instance.error("Error launching URL: $e");
-      if (!mounted) return;
-      _showErrorSnackBar("Error opening the link");
-    }
-  }
-
   void _showUpdateNameDialog(Map<String, dynamic> userData) {
     final nameController = TextEditingController(text: userData['username']);
 
@@ -220,7 +198,7 @@ class _AccountPageState extends State<AccountPage> {
         submitButtonOnPressed: () async {
           try {
             await context.read<AuthAPI>().updateName(nameController.text);
-            _loadUserData(); // Reload user data
+            _reloadUserData(); // Use reload instead of direct load
             if (!mounted) return;
             Navigator.of(context).pop();
             _showSuccessSnackBar("Name updated successfully!");
@@ -261,10 +239,11 @@ class _AccountPageState extends State<AccountPage> {
         submitButtonLabel: "Save",
         submitButtonOnPressed: () async {
           try {
-            await context
-                .read<AuthAPI>()
-                .updateEmail(emailController.text, passwordController.text);
-            _loadUserData(); // Reload user data
+            await context.read<AuthAPI>().updateEmail(
+                  newEmail: emailController.text,
+                  password: passwordController.text,
+                );
+            _reloadUserData(); // Use reload instead of direct load
             if (!mounted) return;
             Navigator.of(context).pop();
             _showSuccessSnackBar("Email updated successfully!");
@@ -274,24 +253,6 @@ class _AccountPageState extends State<AccountPage> {
             _showErrorSnackBar("Failed to update email");
           }
         },
-      ),
-    );
-  }
-
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
       ),
     );
   }
@@ -337,7 +298,9 @@ class _AccountPageState extends State<AccountPage> {
 
           try {
             await context.read<AuthAPI>().updatePassword(
-                currentPasswordController.text, newPasswordController.text);
+                  oldPassword: currentPasswordController.text,
+                  newPassword: newPasswordController.text,
+                );
             if (!mounted) return;
             Navigator.of(context).pop();
             _showSuccessSnackBar("Password updated successfully!");
@@ -347,6 +310,41 @@ class _AccountPageState extends State<AccountPage> {
             _showErrorSnackBar("Failed to update password");
           }
         },
+      ),
+    );
+  }
+
+  Future<void> _goToExternalLink(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        LogService.instance.error("Could not launch URL: $url");
+        if (!mounted) return;
+        _showErrorSnackBar("Could not open the link");
+      }
+    } catch (e) {
+      LogService.instance.error("Error launching URL: $e");
+      if (!mounted) return;
+      _showErrorSnackBar("Error opening the link");
+    }
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
       ),
     );
   }

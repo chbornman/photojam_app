@@ -26,7 +26,9 @@ class PhotosController extends ChangeNotifier {
   })  : _authAPI = authAPI,
         _databaseAPI = databaseAPI,
         _storageAPI = storageAPI,
-        _cacheService = cacheService;
+        _cacheService = cacheService {
+    fetchSubmissions();
+  }
 
   bool get isLoading => _isLoading;
   List<Submission> get submissions => _submissions;
@@ -39,75 +41,103 @@ class PhotosController extends ChangeNotifier {
     super.dispose();
   }
 
-  @override
-  void notifyListeners() {
-    if (!_disposed) {
-      super.notifyListeners();
-    }
+  void _setLoading(bool loading) {
+    if (_disposed) return;
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _setError(String? error) {
+    if (_disposed) return;
+    _error = error;
+    notifyListeners();
   }
 
   Future<void> fetchSubmissions() async {
     if (_disposed) return;
     
     try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
+      _setLoading(true);
+      _setError(null);
 
-      final userId = _authAPI.userid;
-      final authToken = await _authAPI.getToken();
+      if (!_authAPI.isAuthenticated) {
+        throw Exception("User is not authenticated");
+      }
+
+      final userId = _authAPI.userId;
+      if (userId == null) {
+        throw Exception("User ID not available");
+      }
+
+      final sessionId = await _authAPI.getSessionId();
+      if (sessionId == null) {
+        throw Exception("No valid session found");
+      }
 
       if (_disposed) return;
-
-      if (userId == null || userId.isEmpty || authToken == null) {
-        throw Exception("User ID or auth token is not available.");
-      }
 
       final response = await _databaseAPI.getSubmissionsByUser(userId: userId);
       if (_disposed) return;
 
-      List<Submission> submissions = [];
-
-      for (var doc in response) {
-        if (_disposed) return;
-
-        final photoUrls = List<String>.from(doc.data['photos'] ?? []).take(3).toList();
-        List<Uint8List?> photos = [];
-
-        for (var photoUrl in photoUrls) {
-          if (_disposed) return;
-          
-          final imageData = await _cacheService.getImage(
-            photoUrl,
-            authToken,
-            () => _storageAPI.fetchAuthenticatedImage(photoUrl, authToken),
-          );
-          photos.add(imageData);
-        }
-
-        submissions.add(
-          Submission(
-            date: doc.data['date'] ?? 'Unknown Date',
-            jamTitle: doc.data['jam']?['title'] ?? 'Untitled',
-            photos: photos,
-          ),
-        );
-      }
-
+      final submissions = await _processSubmissions(response, sessionId);
       if (_disposed) return;
 
-      submissions.sort((a, b) => b.date.compareTo(a.date));
-      
       _submissions = submissions;
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     } catch (e) {
-      if (_disposed) return;
-      
       LogService.instance.error('Error fetching submissions: $e');
-      _error = 'Failed to load photos';
-      _isLoading = false;
-      notifyListeners();
+      _setError('Failed to load photos');
+      _setLoading(false);
     }
+  }
+
+  Future<List<Submission>> _processSubmissions(
+    dynamic response,
+    String sessionId,
+  ) async {
+    List<Submission> submissions = [];
+
+    for (var doc in response) {
+      if (_disposed) break;
+
+      try {
+        final submission = await _processSubmission(doc, sessionId);
+        if (submission != null) {
+          submissions.add(submission);
+        }
+      } catch (e) {
+        LogService.instance.error('Error processing submission: $e');
+      }
+    }
+
+    submissions.sort((a, b) => b.date.compareTo(a.date));
+    return submissions;
+  }
+
+  Future<Submission?> _processSubmission(
+    dynamic doc,
+    String sessionId,
+  ) async {
+    final photoUrls = List<String>.from(doc.data['photos'] ?? [])
+        .take(3)
+        .toList();
+    
+    List<Uint8List?> photos = [];
+    for (var photoUrl in photoUrls) {
+      if (_disposed) return null;
+      
+      final imageData = await _cacheService.getImage(
+        photoUrl,
+        sessionId,
+        () => _storageAPI.fetchAuthenticatedImage(photoUrl, sessionId),
+      );
+      photos.add(imageData);
+    }
+
+    return Submission(
+      date: doc.data['date'] ?? 'Unknown Date',
+      jamTitle: doc.data['jam']?['title'] ?? 'Untitled',
+      photos: photos,
+    );
   }
 }

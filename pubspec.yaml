@@ -26,6 +26,7 @@ dependencies:
   table_calendar: ^3.1.2
   reorderables: ^0.6.0
   add_2_calendar: ^2.0.1
+  uni_links: ^0.5.1
   # flutter_stripe: ^11.2.0
   # TODO square_in_app_payments: ^1.7.9
 

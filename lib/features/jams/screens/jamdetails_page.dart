@@ -21,11 +21,11 @@ class JamDetailsPage extends StatefulWidget {
   _JamDetailsPageState createState() => _JamDetailsPageState();
 }
 
-class _JamDetailsPageState extends State<JamDetailsPage>
-    with WidgetsBindingObserver {
+class _JamDetailsPageState extends State<JamDetailsPage> with WidgetsBindingObserver {
   bool isLoading = true;
   bool _isDisposed = false;
   List<Uint8List?> photos = [];
+  final Map<String, Uint8List?> _imageCache = {};
 
   @override
   void initState() {
@@ -38,85 +38,113 @@ class _JamDetailsPageState extends State<JamDetailsPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _isDisposed = true;
+    _imageCache.clear();
     super.dispose();
   }
 
-  void _fetchSubmission() async {
-    final auth = Provider.of<AuthAPI>(context, listen: false);
-    final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
-    final storageApi = Provider.of<StorageAPI>(context, listen: false);
+  Future<void> _fetchSubmission() async {
+    if (_isDisposed) return;
 
     try {
-      final userId = auth.userid;
-      final authToken = await auth.getToken();
+      final auth = Provider.of<AuthAPI>(context, listen: false);
+      final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
+      final storageApi = Provider.of<StorageAPI>(context, listen: false);
 
-      if (userId == null || userId.isEmpty || authToken == null) {
-        throw Exception("User ID or auth token is not available.");
+      final userId = auth.userId;
+      if (userId == null || !auth.isAuthenticated) {
+        throw Exception("User is not authenticated.");
+      }
+
+      final sessionId = await auth.getSessionId();
+      if (sessionId == null) {
+        throw Exception("No valid session found.");
       }
 
       LogService.instance.info('Fetching submission for user: $userId');
-      final submission =
-          await databaseApi.getSubmissionByJamAndUser(widget.jam.$id, userId);
+      final submission = await databaseApi.getSubmissionByJamAndUser(
+        widget.jam.$id,
+        userId,
+      );
 
-      if (!_isDisposed) {
-        final photoUrls =
-            List<String>.from(submission.data['photos'] ?? []).take(3).toList();
+      if (_isDisposed) return;
 
-        List<Uint8List?> photos = [];
-        for (var photoUrl in photoUrls) {
-          if (_isDisposed) return;
-          final imageData =
-              await _fetchAndCacheImage(photoUrl, authToken, storageApi);
-          if (imageData != null) {
-            photos.add(imageData);
-          } else {
-            LogService.instance
-                .info('Image data could not be fetched for URL: $photoUrl');
-          }
-        }
+      await _processSubmission(submission, sessionId, storageApi);
 
-        if (!_isDisposed) {
-          setState(() {
-            isLoading = false;
-            this.photos = photos; // Update the photos list in the state
-          });
-        }
-      }
     } catch (e) {
       LogService.instance.error('Error fetching submission: $e');
       if (!_isDisposed) {
         setState(() {
           isLoading = false;
         });
+        _showErrorSnackBar('Failed to load submission');
       }
     }
   }
 
-  Future<Uint8List?> _fetchAndCacheImage(
-      String photoUrl, String authToken, StorageAPI storageApi) async {
-    final cacheFile = await _getImageCacheFile(photoUrl);
+  Future<void> _processSubmission(
+    dynamic submission,
+    String sessionId,
+    StorageAPI storageApi,
+  ) async {
+    final photoUrls = List<String>.from(submission.data['photos'] ?? [])
+        .take(3)
+        .toList();
 
+    List<Uint8List?> newPhotos = [];
+    for (var photoUrl in photoUrls) {
+      if (_isDisposed) return;
+      
+      final imageData = await _fetchAndCacheImage(
+        photoUrl,
+        sessionId,
+        storageApi,
+      );
+      
+      if (imageData != null) {
+        newPhotos.add(imageData);
+      } else {
+        LogService.instance.info('Image data could not be fetched for URL: $photoUrl');
+      }
+    }
+
+    if (!_isDisposed) {
+      setState(() {
+        isLoading = false;
+        photos = newPhotos;
+      });
+    }
+  }
+
+  Future<Uint8List?> _fetchAndCacheImage(
+    String photoUrl,
+    String sessionId,
+    StorageAPI storageApi,
+  ) async {
+    // Check memory cache first
+    if (_imageCache.containsKey(photoUrl)) {
+      return _imageCache[photoUrl];
+    }
+
+    // Check disk cache
+    final cacheFile = await _getImageCacheFile(photoUrl);
     if (await cacheFile.exists()) {
-      LogService.instance.info('Loading image from cache for URL: $photoUrl');
-      return await cacheFile.readAsBytes();
+      final imageData = await cacheFile.readAsBytes();
+      _imageCache[photoUrl] = imageData;
+      return imageData;
     }
 
     try {
-      LogService.instance
-          .info('Downloading image from network for URL: $photoUrl');
-      final imageData =
-          await storageApi.fetchAuthenticatedImage(photoUrl, authToken);
+      final imageData = await storageApi.fetchAuthenticatedImage(
+        photoUrl,
+        sessionId,
+      );
       if (imageData != null) {
         await cacheFile.writeAsBytes(imageData);
-        LogService.instance.info('Image cached for URL: $photoUrl');
-      } else {
-        LogService.instance
-            .info('No image data received from network for URL: $photoUrl');
+        _imageCache[photoUrl] = imageData;
       }
       return imageData;
     } catch (e) {
-      LogService.instance
-          .error('Error fetching image from network for URL $photoUrl: $e');
+      LogService.instance.error('Error fetching image from network: $e');
       return null;
     }
   }
@@ -127,6 +155,66 @@ class _JamDetailsPageState extends State<JamDetailsPage>
     return File('${cacheDir.path}/$sanitizedFileName.jpg');
   }
 
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  Future<void> _openZoomLink(String zoomLink) async {
+    final uri = Uri.parse(zoomLink);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        _showErrorSnackBar('Could not open the Zoom link');
+      }
+    } catch (e) {
+      LogService.instance.error('Error launching Zoom link: $e');
+      _showErrorSnackBar('Failed to open Zoom link');
+    }
+  }
+
+  Future<void> _addToGoogleCalendar(
+    DateTime date,
+    String title,
+    String description,
+  ) async {
+    final startDate = date.toUtc().toIso8601String()
+        .replaceAll('-', '')
+        .replaceAll(':', '')
+        .split('.')[0];
+    
+    final endDate = date.add(const Duration(hours: 1)).toUtc()
+        .toIso8601String()
+        .replaceAll('-', '')
+        .replaceAll(':', '')
+        .split('.')[0];
+
+    final uri = Uri.parse(
+      'https://www.google.com/calendar/render'
+      '?action=TEMPLATE'
+      '&text=${Uri.encodeComponent(title)}'
+      '&details=${Uri.encodeComponent(description)}'
+      '&dates=$startDate/$endDate',
+    );
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        _showErrorSnackBar('Could not open Google Calendar');
+      }
+    } catch (e) {
+      LogService.instance.error('Error launching calendar: $e');
+      _showErrorSnackBar('Failed to open calendar');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final jamDate = DateTime.parse(widget.jam.data['date']);
@@ -134,36 +222,9 @@ class _JamDetailsPageState extends State<JamDetailsPage>
     final zoomLink = widget.jam.data['zoom_link'];
     final formattedDate = DateFormat('MMM dd, yyyy - hh:mm a').format(jamDate);
 
-    final photoWidgets = [
-      Row(
-        children: photos.asMap().entries.map((entry) {
-          Uint8List? photoData = entry.value;
-          return GestureDetector(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
-                child: photoData != null
-                    ? Image.memory(photoData,
-                        width: 100, height: 100, fit: BoxFit.cover)
-                    : Container(
-                        width: 100,
-                        height: 100,
-                        color: const Color.fromARGB(255, 106, 35, 35),
-                        child: const Icon(Icons.image_not_supported,
-                            color: Colors.white),
-                      ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    ];
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
+      appBar: AppBar(title: Text(title)),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -171,10 +232,9 @@ class _JamDetailsPageState extends State<JamDetailsPage>
           children: [
             Text(
               title,
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 10),
             Row(
@@ -183,20 +243,50 @@ class _JamDetailsPageState extends State<JamDetailsPage>
                 const SizedBox(width: 8),
                 Text(
                   'Date: $formattedDate',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: Colors.grey[600]),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            SubmissionCard(
-                title: "Your submitted photos", photoWidgets: photoWidgets)
+            if (isLoading)
+              const Center(child: CircularProgressIndicator())
+            else
+              SubmissionCard(
+                title: "Your submitted photos",
+                photoWidgets: [
+                  Row(
+                    children: photos.map((photoData) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: photoData != null
+                              ? Image.memory(
+                                  photoData,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                )
+                              : Container(
+                                  width: 100,
+                                  height: 100,
+                                  color: const Color.fromARGB(255, 106, 35, 35),
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
-      backgroundColor: Theme.of(context).colorScheme.surface,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -204,56 +294,23 @@ class _JamDetailsPageState extends State<JamDetailsPage>
         children: [
           FloatingActionButton.extended(
             heroTag: 'joinZoom',
-            icon: Icon(Icons.link),
-            label: Text("Join Zoom"),
+            icon: const Icon(Icons.link),
+            label: const Text("Join Zoom"),
             onPressed: () => _openZoomLink(zoomLink),
           ),
           const SizedBox(height: 16),
           FloatingActionButton.extended(
             heroTag: 'addToCalendar',
-            icon: Icon(Icons.calendar_today),
-            label: Text("Add to Calendar"),
-            onPressed: () =>
-                _addToGoogleCalendar(jamDate, title, 'no description'),
+            icon: const Icon(Icons.calendar_today),
+            label: const Text("Add to Calendar"),
+            onPressed: () => _addToGoogleCalendar(
+              jamDate,
+              title,
+              'PhotoJam Session',
+            ),
           ),
         ],
       ),
     );
-  }
-
-  // Function to open the Zoom link
-  void _openZoomLink(String zoomLink) async {
-    if (await canLaunch(zoomLink)) {
-      await launch(zoomLink);
-    } else {
-      LogService.instance.info('Could not open the Zoom link.');
-    }
-  }
-
-  void _addToGoogleCalendar(
-      DateTime date, String title, String description) async {
-    final startDate = date
-        .toUtc()
-        .toIso8601String()
-        .replaceAll('-', '')
-        .replaceAll(':', '')
-        .split('.')[0];
-    final endDate = date
-        .add(Duration(hours: 1))
-        .toUtc()
-        .toIso8601String()
-        .replaceAll('-', '')
-        .replaceAll(':', '')
-        .split('.')[0];
-
-    final googleCalendarUrl = Uri.parse(
-      'https://www.google.com/calendar/render?action=TEMPLATE&text=$title&details=$description&dates=$startDate/$endDate',
-    );
-
-    if (await canLaunchUrl(googleCalendarUrl)) {
-      await launchUrl(googleCalendarUrl);
-    } else {
-      print('Could not launch Google Calendar');
-    }
   }
 }

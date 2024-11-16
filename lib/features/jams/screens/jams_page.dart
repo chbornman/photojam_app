@@ -1,3 +1,4 @@
+// lib/features/jams/screens/jam_page.dart
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -17,9 +18,9 @@ class JamPage extends StatefulWidget {
 }
 
 class _JamPageState extends State<JamPage> {
-  String? currentJamId;
-  String jamTitle = "Jam";
-  List<Document> upcomingJams = [];
+  List<Document> _upcomingJams = [];
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -28,33 +29,57 @@ class _JamPageState extends State<JamPage> {
   }
 
   Future<void> _fetchUserJams() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
     try {
-      final auth = Provider.of<AuthAPI>(context, listen: false);
-      final userId = auth.userid;
-
-      if (userId != null) {
-        final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
-        final response = await databaseApi.getUpcomingJamsByUser(userId);
-
-        final validJams = response.documents
-            .where((doc) => doc.data['date'] != null)
-            .toList();
-
-        validJams.sort((a, b) {
-          final dateA = DateTime.tryParse(a.data['date']) ?? DateTime.now();
-          final dateB = DateTime.tryParse(b.data['date']) ?? DateTime.now();
-          return dateA.compareTo(dateB);
-        });
-
-        if (mounted) {
-          setState(() {
-            upcomingJams = validJams;
-          });
-        }
+      final auth = context.read<AuthAPI>();
+      if (!auth.isAuthenticated) {
+        throw Exception('User not authenticated');
       }
+
+      final userId = auth.userId;
+      if (userId == null) {
+        throw Exception('User ID not available');
+      }
+
+      final databaseApi = context.read<DatabaseAPI>();
+      final response = await databaseApi.getUpcomingJamsByUser(userId);
+
+      if (!mounted) return;
+
+      final validJams = _processJams(response.documents);
+      
+      setState(() {
+        _upcomingJams = validJams;
+        _isLoading = false;
+      });
     } catch (e) {
       LogService.instance.error('Error fetching upcoming jams: $e');
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load jams';
+        _isLoading = false;
+      });
     }
+  }
+
+  List<Document> _processJams(List<Document> jams) {
+    final validJams = jams
+        .where((doc) => doc.data['date'] != null)
+        .toList();
+
+    validJams.sort((a, b) {
+      final dateA = DateTime.tryParse(a.data['date']) ?? DateTime.now();
+      final dateB = DateTime.tryParse(b.data['date']) ?? DateTime.now();
+      return dateA.compareTo(dateB);
+    });
+
+    return validJams;
   }
 
   @override
@@ -65,113 +90,138 @@ class _JamPageState extends State<JamPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            StandardCard(
-              icon: Icons.add_circle_outline,
-              title: "Sign Up for a Jam",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => JamSignupPage()),
-                );
-              },
-            ),
+            _buildSignupCard(),
             const SizedBox(height: 20),
-            Text(
-              "Upcoming Jams",
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
+            _buildHeader(),
             const SizedBox(height: 10),
             Expanded(
-                child: upcomingJams.isEmpty
-                    ? Center(
-                        child: Text(
-                          "No upcoming jams available",
-                          style: TextStyle(
-                              fontSize: 18.0,
-                              color: Theme.of(context).colorScheme.onSurface),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: upcomingJams.length,
-                        itemBuilder: (context, index) {
-                          final jam = upcomingJams[index];
-                          final jamData = jam.data;
-                          final jamTitle = jamData['title'] ?? 'Untitled Jam';
-
-                          final jamDateStr = jamData['date'] ?? '';
-                          DateTime? jamDate;
-
-                          // Try parsing the date if it exists
-                          if (jamDateStr.isNotEmpty) {
-                            try {
-                              jamDate = DateTime.parse(jamDateStr);
-                            } catch (_) {
-                              jamDate = null;
-                            }
-                          }
-
-                          return Card(
-                            elevation: 4,
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              leading: Icon(
-                                Icons.event,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 30,
-                              ),
-                              title: Text(
-                                jamTitle,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w600),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    jamDate != null
-                                        ? 'Date: ${DateFormat('MMM dd, yyyy - hh:mm a').format(jamDate)}'
-                                        : 'Date unavailable',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(color: Colors.grey[600]),
-                                  ),
-                                ],
-                              ),
-                              trailing: Icon(
-                                Icons.arrow_forward_ios,
-                                size: 16,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              onTap: () {
-                                // Navigate to the Jam Details Page
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        JamDetailsPage(jam: jam),
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      )),
+              child: _buildJamsList(),
+            ),
           ],
         ),
       ),
       backgroundColor: Theme.of(context).colorScheme.surface,
+    );
+  }
+
+  Widget _buildSignupCard() {
+    return StandardCard(
+      icon: Icons.add_circle_outline,
+      title: "Sign Up for a Jam",
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const JamSignupPage()),
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader() {
+    return Text(
+      "Upcoming Jams",
+      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  Widget _buildJamsList() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(child: Text(_error!));
+    }
+
+    if (_upcomingJams.isEmpty) {
+      return Center(
+        child: Text(
+          "No upcoming jams available",
+          style: TextStyle(
+            fontSize: 18.0,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _fetchUserJams,
+      child: ListView.builder(
+        itemCount: _upcomingJams.length,
+        itemBuilder: (context, index) => _buildJamCard(_upcomingJams[index]),
+      ),
+    );
+  }
+
+  Widget _buildJamCard(Document jam) {
+    final jamData = jam.data;
+    final jamTitle = jamData['title'] ?? 'Untitled Jam';
+    final jamDate = _parseJamDate(jamData['date']);
+
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        leading: Icon(
+          Icons.event,
+          color: Theme.of(context).colorScheme.primary,
+          size: 30,
+        ),
+        title: Text(
+          jamTitle,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(
+              jamDate != null
+                ? 'Date: ${DateFormat('MMM dd, yyyy - hh:mm a').format(jamDate)}'
+                : 'Date unavailable',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        onTap: () => _navigateToJamDetails(jam),
+      ),
+    );
+  }
+
+  DateTime? _parseJamDate(String? dateStr) {
+    if (dateStr?.isEmpty ?? true) return null;
+    try {
+      return DateTime.parse(dateStr!);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _navigateToJamDetails(Document jam) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => JamDetailsPage(jam: jam),
+      ),
     );
   }
 }

@@ -1,3 +1,5 @@
+
+// lib/features/account/widgets/account_management.dart
 import 'package:flutter/material.dart';
 import 'package:photojam_app/features/account/controllers/account_controller.dart';
 import 'package:photojam_app/features/account/models/update_dialogs.dart';

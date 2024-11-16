@@ -17,6 +17,7 @@ class RegisterController extends ChangeNotifier {
     required String confirmPassword,
   }) async {
     if (_isLoading) return;
+    
     if (password != confirmPassword) {
       throw const FormatException("Passwords do not match!");
     }
@@ -25,23 +26,37 @@ class RegisterController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      LogService.instance.info("Creating new user account");
-      await _authAPI.createUser(
+      LogService.instance.info("Creating new user account for: $email");
+      
+      // Create the account
+      await _authAPI.createAccount(
         name: name,
         email: email,
         password: password,
       );
 
-      LogService.instance.info("User created, creating temporary session");
-      await _authAPI.createEmailPasswordSession(
+      LogService.instance.info("Account created, signing in");
+      
+      // Sign in with the new account
+      await _authAPI.signIn(
         email: email,
         password: password,
       );
 
-      LogService.instance.info("User created as nonmember");
+      // Verify we're authenticated
+      if (!_authAPI.isAuthenticated) {
+        throw Exception('Failed to authenticate after registration');
+      }
+
+      LogService.instance.info("Initial sign in successful");
+      
+      // Sign out to force them to the login screen
       await _authAPI.signOut();
       
-      LogService.instance.info("Registration complete");
+      LogService.instance.info("Registration process complete");
+    } catch (e) {
+      LogService.instance.error("Registration failed: $e");
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();

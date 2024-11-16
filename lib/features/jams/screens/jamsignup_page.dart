@@ -1,49 +1,49 @@
+import 'dart:io' as io;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:appwrite/models.dart';
+import 'package:photojam_app/app.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:photojam_app/core/services/log_service.dart';
-import 'package:photojam_app/core/widgets/standard_dialog.dart';
-import 'package:photojam_app/app.dart';
-import 'package:photojam_app/core/widgets/standard_button.dart';
-import 'package:provider/provider.dart';
-import 'dart:io';
-import 'package:intl/intl.dart';
 import 'package:photojam_app/core/services/role_service.dart';
+import 'package:photojam_app/core/widgets/standard_dialog.dart';
+import 'package:photojam_app/core/widgets/standard_button.dart';
+import 'package:photojam_app/features/jams/models/photo_submission.dart';
+import 'package:photojam_app/features/jams/services/photo_upload_service.dart';
+import 'package:photojam_app/features/jams/widgets/photo_selector.dart';
+import 'package:photojam_app/features/jams/widgets/jam_dropdown.dart';
 
 class JamSignupPage extends StatefulWidget {
   const JamSignupPage({super.key});
 
   @override
-  _JamSignupPageState createState() => _JamSignupPageState();
+  State<JamSignupPage> createState() => _JamSignupPageState();
 }
 
 class _JamSignupPageState extends State<JamSignupPage> {
-  String? selectedJamId;
-  String? selectedJamName;
-  List<DropdownMenuItem<String>> jamEvents = [];
-  List<File?> photos = [null, null, null];
-  bool isLoading = false;
-  final TextEditingController _commentController = TextEditingController();
+  static const int _maxPhotos = 3;
 
-  late DatabaseAPI database;
-  late StorageAPI storage;
-  late AuthAPI auth;
-  late RoleService roleService;
-  bool hasInitializedDependencies = false;
+  final List<io.File?> _photos = List.filled(_maxPhotos, null);
+  final TextEditingController _commentController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
+  
+  String? _selectedJamId;
+  String? _selectedJamName;
+  List<Document> _jams = [];
+  bool _isLoading = false;
+
+  late final DatabaseAPI _databaseApi;
+  late final PhotoUploadService _photoUploadService;
+  late final AuthAPI _authApi;
+  late final RoleService _roleService;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!hasInitializedDependencies) {
-      database = Provider.of<DatabaseAPI>(context, listen: false);
-      storage = Provider.of<StorageAPI>(context, listen: false);
-      auth = Provider.of<AuthAPI>(context, listen: false);
-      roleService = Provider.of<RoleService>(context, listen: false);
-      hasInitializedDependencies = true;
-      _fetchJamEvents();
-    }
+  void initState() {
+    super.initState();
+    _initializeServices();
   }
 
   @override
@@ -52,331 +52,340 @@ class _JamSignupPageState extends State<JamSignupPage> {
     super.dispose();
   }
 
-  Future<void> _fetchJamEvents() async {
-    try {
-      final response = await database.getJams();
-      if (!mounted) return;
-
-      setState(() {
-        jamEvents = response.documents.asMap().entries.map((entry) {
-          var doc = entry.value;
-
-          String title = doc.data['title'];
-          DateTime dateTime = DateTime.parse(doc.data['date']);
-          String formattedDateTime =
-              DateFormat('MMM dd, yyyy • hh:mm a').format(dateTime);
-
-          return DropdownMenuItem<String>(
-            value: doc.$id,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                SizedBox(width: 10),
-                Text(
-                  formattedDateTime,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList();
-      });
-    } catch (e) {
-      LogService.instance.error('Error fetching jam events: $e');
-    }
+  void _initializeServices() {
+    _databaseApi = context.read<DatabaseAPI>();
+    final storageApi = context.read<StorageAPI>();
+    _photoUploadService = PhotoUploadService(storageApi);
+    _authApi = context.read<AuthAPI>();
+    _roleService = context.read<RoleService>();
+    _fetchJamEvents();
   }
 
-  Future<void> _selectPhoto(int index) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      final file = File(pickedFile.path);
-      final fileSize = await file.length();
-
-      if (fileSize > 50 * 1024 * 1024) {
-        _showSizeWarningDialog();
-        return;
-      }
-
-      setState(() {
-        photos[index] = file;
-      });
-    }
-  }
-
-  Future<void> _showSizeWarningDialog() async {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("File Size Warning"),
-          content: Text(
-              "Selected photo exceeds the 50MB size limit. Please choose a smaller photo."),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("OK"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
+  // Event Handlers
   Future<void> _onJamSelected(String? jamId) async {
     if (jamId == null) return;
 
     setState(() {
-      selectedJamId = jamId;
-    });
-
-    final jamData = await database.getJamById(jamId);
-    if (!mounted) return;
-
-    setState(() {
-      selectedJamName = jamData.data['title'] ?? "UnknownJam";
-    });
-  }
-
-  String formatFileName(int index, String jamName, String username) {
-    String date = DateFormat('yyyyMMdd').format(DateTime.now());
-    return "${jamName}_${date}_${username}_photo${index + 1}.jpg";
-  }
-
-  Future<bool> _showOverwriteConfirmationDialog() async {
-    return showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Existing Submission"),
-          content: Text(
-              "You have already submitted photos for this Jam. Submitting again will overwrite your previous submission. Do you want to proceed?"),
-          actions: [
-            StandardButton(
-              onPressed: () => Navigator.pop(context, false),
-              label: Text("Cancel"),
-            ),
-            StandardButton(
-              onPressed: () => Navigator.pop(context, true),
-              label: Text("Overwrite"),
-            ),
-          ],
-        );
-      },
-    ).then((value) => value ?? false);
-  }
-
-  Future<void> _submitPhotos() async {
-    if (selectedJamId == null || selectedJamName == null) {
-      await _showSelectJamWarningDialog();
-      return;
-    }
-
-    bool noPhotosSelected = photos.every((photo) => photo == null);
-    if (noPhotosSelected) {
-      bool shouldDelete = await _showDeleteWarningDialog();
-      if (shouldDelete) {
-        await _deleteExistingSubmission();
-      }
-      return;
-    }
-
-    setState(() {
-      isLoading = true;
+      _selectedJamId = jamId;
     });
 
     try {
-      final userId = await auth.fetchUserId();
-      if (userId == null) {
-        LogService.instance.info("User ID not found. Please log in.");
+      final jamData = await _databaseApi.getJamById(jamId);
+      if (!mounted) return;
+
+      setState(() {
+        _selectedJamName = jamData.data['title'] as String? ?? "Unknown Jam";
+      });
+    } catch (e) {
+      LogService.instance.error('Error fetching jam details: $e');
+      _showErrorSnackBar('Failed to load jam details');
+    }
+  }
+
+  Future<void> _handleSubmit() async {
+    if (_selectedJamId == null) {
+      await _showNoJamSelectedDialog();
+      return;
+    }
+
+    if (_photos.every((photo) => photo == null)) {
+      await _handleEmptySubmission();
+      return;
+    }
+
+    await _processSubmission();
+  }
+
+  // Data Fetching
+  Future<void> _fetchJamEvents() async {
+    if (!mounted) return;
+
+    try {
+      final response = await _databaseApi.getJams();
+      if (!mounted) return;
+
+      setState(() {
+        _jams = response.documents;
+      });
+    } catch (e) {
+      LogService.instance.error('Error fetching jam events: $e');
+      _showErrorSnackBar('Failed to load jam events');
+    }
+  }
+
+  // Photo Management
+  Future<void> _selectPhoto(int index) async {
+    try {
+      final pickedFile = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+
+      if (pickedFile == null) return;
+
+      final file = io.File(pickedFile.path);
+      
+      if (!_photoUploadService.isPhotoSizeValid(file)) {
+        await _showFileSizeWarningDialog();
         return;
       }
 
-      final existingSubmission =
-          await database.getUserSubmissionForJam(selectedJamId!, userId);
+      setState(() => _photos[index] = file);
+    } catch (e) {
+      LogService.instance.error('Error selecting photo: $e');
+      _showErrorSnackBar('Failed to select photo');
+    }
+  }
+
+  void _removePhoto(int index) {
+    setState(() => _photos[index] = null);
+  }
+
+  // Submission Processing
+  Future<void> _processSubmission() async {
+    if (!_validateSubmission()) return;
+    
+    setState(() => _isLoading = true);
+
+    try {
+      final userId = _authApi.userId!;
+      final existingSubmission = await _databaseApi.getUserSubmissionForJam(
+        _selectedJamId!,
+        userId,
+      );
+
       if (existingSubmission != null) {
-        bool shouldOverwrite = await _showOverwriteConfirmationDialog();
+        final shouldOverwrite = await _showOverwriteConfirmationDialog();
         if (!shouldOverwrite) {
-          setState(() {
-            isLoading = false;
-          });
+          setState(() => _isLoading = false);
           return;
         }
       }
 
-      List<String> photoUrls = [];
-      for (int i = 0; i < photos.length; i++) {
-        final photo = photos[i];
-        if (photo != null) {
-          String fileName = formatFileName(i, selectedJamName!, userId);
-          try {
-            if (existingSubmission != null) {
-              // Delete old photo if it exists
-              if (i < existingSubmission.data['photos'].length) {
-                final oldUrl = existingSubmission.data['photos'][i];
-                final fileId = extractFileIdFromUrl(oldUrl);
-                await storage.deletePhoto(fileId);
-              }
-            }
-            final photoId =
-                await storage.uploadPhoto(await photo.readAsBytes(), fileName);
-            final photoUrl = await storage.getPhotoUrl(photoId);
-            photoUrls.add(photoUrl);
-            LogService.instance
-                .info("Uploaded photo ${i + 1} with name $fileName");
-          } catch (e) {
-            LogService.instance.error("Failed to upload photo $i: $e");
-          }
-        }
-      }
-
-      if (existingSubmission != null) {
-        await database.updateSubmission(
-          existingSubmission.$id,
-          photoUrls,
-          DateTime.now().toIso8601String(),
-          _commentController.text,
-        );
-        LogService.instance
-            .info("Submission updated successfully for Jam: $selectedJamId");
-      } else {
-        await database.createSubmission(
-          selectedJamId!,
-          photoUrls,
-          userId,
-          _commentController.text,
-        );
-        LogService.instance
-            .info("Submission created successfully for Jam: $selectedJamId");
-      }
+      await _submitPhotos(userId, existingSubmission);
 
       if (!mounted) return;
-      setState(() {
-        isLoading = false;
-      });
-      _showConfirmationDialog();
+      await _showSuccessAndNavigate();
     } catch (e) {
       LogService.instance.error("Error during photo submission: $e");
       if (!mounted) return;
-      setState(() {
-        isLoading = false;
-      });
+      _showErrorSnackBar('Failed to submit photos');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  Future<void> _showSelectJamWarningDialog() async {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Select a Jam"),
-          content: Text("Please select a Jam event before submitting photos."),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("OK"),
-            ),
-          ],
-        );
-      },
+  Future<void> _submitPhotos(String userId, Document? existingSubmission) async {
+    final photoUrls = await _photoUploadService.uploadPhotos(
+      photos: _photos,
+      jamName: _selectedJamName!,
+      username: _authApi.username ?? 'unknown',
+      existingSubmission: existingSubmission,
     );
+
+    final submission = PhotoSubmission(
+      jamId: _selectedJamId!,
+      photoUrls: photoUrls,
+      userId: userId,
+      comment: _commentController.text,
+    );
+
+    if (existingSubmission != null) {
+      await _databaseApi.updateSubmission(
+        existingSubmission.$id,
+        submission.photoUrls,
+        submission.submissionDate.toIso8601String(),
+        submission.comment ?? '',
+      );
+    } else {
+      await _databaseApi.createSubmission(
+        submission.jamId,
+        submission.photoUrls,
+        submission.userId,
+        submission.comment ?? '',
+      );
+    }
   }
 
-  Future<bool> _showDeleteWarningDialog() async {
-    return showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return StandardDialog(
-          title: "No Photos Selected",
-          content: Text(
-              "You have not selected any photos. Submitting will delete your existing submission and its photos. Do you want to proceed?"),
-          submitButtonLabel: "Delete Submission",
-          submitButtonOnPressed: () {
-            if (!mounted) return;
-            Navigator.pop(context, true);
-          },
-        );
-      },
-    ).then((value) => value ?? false);
+  Future<void> _handleEmptySubmission() async {
+    final shouldDelete = await _showDeleteConfirmationDialog();
+    if (shouldDelete) {
+      await _deleteExistingSubmission();
+    }
   }
 
   Future<void> _deleteExistingSubmission() async {
-    final userId = await auth.fetchUserId();
+    if (_selectedJamId == null || !_authApi.isAuthenticated) return;
 
-    if (userId != null) {
-      final existingSubmission =
-          await database.getUserSubmissionForJam(selectedJamId!, userId);
+    try {
+      final existingSubmission = await _databaseApi.getUserSubmissionForJam(
+        _selectedJamId!,
+        _authApi.userId!,
+      );
+
       if (existingSubmission != null) {
-        for (String url in existingSubmission.data['photos']) {
-          final fileId = extractFileIdFromUrl(url);
-          await storage.deletePhoto(fileId);
-          LogService.instance.info("Deleted photo with file ID: $fileId");
-        }
-
-        await database.deleteSubmission(existingSubmission.$id);
-        LogService.instance
-            .info("Existing submission deleted for Jam: $selectedJamId");
+        await _photoUploadService.deleteSubmissionPhotos(existingSubmission);
+        await _databaseApi.deleteSubmission(existingSubmission.$id);
       }
+
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      LogService.instance.error('Error deleting submission: $e');
+      _showErrorSnackBar('Failed to delete submission');
+    }
+  }
+
+  // Validation
+  bool _validateSubmission() {
+    if (!_authApi.isAuthenticated || _authApi.userId == null) {
+      _showErrorSnackBar('User not authenticated');
+      return false;
     }
 
+    if (_selectedJamId == null || _selectedJamName == null) {
+      _showErrorSnackBar('Please select a jam event');
+      return false;
+    }
+
+    return true;
+  }
+
+  // UI Feedback
+  void _showErrorSnackBar(String message) {
     if (!mounted) return;
-    Navigator.pop(context);
-  }
-
-  String extractFileIdFromUrl(String url) {
-    final regex = RegExp(r'/files/([^/]+)/view');
-    final match = regex.firstMatch(url);
-
-    if (match != null && match.groupCount >= 1) {
-      return match.group(1)!;
-    } else {
-      throw Exception('Invalid URL format: Unable to extract file ID');
-    }
-  }
-
-  Future<void> _showConfirmationDialog() async {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StandardDialog(
-          title: "Submission Successful",
-          content: Text("Your photos have been submitted successfully."),
-          submitButtonLabel: "OK",
-          submitButtonOnPressed: () async {
-            if (!mounted) return;
-            Navigator.pop(context);
-
-            // Get the user's role before navigation
-            final userRole = await roleService.getCurrentUserRole();
-
-            if (!mounted) return;
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => App(userRole: userRole),
-              ),
-              (route) => false,
-            );
-          },
-          showCancelButton: false,
-        );
-      },
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
     );
   }
 
+  // Dialog Methods
+  Future<void> _showFileSizeWarningDialog() {
+    return _showDialog(
+      title: "File Size Warning",
+      content: "Selected photo exceeds the 50MB size limit. Please choose a smaller photo.",
+    );
+  }
+
+  Future<void> _showNoJamSelectedDialog() {
+    return _showDialog(
+      title: "Select a Jam",
+      content: "Please select a Jam event before submitting photos.",
+    );
+  }
+
+  Future<void> _showDialog({
+    required String title,
+    required String content,
+  }) {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool> _showDeleteConfirmationDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => StandardDialog(
+        title: "No Photos Selected",
+        content: const Text(
+          "You have not selected any photos. "
+          "Submitting will delete your existing submission and its photos. "
+          "Do you want to proceed?"
+        ),
+        submitButtonLabel: "Delete Submission",
+        submitButtonOnPressed: () => Navigator.pop(context, true),
+      ),
+    ).then((value) => value ?? false);
+  }
+
+  Future<bool> _showOverwriteConfirmationDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => StandardDialog(
+        title: "Existing Submission",
+        content: const Text(
+          "You have already submitted photos for this Jam. "
+          "Submitting again will overwrite your previous submission. "
+          "Do you want to proceed?"
+        ),
+        submitButtonLabel: "Overwrite",
+        submitButtonOnPressed: () => Navigator.pop(context, true),
+      ),
+    ).then((value) => value ?? false);
+  }
+
+  Future<void> _showSuccessAndNavigate() async {
+    await showDialog(
+      context: context,
+      builder: (context) => StandardDialog(
+        title: "Submission Successful",
+        content: const Text("Your photos have been submitted successfully."),
+        submitButtonLabel: "OK",
+        submitButtonOnPressed: () async {
+          Navigator.pop(context);
+          if (!mounted) return;
+          
+          final userRole = await _roleService.getCurrentUserRole();
+          if (!mounted) return;
+          
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => App(userRole: userRole),
+            ),
+            (route) => false,
+          );
+        },
+        showCancelButton: false,
+      ),
+    );
+  }
+
+  // UI Components
+  Widget _buildCommentField() {
+    return TextField(
+      controller: _commentController,
+      decoration: InputDecoration(
+        labelText: 'Note to facilitator (optional)',
+        labelStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+      ),
+      maxLines: 3,
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    final bool isDisabled = _selectedJamId == null ||
+        _jams.isEmpty ||
+        _photos.every((photo) => photo == null);
+
+    return StandardButton(
+      label: const Text("Submit Photos"),
+      onPressed: isDisabled ? null : _handleSubmit,
+    );
+  }
+
+  // Build Method
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -389,126 +398,41 @@ class _JamSignupPageState extends State<JamSignupPage> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: DropdownButtonFormField<String>(
-                    decoration: InputDecoration(
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16.0),
-                      ),
+                JamDropdown(
+                  jams: _jams,
+                  selectedJamId: _selectedJamId,
+                  onChanged: _onJamSelected,
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    _maxPhotos,
+                    (index) => PhotoSelector(
+                      photo: _photos[index],
+                      onSelect: () => _selectPhoto(index),
+                      onRemove: () => _removePhoto(index),
                     ),
-                    hint: Text(
-                      jamEvents.isEmpty
-                          ? "No jams available"
-                          : "Select Jam Event",
-                    ),
-                    value: selectedJamId,
-                    onChanged: jamEvents.isEmpty ? null : _onJamSelected,
-                    items: jamEvents,
                   ),
                 ),
                 const SizedBox(height: 20),
-                Flexible(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(3, (index) {
-                      return Flexible(
-                        child: InkWell(
-                          onTap: () => _selectPhoto(index),
-                          child: Stack(
-                            children: [
-                              Container(
-                                width: 100.0,
-                                height: 100.0,
-                                margin: EdgeInsets.symmetric(horizontal: 8.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16.0),
-                                  border: Border.all(color: Colors.grey),
-                                  image: photos[index] != null
-                                      ? DecorationImage(
-                                          image: FileImage(photos[index]!),
-                                          fit: BoxFit.cover,
-                                        )
-                                      : null,
-                                ),
-                                child: photos[index] == null
-                                    ? Icon(Icons.photo,
-                                        size: 50.0, color: Colors.grey[600])
-                                    : null,
-                              ),
-                              if (photos[index] != null)
-                                Positioned(
-                                  top: 6,
-                                  right: 12,
-                                  child: InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        photos[index] = null;
-                                      });
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.6),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 26,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
+                _buildCommentField(),
                 const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    controller: _commentController,
-                    decoration: InputDecoration(
-                      labelText: 'Note to facilitator (optional)',
-                      labelStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16.0),
-                      ),
-                    ),
-                  ),
-                ),
-                StandardButton(
-                  label: Text("Submit Photos"),
-                  onPressed: (selectedJamId == null ||
-                          jamEvents.isEmpty ||
-                          photos.every((photo) => photo == null))
-                      ? null // Disable the button if no jam is selected, no jams exist, or no photos are selected
-                      : () {
-                          _submitPhotos();
-                        },
-                ),
+                _buildSubmitButton(),
               ],
             ),
           ),
-          if (isLoading)
+          if (_isLoading)
             Container(
               color: Colors.black54,
-              child: Center(
+              child: const Center(
                 child: CircularProgressIndicator(),
               ),
             ),
         ],
       ),
-      backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
 }

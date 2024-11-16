@@ -1,190 +1,158 @@
-// lib/services/role_service.dart
 import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart';
 import 'package:photojam_app/config/app_constants.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 
 class RoleService {
   final Client client;
-  final Teams teams;
-  final Account account;
-  final Databases databases;
+  final Teams _teams;
+  final Account _account;
+  String? _cachedRole;
 
-  RoleService(this.client) 
-    : teams = Teams(client),
-      account = Account(client),
-      databases = Databases(client);
-
-  // Define role levels
-  static const Map<String, int> roleLevels = {
+  final Map<String, int> roleLevels = {
     'nonmember': 0,
     'member': 1,
     'facilitator': 2,
     'admin': 3,
   };
 
-  // Get current user's role
-  Future<String> getCurrentUserRole() async {
-    try {
-      LogService.instance.info("Getting current user role");
-      final memberships = await teams.listMemberships(
-        teamId: appwriteTeamId,
-      );
+  RoleService(this.client)
+      : _teams = Teams(client),
+        _account = Account(client) {
+    LogService.instance.info('RoleService initialized');
+  }
 
-      if (memberships.memberships.isEmpty) {
-        LogService.instance.info("No team memberships found - adding user as nonmember");
-        // Add user to team as nonmember
-        await _addUserToTeam();
-        return 'nonmember';
+  Future<String> getCurrentUserRole() async {
+    LogService.instance.info('getCurrentUserRole called');
+
+    if (_cachedRole != null) {
+      LogService.instance.info('Returning cached role: $_cachedRole');
+      return _cachedRole!;
+    }
+
+    try {
+      LogService.instance
+          .info('Fetching memberships for team: $appwriteTeamId');
+      final memberships = await _teams.listMemberships(teamId: appwriteTeamId);
+
+      final confirmedMemberships =
+          memberships.memberships.where((m) => m.confirm == true).toList();
+
+      LogService.instance
+          .info('Found ${confirmedMemberships.length} confirmed memberships');
+
+      if (confirmedMemberships.isEmpty) {
+        LogService.instance
+            .info('No confirmed memberships found - user is nonmember');
+        _cachedRole = 'nonmember';
+        return _cachedRole!;
       }
 
-      // Get highest role level
-      int highestLevel = 0;
-      String highestRole = 'nonmember';
+      final highestRole = _determineHighestRole(confirmedMemberships);
+      _cachedRole = highestRole;
+      LogService.instance.info('Determined user role: $highestRole');
+      return highestRole;
+    } catch (e) {
+      if (e is AppwriteException) {
+        LogService.instance.error("""
+AppwriteException in getCurrentUserRole:
+- Code: ${e.code}
+- Message: ${e.message}
+- Type: ${e.type}
+""");
 
-      for (var membership in memberships.memberships) {
-        for (var role in membership.roles) {
-          final level = roleLevels[role] ?? 0;
-          if (level > highestLevel) {
-            highestLevel = level;
-            highestRole = role;
-          }
+        if (e.code == 401 || e.code == 404) {
+          _cachedRole = 'nonmember';
+          return _cachedRole!;
         }
       }
 
-      LogService.instance.info("Current user role: $highestRole");
-      return highestRole;
-    } catch (e) {
-      if (e is AppwriteException && e.code == 404) {
-        LogService.instance.info("Team not found - adding user as nonmember");
-        // Add user to team as nonmember
-        await _addUserToTeam();
-        return 'nonmember';
-      }
-      LogService.instance.error("Error getting user role: $e");
-      throw e; // Rethrow to handle in UI layer
+      LogService.instance.error('Unexpected error getting user role: $e');
+      _cachedRole = 'nonmember';
+      return _cachedRole!;
     }
   }
 
-  // Private method to add user to team
-  Future<void> _addUserToTeam() async {
+  String _determineHighestRole(List<Membership> memberships) {
+    LogService.instance.info('Determining highest role from memberships');
+
+    int highestLevel = 0;
+    String highestRole = 'nonmember';
+
+    for (var membership in memberships) {
+      LogService.instance.info('Checking roles: ${membership.roles}');
+      for (var role in membership.roles) {
+        final level = roleLevels[role] ?? 0;
+        if (level > highestLevel) {
+          highestLevel = level;
+          highestRole = role;
+          LogService.instance
+              .info('New highest role: $highestRole (level $highestLevel)');
+        }
+      }
+    }
+
+    return highestRole;
+  }
+
+  Future<void> verifyMembership({
+    required String teamId,
+    required String membershipId,
+    required String userId,
+    required String secret,
+  }) async {
+    LogService.instance.info("""
+Verifying membership:
+- Team ID: $teamId
+- Membership ID: $membershipId
+- User ID: $userId
+""");
+
     try {
-      final user = await account.get();
-      await teams.createMembership(
-        teamId: appwriteTeamId,
-        roles: ['nonmember'],
-        userId: user.$id,
+      // Verify the membership with Appwrite
+      await _teams.updateMembershipStatus(
+        teamId: teamId,
+        membershipId: membershipId,
+        userId: userId,
+        secret: secret,
       );
-      LogService.instance.info("User added to team as nonmember");
-    } catch (e) {
-      LogService.instance.error("Error adding user to team: $e");
-      throw e;
-    }
-  }
+      LogService.instance.info('Membership verified successfully');
 
-  // Check if user has minimum role level
-  Future<bool> hasMinimumRole(String requiredRole) async {
-    try {
-      final userRole = await getCurrentUserRole();
-      final userLevel = roleLevels[userRole] ?? 0;
-      final requiredLevel = roleLevels[requiredRole] ?? 0;
-      return userLevel >= requiredLevel;
+      // Clear the role cache to force a refresh
+      await clearRoleCache();
+      LogService.instance.info('Role cache cleared after verification');
     } catch (e) {
-      LogService.instance.error("Error checking minimum role: $e");
-      return false;
-    }
-  }
+      if (e is AppwriteException) {
+        LogService.instance.error("""
+Membership Verification Error:
+- Code: ${e.code}
+- Message: ${e.message}
+- Type: ${e.type}
+""");
 
-  // Request member role (for nonmembers)
-  Future<void> requestMemberRole() async {
-    try {
-      LogService.instance.info("Requesting member role");
-      final currentRole = await getCurrentUserRole();
-      if (currentRole != 'nonmember') {
-        throw Exception('User already has a role higher than nonmember');
+        if (e.code == 404) {
+          throw Exception(
+              'Invalid verification link. Please request a new invitation.');
+        } else if (e.code == 401) {
+          throw Exception('Unauthorized. Please make sure you\'re logged in.');
+        }
       }
-
-      // Update existing membership instead of creating new one
-      final memberships = await teams.listMemberships(teamId: appwriteTeamId);
-      if (memberships.memberships.isNotEmpty) {
-        final membershipId = memberships.memberships.first.$id;
-        await teams.updateMembership(
-          teamId: appwriteTeamId,
-          membershipId: membershipId,
-          roles: ['member'],
-        );
-      }
-      LogService.instance.info("Member role granted successfully");
-    } catch (e) {
-      LogService.instance.error("Error requesting member role: $e");
+      LogService.instance.error('Unexpected error in verifyMembership: $e');
       rethrow;
     }
   }
 
-  // Request facilitator role (for members)
-  Future<void> requestFacilitatorRole() async {
-    try {
-      LogService.instance.info("Requesting facilitator role");
-      final currentRole = await getCurrentUserRole();
-      if (currentRole != 'member') {
-        throw Exception('Only members can request facilitator role');
-      }
-
-      await databases.createDocument(
-        databaseId: appwriteDatabaseId,  // Use your constant
-        collectionId: 'facilitator-requests', // You might want to add this to constants
-        documentId: ID.unique(),
-        data: {
-          'userId': (await account.get()).$id,
-          'status': 'pending',
-          'requestDate': DateTime.now().toIso8601String(),
-        },
-      );
-      LogService.instance.info("Facilitator role request submitted");
-    } catch (e) {
-      LogService.instance.error("Error requesting facilitator role: $e");
-      rethrow;
-    }
+  Future<void> clearRoleCache() async {
+    LogService.instance.info('Clearing role cache');
+    _cachedRole = null;
   }
 
-  // Admin Functions
-  Future<List<UserData>> getAllUsers() async {
-    try {
-      LogService.instance.info("Getting all users");
-      if (!await hasMinimumRole('admin')) {
-        throw Exception('Unauthorized: Admin access required');
-      }
-
-      final memberships = await teams.listMemberships(
-        teamId: appwriteTeamId,
-      );
-
-      return memberships.memberships.map((membership) => UserData(
-        userId: membership.userId,
-        email: membership.userEmail,
-        name: membership.userName,
-        roles: List<String>.from(membership.roles),
-        membershipId: membership.$id,
-      )).toList();
-    } catch (e) {
-      LogService.instance.error("Error getting all users: $e");
-      rethrow;
-    }
+  Future<bool> hasPermission(String requiredRole) async {
+    final userRole = await getCurrentUserRole();
+    final hasPermission =
+        (roleLevels[userRole] ?? 0) >= (roleLevels[requiredRole] ?? 0);
+    LogService.instance
+        .info('Permission check: $userRole >= $requiredRole = $hasPermission');
+    return hasPermission;
   }
-}
-
-// User data class
-class UserData {
-  final String userId;
-  final String email;
-  final String name;
-  final List<String> roles;
-  final String membershipId;
-
-  UserData({
-    required this.userId,
-    required this.email,
-    required this.name,
-    required this.roles,
-    required this.membershipId,
-  });
 }

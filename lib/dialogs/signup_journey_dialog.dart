@@ -1,8 +1,8 @@
-// lib/features/journeys/widgets/signup_journey_dialog.dart
 import 'package:flutter/material.dart';
+import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/core/services/role_service.dart';
 import 'package:photojam_app/features/journeys/providers/journey_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 
@@ -33,16 +33,26 @@ class _SignUpJourneyDialogState extends State<SignUpJourneyDialog> {
     try {
       final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
       final auth = Provider.of<AuthAPI>(context, listen: false);
-      final userId = auth.userid;
+      final roleService = Provider.of<RoleService>(context, listen: false);
 
+      final userId = auth.userId;
       if (userId == null) {
         _showError('User not logged in');
         return;
       }
 
+      // Check user role
+      final userRole = await roleService.getCurrentUserRole();
+      LogService.instance.info('User role: $userRole');
+
+      if (userRole == 'nonmember') {
+        _showError('Access restricted. Please upgrade your membership.');
+        return;
+      }
+
       // Get all active journeys
       final allJourneys = await databaseApi.getAllActiveJourneys();
-      
+
       // Get user's current journeys
       final userJourneys = await databaseApi.getJourneysByUser(userId);
       final userJourneyIds = userJourneys.documents.map((doc) => doc.$id).toSet();
@@ -71,11 +81,11 @@ class _SignUpJourneyDialogState extends State<SignUpJourneyDialog> {
 
   void _showError(String message) {
     if (!mounted) return;
-    
+
     setState(() {
       isLoading = false;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
@@ -92,7 +102,7 @@ class _SignUpJourneyDialogState extends State<SignUpJourneyDialog> {
     try {
       final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
       final auth = Provider.of<AuthAPI>(context, listen: false);
-      final userId = auth.userid;
+      final userId = auth.userId;
 
       if (userId == null) {
         _showError('User not logged in');
@@ -100,7 +110,7 @@ class _SignUpJourneyDialogState extends State<SignUpJourneyDialog> {
       }
 
       await databaseApi.addUserToJourney(selectedJourneyId!, userId);
-      
+
       if (!mounted) return;
 
       // Show success message

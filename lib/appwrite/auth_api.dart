@@ -1,7 +1,8 @@
+// lib/services/auth_api.dart
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 
 enum AuthStatus {
@@ -13,350 +14,224 @@ enum AuthStatus {
 class AuthAPI extends ChangeNotifier {
   final Client client;
   final Account account;
-  final Teams teams;
-  static const String ADMIN_TEAM_ID = 'photojam_admin_team'; // Set this
 
   User? _currentUser;
   AuthStatus _status = AuthStatus.uninitialized;
-  String? _authToken;
+  String? _sessionId;
 
-  // Constructor with injected client
-  AuthAPI(this.client)
-      : account = Account(client),
-        teams = Teams(client) {
-    loadUser().then((_) {
-      LogService.instance.info('Authenticated user ID: $userid');
-      LogService.instance.info('username: $username');
-    }).catchError((error) {
-      LogService.instance.error('Error loading user: $error');
-    });
+  AuthAPI(this.client) : account = Account(client) {
+    _initializeAuth();
   }
 
-  // getters
-  String? get userid => _currentUser?.$id;
+  // Getters
+  String? get userId => _currentUser?.$id;
   String? get email => _currentUser?.email;
   String? get username => _currentUser?.name;
   AuthStatus get status => _status;
+  bool get isAuthenticated => _status == AuthStatus.authenticated;
+  bool get isOAuthUser => _currentUser?.emailVerification == false;
 
-  /// Fetch user information with retry logic and set authentication status
-  loadUser() async {
+  Future<void> _initializeAuth() async {
     try {
-      final user = await account.get();
+      _currentUser = await account.get();
       _status = AuthStatus.authenticated;
-      _currentUser = user;
+      LogService.instance.info('Auth initialized - User: ${_currentUser?.$id}');
     } catch (e) {
       _status = AuthStatus.unauthenticated;
+      LogService.instance.info('Auth initialized - No authenticated user');
     } finally {
       notifyListeners();
     }
   }
 
-  /// Ensures that the user ID is available by loading the user if necessary
-  Future<String?> fetchUserId() async {
-    if (_currentUser == null) {
-      await loadUser();
-    }
-    return userid;
-  }
+Future<User> createAccount({
+  required String email,
+  required String password,
+  required String name,
+}) async {
+  try {
+    LogService.instance.info('Creating account for: $email');
 
-  Future<User> createUser({
-    required String name,
+    final user = await account.create(
+      userId: ID.unique(),
+      email: email,
+      password: password,
+      name: name,
+    );
+
+    LogService.instance.info('Account created: ${user.$id}');
+
+    return user;
+  } catch (e) {
+    LogService.instance.error('Account creation failed: $e');
+    rethrow;
+  }
+}
+
+  Future<void> signIn({
     required String email,
     required String password,
   }) async {
     try {
-      LogService.instance.info("Attempting to create user with email: $email");
-
-      // Create the user with email, password, and name only
-      final user = await account.create(
-        userId: ID.unique(),
-        email: email,
-        password: password,
-        name: name,
-      );
-
-      LogService.instance
-          .info("User created successfully with ID: ${user.$id}");
-
-      // Return the created user without setting a role
-      return user;
-    } on AppwriteException catch (e) {
-      // Log specific details about the exception
-      LogService.instance.error("AppwriteException: ${e.message}");
-      LogService.instance.error("Status Code: ${e.code}");
-      LogService.instance.error("Response: ${e.response}");
-
-      // Propagate the exception after logging
-      rethrow;
-    } catch (e) {
-      LogService.instance.error("Unexpected error: $e");
-      rethrow;
-    }
-  }
-
-  Future<String?> getUserRole() async {
-    try {
-      final prefs = await account.getPrefs();
-      // Additional Debug: Print retrieved role
-      final role = prefs.data['role'] as String?;
-      LogService.instance.info("Retrieved user role: $role");
-      return role;
-    } catch (e) {
-      // Debug: Role retrieval failed or not set
-      LogService.instance
-          .error("Error retrieving user role or role not set in preferences.");
-      return null;
-    }
-  }
-
-  Future<void> setRole(String role) async {
-    if (_status != AuthStatus.authenticated) {
-      LogService.instance.info("User is not logged in. Unable to set role.");
-      throw Exception("User must be logged in to set a role.");
-    }
-
-    try {
-      LogService.instance.info("Setting user role to: $role");
-
-      // Update the role in user preferences
-      await account.updatePrefs(prefs: {'role': role});
-
-      // Verify that the role was saved correctly
-      final prefs = await account.getPrefs();
-      if (prefs.data['role'] == role) {
-        LogService.instance
-            .info("Role set successfully: ${prefs.data['role']}");
-      } else {
-        LogService.instance.info(
-            "Role verification failed. Expected: $role, Found: ${prefs.data['role']}");
-        throw Exception("Role verification failed after setting.");
-      }
-    } on AppwriteException catch (e) {
-      LogService.instance.error("AppwriteException: ${e.message}");
-      LogService.instance.error("Status Code: ${e.code}");
-      LogService.instance.error("Response: ${e.response}");
-      rethrow;
-    } catch (e) {
-      LogService.instance.error("Unexpected error in setRole: $e");
-      rethrow;
-    }
-  }
-
-  Future<Session?> createEmailPasswordSession({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      // Attempt to delete any existing session
-      try {
-        await account.deleteSession(sessionId: 'current');
-        LogService.instance.info("Existing session deleted.");
-      } catch (e) {
-        LogService.instance
-            .error("No existing session to delete or deletion failed: $e");
-      }
-
-      // Create a new session
+      LogService.instance.info('Signing in: $email');
+      
+      // Ensure clean session state
+      await _clearCurrentSession();
+      
+      // Create new session
       final session = await account.createEmailPasswordSession(
         email: email,
         password: password,
       );
-
-      // Additional Debug: Print session details to verify session creation
-      LogService.instance
-          .info("Session created successfully: Session ID: ${session.$id}");
-      _currentUser =
-          await account.get(); // Get user details for the new session
-      _status = AuthStatus.authenticated;
-      LogService.instance.info(
-          "User authenticated successfully. User ID: ${_currentUser?.$id}, Status: $_status");
-      return session;
-    } on AppwriteException catch (e) {
-      LogService.instance.error("Login failed: ${e.message}");
-      rethrow;
-    } finally {
-      notifyListeners();
-    }
-  }
-
-  signInWithProvider({required OAuthProvider provider}) async {
-    try {
-      final session = await account.createOAuth2Session(provider: provider);
+      
+      _sessionId = session.$id;
       _currentUser = await account.get();
       _status = AuthStatus.authenticated;
-      return session;
-    } finally {
+      
+      LogService.instance.info('Sign in successful: ${_currentUser?.$id}');
       notifyListeners();
+    } catch (e) {
+      _status = AuthStatus.unauthenticated;
+      LogService.instance.error('Sign in failed: $e');
+      rethrow;
     }
   }
 
-  signOut() async {
+  Future<void> signInWithOAuth(OAuthProvider provider) async {
+    try {
+      LogService.instance.info('Starting OAuth sign in: $provider');
+      
+      await _clearCurrentSession();
+      final session = await account.createOAuth2Session(provider: provider);
+      
+      _sessionId = session.$id;
+      _currentUser = await account.get();
+      _status = AuthStatus.authenticated;
+      
+      LogService.instance.info('OAuth sign in successful: ${_currentUser?.$id}');
+      notifyListeners();
+    } catch (e) {
+      _status = AuthStatus.unauthenticated;
+      LogService.instance.error('OAuth sign in failed: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> signOut() async {
+    try {
+      LogService.instance.info('Signing out user: ${_currentUser?.$id}');
+      await _clearCurrentSession();
+      
+      _currentUser = null;
+      _status = AuthStatus.unauthenticated;
+      _sessionId = null;
+      
+      LogService.instance.info('Sign out successful');
+      notifyListeners();
+    } catch (e) {
+      LogService.instance.error('Sign out failed: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _clearCurrentSession() async {
     try {
       await account.deleteSession(sessionId: 'current');
-      _status = AuthStatus.unauthenticated;
-    } finally {
-      notifyListeners();
+      LogService.instance.info('Current session cleared');
+    } catch (e) {
+      // Ignore if no session exists
+      LogService.instance.info('No current session to clear');
     }
   }
 
-  Future<Preferences> getUserPreferences() async {
-    return await account.getPrefs();
-  }
-
-  updatePreferences({required String bio}) async {
-    return account.updatePrefs(prefs: {'bio': bio});
-  }
-
+  // Profile Management
   Future<void> updateName(String newName) async {
     try {
+      LogService.instance.info('Updating name to: $newName');
+      
       await account.updateName(name: newName);
-      _currentUser = await account.get(); // Refresh current user data
-      notifyListeners(); // Notify listeners of the change
-    } catch (e) {
-      LogService.instance.error("Error updating name: $e");
-      rethrow;
-    }
-  }
-
-  Future<void> updatePassword(
-      String currentPassword, String newPassword) async {
-    try {
-      await account.updatePassword(
-          password: newPassword, oldPassword: currentPassword);
-      notifyListeners(); // Notify listeners if there’s any UI dependency
-    } catch (e) {
-      LogService.instance.error("Error updating password: $e");
-      rethrow;
-    }
-  }
-
-  bool isOAuthUser() {
-    return _currentUser != null && _currentUser!.emailVerification == false;
-  }
-
-  Future<void> updateEmail(String newEmail, String currentPassword) async {
-    try {
-      await account.updateEmail(email: newEmail, password: currentPassword);
-      _currentUser = await account.get(); // Refresh current user data
+      _currentUser = await account.get();
+      
+      LogService.instance.info('Name updated successfully');
       notifyListeners();
     } catch (e) {
-      LogService.instance.error("Error updating email: $e");
+      LogService.instance.error('Name update failed: $e');
       rethrow;
     }
   }
 
-  Future<String?> getUsername() async {
+  Future<void> updateEmail({
+    required String newEmail,
+    required String password,
+  }) async {
     try {
-      User user = await account.get();
-      return user.name;
+      LogService.instance.info('Updating email to: $newEmail');
+      
+      await account.updateEmail(
+        email: newEmail,
+        password: password,
+      );
+      _currentUser = await account.get();
+      
+      LogService.instance.info('Email updated successfully');
+      notifyListeners();
     } catch (e) {
-      LogService.instance.error("Error retrieving username: $e");
+      LogService.instance.error('Email update failed: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updatePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      LogService.instance.info('Updating password');
+      
+      await account.updatePassword(
+        password: newPassword,
+        oldPassword: oldPassword,
+      );
+      
+      LogService.instance.info('Password updated successfully');
+    } catch (e) {
+      LogService.instance.error('Password update failed: $e');
+      rethrow;
+    }
+  }
+
+  // User Preferences
+  Future<Preferences> getUserPreferences() async {
+    try {
+      return await account.getPrefs();
+    } catch (e) {
+      LogService.instance.error('Failed to get user preferences: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updatePreferences(Map<String, dynamic> prefs) async {
+    try {
+      LogService.instance.info('Updating user preferences');
+      await account.updatePrefs(prefs: prefs);
+      LogService.instance.info('Preferences updated successfully');
+    } catch (e) {
+      LogService.instance.error('Failed to update preferences: $e');
+      rethrow;
+    }
+  }
+
+  // Session Management
+  Future<String?> getSessionId() async {
+    if (_sessionId != null) return _sessionId;
+    
+    try {
+      final session = await account.getSession(sessionId: 'current');
+      _sessionId = session.$id;
+      return _sessionId;
+    } catch (e) {
+      LogService.instance.error('Failed to get session ID: $e');
       return null;
     }
   }
-
-  Future<String?> getToken() async {
-    if (_authToken != null) {
-      return _authToken;
-    }
-
-    try {
-      final session = await account.getSession(sessionId: 'current');
-      _authToken = session.$id;
-    } catch (e) {
-      LogService.instance.error('No active session found, creating a new one.');
-      final email = "user@example.com";
-      final password = "user_password";
-
-      try {
-        final session = await account.createEmailPasswordSession(
-          email: email,
-          password: password,
-        );
-        _authToken = session.$id;
-        _currentUser = await account.get();
-        _status = AuthStatus.authenticated;
-      } catch (e) {
-        LogService.instance.error("Failed to create session: $e");
-        _status = AuthStatus.unauthenticated;
-      }
-    }
-
-    notifyListeners();
-    return _authToken;
-  }
-
-  Future<bool> isUserAdmin() async {
-    try {
-      final memberships = await teams.listMemberships(
-        teamId: ADMIN_TEAM_ID,
-      );
-      return memberships.memberships.any((m) => m.userId == userid);
-    } catch (e) {
-      LogService.instance.error('Error checking admin status: $e');
-      return false;
-    }
-  }
-
-  Future<List<Membership>> getTeamMembers(String teamId) async {
-    try {
-      final result = await teams.listMemberships(teamId: teamId);
-      return result.memberships;
-    } catch (e) {
-      LogService.instance.error('Error getting team members: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> addUserToTeam({
-    required String email,
-    required String teamId,
-    required List<String> roles,
-  }) async {
-    try {
-      await teams.createMembership(
-        teamId: teamId,
-        email: email,
-        roles: roles,
-      );
-    } catch (e) {
-      LogService.instance.error('Error adding user to team: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> removeUserFromTeam({
-    required String membershipId,
-    required String teamId,
-  }) async {
-    try {
-      await teams.deleteMembership(
-        teamId: teamId,
-        membershipId: membershipId,
-      );
-    } catch (e) {
-      LogService.instance.error('Error removing user from team: $e');
-      rethrow;
-    }
-  }
-
-  Future<User> getCurrentUser() async {
-  try {
-    if (_currentUser == null) {
-      LogService.instance.info("No cached user, fetching from Appwrite");
-      _currentUser = await account.get();
-      LogService.instance.info("User fetched successfully: ${_currentUser?.$id}");
-    }
-    
-    if (_currentUser == null) {
-      LogService.instance.error("No user found after fetch attempt");
-      throw Exception("No authenticated user found");
-    }
-    
-    return _currentUser!;
-  } catch (e) {
-    LogService.instance.error("Error getting current user: $e");
-    rethrow;
-  }
-}
 }

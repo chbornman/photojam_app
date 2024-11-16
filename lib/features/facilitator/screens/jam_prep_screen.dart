@@ -19,11 +19,12 @@ class JamPrepPage extends StatefulWidget {
   _JamPrepPageState createState() => _JamPrepPageState();
 }
 
-class _JamPrepPageState extends State<JamPrepPage>  with WidgetsBindingObserver {
+class _JamPrepPageState extends State<JamPrepPage> with WidgetsBindingObserver {
   List<Map<String, dynamic>> allSubmissions = [];
   bool isLoading = true;
   bool _isDisposed = false;
-  
+  final Map<String, Uint8List?> _imageCache = {};
+
   @override
   void initState() {
     super.initState();
@@ -35,20 +36,25 @@ class _JamPrepPageState extends State<JamPrepPage>  with WidgetsBindingObserver 
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _isDisposed = true;
+    _imageCache.clear();
     super.dispose();
   }
 
   Future<void> _fetchAllSubmissions() async {
+    if (_isDisposed) return;
+    setState(() => isLoading = true);
+
     try {
-      if (_isDisposed) return;
-      setState(() => isLoading = true);
-
       final auth = Provider.of<AuthAPI>(context, listen: false);
-      final userId = auth.userid;
-      final authToken = await auth.getToken();
+      final userId = auth.userId;
 
-      if (userId == null || userId.isEmpty || authToken == null) {
-        throw Exception("User ID or auth token is not available.");
+      if (userId == null || !auth.isAuthenticated) {
+        throw Exception("User is not authenticated.");
+      }
+
+      final sessionId = await auth.getSessionId();
+      if (sessionId == null) {
+        throw Exception("No valid session found.");
       }
 
       final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
@@ -59,54 +65,92 @@ class _JamPrepPageState extends State<JamPrepPage>  with WidgetsBindingObserver 
       for (var doc in response) {
         if (_isDisposed) return;
 
-        final date = doc.data['date'] ?? 'Unknown Date';
-        final photoUrls = List<String>.from(doc.data['photos'] ?? []).take(3).toList();
-
-        String jamTitle = 'Untitled';
-        final jamData = doc.data['jam'];
-        if (jamData is Map && jamData.containsKey('title')) {
-          jamTitle = jamData['title'] ?? 'Untitled';
+        final submission = await _processSubmission(
+          doc,
+          sessionId,
+          storageApi,
+        );
+        if (submission != null) {
+          submissions.add(submission);
         }
-
-        List<Uint8List?> photos = [];
-        for (var photoUrl in photoUrls) {
-          if (_isDisposed) return;
-          final imageData = await _fetchAndCacheImage(photoUrl, authToken, storageApi);
-          photos.add(imageData);
-        }
-
-        submissions.add({
-          'date': date,
-          'jamTitle': jamTitle,
-          'photos': photos,
-        });
       }
 
       submissions.sort((a, b) => b['date'].compareTo(a['date']));
 
-      if (_isDisposed) return;
-      setState(() {
-        allSubmissions = submissions;
-        isLoading = false;
-      });
+      if (!_isDisposed) {
+        setState(() {
+          allSubmissions = submissions;
+          isLoading = false;
+        });
+      }
     } catch (e) {
       LogService.instance.error('Error fetching submissions: $e');
-      if (_isDisposed) return;
-      setState(() => isLoading = false);
+      if (!_isDisposed) {
+        setState(() => isLoading = false);
+      }
+      _showErrorSnackBar('Failed to load submissions');
     }
   }
 
-  Future<Uint8List?> _fetchAndCacheImage(String photoUrl, String authToken, StorageAPI storageApi) async {
-    final cacheFile = await _getImageCacheFile(photoUrl);
+  Future<Map<String, dynamic>?> _processSubmission(
+    dynamic doc,
+    String sessionId,
+    StorageAPI storageApi,
+  ) async {
+    try {
+      final date = doc.data['date'] ?? 'Unknown Date';
+      final photoUrls =
+          List<String>.from(doc.data['photos'] ?? []).take(3).toList();
 
+      String jamTitle = 'Untitled';
+      final jamData = doc.data['jam'];
+      if (jamData is Map && jamData.containsKey('title')) {
+        jamTitle = jamData['title'] ?? 'Untitled';
+      }
+
+      List<Uint8List?> photos = [];
+      for (var photoUrl in photoUrls) {
+        if (_isDisposed) return null;
+        final imageData =
+            await _fetchAndCacheImage(photoUrl, sessionId, storageApi);
+        photos.add(imageData);
+      }
+
+      return {
+        'date': date,
+        'jamTitle': jamTitle,
+        'photos': photos,
+      };
+    } catch (e) {
+      LogService.instance.error('Error processing submission: $e');
+      return null;
+    }
+  }
+
+  Future<Uint8List?> _fetchAndCacheImage(
+    String photoUrl,
+    String sessionId,
+    StorageAPI storageApi,
+  ) async {
+    // Check memory cache first
+    if (_imageCache.containsKey(photoUrl)) {
+      return _imageCache[photoUrl];
+    }
+
+    // Check disk cache
+    final cacheFile = await _getImageCacheFile(photoUrl);
     if (await cacheFile.exists()) {
-      return await cacheFile.readAsBytes();
+      final imageData = await cacheFile.readAsBytes();
+      _imageCache[photoUrl] = imageData;
+      return imageData;
     }
 
     try {
-      final imageData = await storageApi.fetchAuthenticatedImage(photoUrl, authToken);
+      final imageData =
+          await storageApi.fetchAuthenticatedImage(photoUrl, sessionId);
       if (imageData != null) {
         await cacheFile.writeAsBytes(imageData);
+        _imageCache[photoUrl] = imageData;
       }
       return imageData;
     } catch (e) {
@@ -136,8 +180,17 @@ class _JamPrepPageState extends State<JamPrepPage>  with WidgetsBindingObserver 
     }
   }
 
-  
- @override
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -145,50 +198,61 @@ class _JamPrepPageState extends State<JamPrepPage>  with WidgetsBindingObserver 
         onRefresh: _fetchAllSubmissions,
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
-            : ListView.builder(
-                itemCount: allSubmissions.length,
-                padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                itemBuilder: (context, index) {
-                  final submission = allSubmissions[index];
-                  final jamTitle = submission['jamTitle'];
-                  final date = submission['date'];
-                  final photos = submission['photos'] as List<Uint8List?>;
+            : allSubmissions.isEmpty
+                ? const Center(child: Text('No submissions found'))
+                : ListView.builder(
+                    itemCount: allSubmissions.length,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 8.0, horizontal: 16.0),
+                    itemBuilder: (context, index) {
+                      final submission = allSubmissions[index];
+                      final photos = submission['photos'] as List<Uint8List?>;
 
-                  // Define how each photo should appear
-                  final photoWidgets = [
-                    Row(
-                      children: photos.asMap().entries.map((entry) {
-                        int photoIndex = entry.key;
-                        Uint8List? photoData = entry.value;
-                        return GestureDetector(
-                          onTap: () => _navigateToPhotoSelectPage(index, photoIndex),
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8.0),
-                              child: photoData != null
-                                  ? Image.memory(photoData, width: 100, height: 100, fit: BoxFit.cover)
-                                  : Container(
-                                      width: 100,
-                                      height: 100,
-                                      color: const Color.fromARGB(255, 106, 35, 35),
-                                      child: Icon(Icons.image_not_supported, color: Theme.of(context).colorScheme.onSurface),
-                                    ),
-                            ),
+                      return SubmissionCard(
+                        title: submission['jamTitle'],
+                        date: submission['date'],
+                        photoWidgets: [
+                          Row(
+                            children: photos.asMap().entries.map((entry) {
+                              int photoIndex = entry.key;
+                              Uint8List? photoData = entry.value;
+                              return GestureDetector(
+                                onTap: () => _navigateToPhotoSelectPage(
+                                  index,
+                                  photoIndex,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8.0),
+                                    child: photoData != null
+                                        ? Image.memory(
+                                            photoData,
+                                            width: 100,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Container(
+                                            width: 100,
+                                            height: 100,
+                                            color: const Color.fromARGB(
+                                                255, 106, 35, 35),
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                           ),
-                        );
-                      }).toList(),
-                    ),
-                  ];
-
-                  // Pass photoWidgets to SubmissionCard
-                  return SubmissionCard(
-                    title: jamTitle,
-                    date: date,
-                    photoWidgets: photoWidgets,
-                  );
-                },
-              ),
+                        ],
+                      );
+                    },
+                  ),
       ),
     );
   }

@@ -11,6 +11,7 @@ class LoginController extends ChangeNotifier {
   LoginController(this._authAPI);
 
   bool get isLoading => _isLoading;
+  bool get isAuthenticated => _authAPI.isAuthenticated;
 
   Future<void> signIn({
     required String email,
@@ -22,20 +23,73 @@ class LoginController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      LogService.instance.info("Attempting to sign in");
+      LogService.instance.info("Attempting to sign in with email: $email");
       
-      await _authAPI.createEmailPasswordSession(
+      await _authAPI.signIn(
         email: email,
         password: password,
       );
 
-      LogService.instance.info("Login successful");
+      if (!_authAPI.isAuthenticated) {
+        throw const LoginException('Failed to authenticate');
+      }
+
+      LogService.instance.info("Login successful for user: ${_authAPI.username}");
     } on AppwriteException catch (e) {
-      LogService.instance.error("Login failed: ${e.message}");
+      LogService.instance.error("Appwrite login failed: ${e.message}");
       throw LoginException(e.message.toString());
     } catch (e) {
       LogService.instance.error("Unexpected error during login: $e");
       throw const LoginException('An unexpected error occurred');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Future<void> signInWithProvider(OAuthProvider provider) async {
+  //   if (_isLoading) return;
+
+  //   _isLoading = true;
+  //   notifyListeners();
+
+  //   try {
+  //     LogService.instance.info("Attempting to sign in with provider: $provider");
+      
+  //     await _authAPI.signInWithOAuth(provider);
+
+  //     if (!_authAPI.isAuthenticated) {
+  //       throw const LoginException('Failed to authenticate with provider');
+  //     }
+
+  //     LogService.instance.info("OAuth login successful for user: ${_authAPI.username}");
+  //   } on AppwriteException catch (e) {
+  //     LogService.instance.error("OAuth login failed: ${e.message}");
+  //     throw LoginException(e.message.toString());
+  //   } catch (e) {
+  //     LogService.instance.error("Unexpected error during OAuth login: $e");
+  //     throw const LoginException('An unexpected error occurred');
+  //   } finally {
+  //     _isLoading = false;
+  //     notifyListeners();
+  //   }
+  // }
+
+  Future<void> signOut() async {
+    if (_isLoading) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      LogService.instance.info("Attempting to sign out");
+      
+      await _authAPI.signOut();
+
+      LogService.instance.info("Sign out successful");
+    } catch (e) {
+      LogService.instance.error("Error during sign out: $e");
+      throw const LoginException('Failed to sign out');
     } finally {
       _isLoading = false;
       notifyListeners();

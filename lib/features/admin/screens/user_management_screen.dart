@@ -1,7 +1,8 @@
 import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
-import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/config/app_constants.dart';
 import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/core/services/team_service.dart';
 import 'package:provider/provider.dart';
 
 class UserManagementPage extends StatefulWidget {
@@ -16,9 +17,12 @@ class _UserManagementPageState extends State<UserManagementPage> {
   bool _isLoading = true;
   String? _error;
 
+  late final TeamService _teamService;
+
   @override
   void initState() {
     super.initState();
+    _teamService = context.read<TeamService>();
     _loadTeamMembers();
   }
 
@@ -29,26 +33,13 @@ class _UserManagementPageState extends State<UserManagementPage> {
         _error = null;
       });
 
-      // Check if user is admin
-      final authApi = context.read<AuthAPI>();
-      final isAdmin = await authApi.isUserAdmin();
-      
-      if (!isAdmin) {
-        setState(() {
-          _error = 'Unauthorized access';
-          _isLoading = false;
-        });
-        return;
-      }
+      // Load team members using the appwriteTeamId from constants
+      final members = await _teamService.getTeamMembers(appwriteTeamId);
 
-      // Load team members using the ADMIN_TEAM_ID
-      final members = await authApi.getTeamMembers(AuthAPI.ADMIN_TEAM_ID);
-      
       setState(() {
         _teamMembers = members;
         _isLoading = false;
       });
-
     } catch (e) {
       LogService.instance.error('Error loading team members: $e');
       setState(() {
@@ -64,7 +55,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Remove Team Member'),
-          content: Text('Are you sure you want to remove this team member?'),
+          content: Text('Are you sure you want to remove ${member.userEmail}?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -72,9 +63,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Remove'),
             ),
           ],
@@ -85,32 +74,27 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
       setState(() => _isLoading = true);
 
-      await context.read<AuthAPI>().removeUserFromTeam(
+      await _teamService.removeMember(
+        teamId: appwriteTeamId,
         membershipId: member.$id,
-        teamId: AuthAPI.ADMIN_TEAM_ID,
       );
-      
-      await _loadTeamMembers(); // Reload the list after removal
+
+      await _loadTeamMembers();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Team member removed successfully')),
-      );
-
+      _showSuccessMessage('Team member removed successfully');
     } catch (e) {
       LogService.instance.error('Error removing team member: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to remove team member')),
-      );
+      _showErrorMessage('Failed to remove team member');
     }
   }
 
   Future<void> _addNewTeamMember() async {
-    final TextEditingController emailController = TextEditingController();
-    
+    final emailController = TextEditingController();
+
     try {
-      final bool? confirmed = await showDialog<bool>(
+      final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Add Team Member'),
@@ -144,28 +128,41 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
       setState(() => _isLoading = true);
 
-      await context.read<AuthAPI>().addUserToTeam(
+      await _teamService.addMember(
+        teamId: appwriteTeamId,
         email: emailController.text,
-        teamId: AuthAPI.ADMIN_TEAM_ID,
-        roles: ['admin'], // You might want to make this configurable
+        roles: ['member'], // Changed from 'admin' to 'member' for safety
       );
-      
-      await _loadTeamMembers(); // Reload the list after adding
+
+      await _loadTeamMembers();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Team member added successfully')),
-      );
-
+      _showSuccessMessage('Invitation sent successfully');
     } catch (e) {
       LogService.instance.error('Error adding team member: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to add team member')),
-      );
+      _showErrorMessage('Failed to send invitation');
     } finally {
       emailController.dispose();
     }
+  }
+
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override
@@ -209,8 +206,8 @@ class _UserManagementPageState extends State<UserManagementPage> {
                 itemBuilder: (context, index) {
                   final member = _teamMembers[index];
                   return ListTile(
-                    title: Text(member.userName),
-                    subtitle: Text(member.userEmail),
+                    title: Text(member.userEmail),
+                    subtitle: Text('Roles: ${member.roles.join(", ")}'),
                     trailing: IconButton(
                       icon: const Icon(Icons.remove_circle_outline),
                       color: Colors.red,

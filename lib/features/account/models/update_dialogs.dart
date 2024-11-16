@@ -36,7 +36,10 @@ class UpdateDialogs {
   static void showUpdateEmailDialog({
     required BuildContext context,
     required String currentEmail,
-    required Future<void> Function(String, String) onUpdate,
+    required Future<void> Function({
+      required String newEmail,
+      required String password,
+    }) onUpdate,
   }) {
     final emailController = TextEditingController(text: currentEmail);
     final passwordController = TextEditingController();
@@ -64,7 +67,10 @@ class UpdateDialogs {
         submitButtonLabel: "Save",
         submitButtonOnPressed: () async {
           try {
-            await onUpdate(emailController.text, passwordController.text);
+            await onUpdate(
+              newEmail: emailController.text,
+              password: passwordController.text,
+            );
             if (!context.mounted) return;
             Navigator.of(context).pop();
             _showSuccessSnackBar(context, "Email updated successfully!");
@@ -79,7 +85,10 @@ class UpdateDialogs {
 
   static void showUpdatePasswordDialog({
     required BuildContext context,
-    required Future<void> Function(String, String) onUpdate,
+    required Future<void> Function({
+      required String oldPassword,
+      required String newPassword,
+    }) onUpdate,
   }) {
     final currentPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
@@ -120,8 +129,8 @@ class UpdateDialogs {
 
           try {
             await onUpdate(
-              currentPasswordController.text,
-              newPasswordController.text,
+              oldPassword: currentPasswordController.text,
+              newPassword: newPasswordController.text,
             );
             if (!context.mounted) return;
             Navigator.of(context).pop();

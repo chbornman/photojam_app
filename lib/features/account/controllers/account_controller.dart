@@ -10,7 +10,9 @@ class AccountController extends ChangeNotifier {
   bool _isLoading = false;
   Map<String, dynamic>? _userData;
   
-  AccountController(this._authAPI, this._roleService);
+  AccountController(this._authAPI, this._roleService) {
+    loadUserData(); // Load data when controller is created
+  }
   
   bool get isLoading => _isLoading;
   Map<String, dynamic>? get userData => _userData;
@@ -20,14 +22,16 @@ class AccountController extends ChangeNotifier {
     notifyListeners();
     
     try {
-      final user = await _authAPI.getCurrentUser();
+      // Use AuthAPI getters instead of getCurrentUser
+      final username = _authAPI.username;
+      final email = _authAPI.email;
       final role = await _roleService.getCurrentUserRole();
       
       _userData = {
-        'username': user.name,
-        'email': user.email,
+        'username': username ?? 'Unknown User',
+        'email': email ?? 'No email available',
         'role': role,
-        'isOAuthUser': false
+        'isOAuthUser': _authAPI.isOAuthUser
       };
     } catch (e) {
       LogService.instance.error("Error loading user data: $e");
@@ -39,26 +43,63 @@ class AccountController extends ChangeNotifier {
   }
   
   Future<void> updateName(String newName) async {
-    await _authAPI.updateName(newName);
-    await loadUserData();
+    try {
+      await _authAPI.updateName(newName);
+      await loadUserData();
+    } catch (e) {
+      LogService.instance.error("Error updating name: $e");
+      rethrow;
+    }
   }
   
-  Future<void> updateEmail(String newEmail, String currentPassword) async {
-    await _authAPI.updateEmail(newEmail, currentPassword);
-    await loadUserData();
+  Future<void> updateEmail({
+    required String newEmail,
+    required String password,
+  }) async {
+    try {
+      await _authAPI.updateEmail(
+        newEmail: newEmail,
+        password: password,
+      );
+      await loadUserData();
+    } catch (e) {
+      LogService.instance.error("Error updating email: $e");
+      rethrow;
+    }
   }
   
-  Future<void> updatePassword(String currentPassword, String newPassword) async {
-    await _authAPI.updatePassword(currentPassword, newPassword);
+  Future<void> updatePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _authAPI.updatePassword(
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+      );
+    } catch (e) {
+      LogService.instance.error("Error updating password: $e");
+      rethrow;
+    }
   }
   
   Future<void> requestMemberRole() async {
-    await _roleService.requestMemberRole();
-    await loadUserData();
+    try {
+      // await _roleService.requestMemberRole(); TODO
+      await loadUserData();
+    } catch (e) {
+      LogService.instance.error("Error requesting member role: $e");
+      rethrow;
+    }
   }
   
   Future<void> requestFacilitatorRole() async {
-    await _roleService.requestFacilitatorRole();
-    await loadUserData();
+    try {
+      // await _roleService.requestFacilitatorRole(); TODO
+      await loadUserData();
+    } catch (e) {
+      LogService.instance.error("Error requesting facilitator role: $e");
+      rethrow;
+    }
   }
 }
