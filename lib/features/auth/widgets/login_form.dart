@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/core/widgets/loading_overlay.dart';
 import 'package:photojam_app/features/auth/controllers/login_controller.dart';
 import 'package:provider/provider.dart';
-import 'package:photojam_app/core/widgets/standard_button.dart';
 import 'package:photojam_app/features/auth/screens/register_screen.dart';
+import 'package:photojam_app/core/widgets/loading_overlay.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -27,122 +26,186 @@ class _LoginFormState extends State<LoginForm> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<LoginController>();
-    
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Stack(
-        children: [
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
+
+    return Stack(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildTextField(
+              controller: _emailController,
+              label: 'Email Address',
+              prefixIcon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+              enabled: !controller.isLoading,
+            ),
+            const SizedBox(height: 20),
+            _buildTextField(
+              controller: _passwordController,
+              label: 'Password',
+              prefixIcon: Icons.lock_outline,
+              enabled: !controller.isLoading,
+              isPassword: true,
+              obscureText: _obscurePassword,
+              onToggleVisibility: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: controller.isLoading
+                    ? null
+                    : () {
+                        // TODO: Implement forgot password
+                      },
+                child: Text(
+                  'Forgot Password?',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: controller.isLoading
+                  ? null
+                  : () => controller.signIn(
+                        email: _emailController.text,
+                        password: _passwordController.text,
+                      ),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildEmailField(controller.isLoading),
-                  const SizedBox(height: 18),
-                  _buildPasswordField(controller.isLoading),
-                  const SizedBox(height: 26),
-                  _buildLoginButton(controller),
-                  const SizedBox(height: 16),
-                  _buildRegisterButton(controller),
+                  if (controller.isLoading)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                  Text(
+                    controller.isLoading ? 'Signing In...' : 'Sign In',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-          if (controller.isLoading) const LoadingOverlay(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmailField(bool isLoading) {
-    return TextField(
-      controller: _emailController,
-      enabled: !isLoading,
-      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-      decoration: InputDecoration(
-        labelText: 'Email',
-        labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16.0),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        contentPadding: const EdgeInsets.all(20.0),
-        filled: true,
-        fillColor: Theme.of(context).colorScheme.surface,
-      ),
-    );
-  }
-
-  Widget _buildPasswordField(bool isLoading) {
-    return TextField(
-      controller: _passwordController,
-      enabled: !isLoading,
-      obscureText: _obscurePassword,
-      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-      decoration: InputDecoration(
-        labelText: 'Password',
-        labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16.0),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        contentPadding: const EdgeInsets.all(20.0),
-        filled: true,
-        fillColor: Theme.of(context).colorScheme.surface,
-        suffixIcon: IconButton(
-          icon: Icon(
-            _obscurePassword ? Icons.visibility : Icons.visibility_off,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoginButton(LoginController controller) {
-    return StandardButton(
-      label: Text(
-        controller.isLoading ? "Signing In..." : "Sign In",
-        style: const TextStyle(fontSize: 18),
-      ),
-      onPressed: controller.isLoading
-          ? null
-          : () => controller.signIn(
-                email: _emailController.text,
-                password: _passwordController.text,
-              ),
-      icon: Icon(
-        Icons.login,
-        color: Theme.of(context).colorScheme.onPrimary,
-      ),
-    );
-  }
-
-  Widget _buildRegisterButton(LoginController controller) {
-    return StandardButton(
-      label: const Text("Create Account", style: TextStyle(fontSize: 18)),
-      icon: Icon(
-        Icons.app_registration,
-        color: Theme.of(context).colorScheme.onPrimary,
-      ),
-      onPressed: controller.isLoading
-          ? null
-          : () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const RegisterPage(),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Don\'t have an account? ',
+                  style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.7),
+                  ),
                 ),
-              ),
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RegisterPage(),
+                    ),
+                  ),
+                  child: const Text('Register'),
+                ),
+              ],
+            ),
+          ],
+        ),
+        if (controller.isLoading) const LoadingOverlay(),
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    IconData? prefixIcon,
+    TextInputType? keyboardType,
+    bool enabled = true,
+    bool isPassword = false,
+    bool? obscureText,
+    VoidCallback? onToggleVisibility,
+  }) {
+    return TextFormField(
+      controller: controller,
+      enabled: enabled,
+      obscureText: isPassword ? (obscureText ?? true) : false,
+      keyboardType: keyboardType,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onBackground,
+        fontSize: 16,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+        ),
+        prefixIcon: prefixIcon != null
+            ? Icon(
+                prefixIcon,
+                color:
+                    Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+              )
+            : null,
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  obscureText ?? true
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onBackground
+                      .withOpacity(0.7),
+                ),
+                onPressed: onToggleVisibility,
+              )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 2,
+          ),
+        ),
+        fillColor: Theme.of(context).colorScheme.surface,
+        filled: true,
+        contentPadding: const EdgeInsets.all(16),
+      ),
     );
   }
 }

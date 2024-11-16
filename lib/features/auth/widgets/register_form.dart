@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/core/widgets/loading_overlay.dart';
 import 'package:photojam_app/features/auth/controllers/register_controller.dart';
-import 'package:photojam_app/core/widgets/standard_button.dart';
 import 'package:provider/provider.dart';
+
+
 
 class RegisterForm extends StatefulWidget {
   const RegisterForm({super.key});
@@ -35,64 +36,100 @@ class _RegisterFormState extends State<RegisterForm> {
     
     return Stack(
       children: [
-        GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildTextField(
+              controller: _nameController,
+              label: 'Full Name',
+              prefixIcon: Icons.person_outline,
+              enabled: !controller.isLoading,
+            ),
+            const SizedBox(height: 20),
+            _buildTextField(
+              controller: _emailController,
+              label: 'Email Address',
+              prefixIcon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+              enabled: !controller.isLoading,
+            ),
+            const SizedBox(height: 20),
+            _buildPasswordField(
+              controller: _passwordController,
+              label: 'Password',
+              obscureText: _obscurePassword,
+              onToggleVisibility: () => setState(() => _obscurePassword = !_obscurePassword),
+              enabled: !controller.isLoading,
+            ),
+            const SizedBox(height: 20),
+            _buildPasswordField(
+              controller: _confirmPasswordController,
+              label: 'Confirm Password',
+              obscureText: _obscureConfirmPassword,
+              onToggleVisibility: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+              enabled: !controller.isLoading,
+            ),
+            const SizedBox(height: 32),
+            FilledButton(
+              onPressed: controller.isLoading
+                  ? null
+                  : () => controller.register(
+                        name: _nameController.text,
+                        email: _emailController.text,
+                        password: _passwordController.text,
+                        confirmPassword: _confirmPasswordController.text,
+                      ),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (controller.isLoading)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                  Text(
+                    controller.isLoading ? 'Creating Account...' : 'Create Account',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildTextField(
-                  controller: _nameController,
-                  label: 'Name',
-                  enabled: !controller.isLoading,
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _emailController,
-                  label: 'Email',
-                  enabled: !controller.isLoading,
-                ),
-                const SizedBox(height: 16),
-                _buildPasswordField(
-                  controller: _passwordController,
-                  label: 'Password',
-                  obscureText: _obscurePassword,
-                  onToggleVisibility: () => setState(() => _obscurePassword = !_obscurePassword),
-                  enabled: !controller.isLoading,
-                ),
-                const SizedBox(height: 16),
-                _buildPasswordField(
-                  controller: _confirmPasswordController,
-                  label: 'Confirm Password',
-                  obscureText: _obscureConfirmPassword,
-                  onToggleVisibility: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                  enabled: !controller.isLoading,
-                ),
-                const SizedBox(height: 16),
-                StandardButton(
-                  label: Text(
-                    controller.isLoading ? "Creating Account..." : "Sign up",
-                    style: const TextStyle(fontSize: 18),
+                Text(
+                  'Already have an account? ',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   ),
-                  icon: Icon(
-                    Icons.app_registration,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                  onPressed: controller.isLoading
-                      ? null
-                      : () => controller.register(
-                            name: _nameController.text,
-                            email: _emailController.text,
-                            password: _passwordController.text,
-                            confirmPassword: _confirmPasswordController.text,
-                          ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Sign In'),
                 ),
               ],
             ),
-          ),
+          ],
         ),
-        if (controller.isLoading) const LoadingOverlay(),
+        if (controller.isLoading)
+          const LoadingOverlay(),
       ],
     );
   }
@@ -100,23 +137,51 @@ class _RegisterFormState extends State<RegisterForm> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
+    IconData? prefixIcon,
+    TextInputType? keyboardType,
     bool enabled = true,
   }) {
-    return TextField(
+    return TextFormField(
       controller: controller,
       enabled: enabled,
-      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+      keyboardType: keyboardType,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onBackground,
+        fontSize: 16,
+      ),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface,
+          color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
         ),
+        prefixIcon: prefixIcon != null
+            ? Icon(
+                prefixIcon,
+                color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+              )
+            : null,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16.0),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+          ),
         ),
-        contentPadding: const EdgeInsets.all(20.0),
-        filled: true,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 2,
+          ),
+        ),
         fillColor: Theme.of(context).colorScheme.surface,
+        filled: true,
+        contentPadding: const EdgeInsets.all(16),
       ),
     );
   }
@@ -128,29 +193,52 @@ class _RegisterFormState extends State<RegisterForm> {
     required VoidCallback onToggleVisibility,
     bool enabled = true,
   }) {
-    return TextField(
+    return TextFormField(
       controller: controller,
       enabled: enabled,
       obscureText: obscureText,
-      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onBackground,
+        fontSize: 16,
+      ),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface,
+          color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16.0),
+        prefixIcon: Icon(
+          Icons.lock_outline,
+          color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
         ),
-        contentPadding: const EdgeInsets.all(20.0),
-        filled: true,
-        fillColor: Theme.of(context).colorScheme.surface,
         suffixIcon: IconButton(
           icon: Icon(
-            obscureText ? Icons.visibility : Icons.visibility_off,
-            color: Theme.of(context).colorScheme.onSurface,
+            obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
           ),
           onPressed: onToggleVisibility,
         ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 2,
+          ),
+        ),
+        fillColor: Theme.of(context).colorScheme.surface,
+        filled: true,
+        contentPadding: const EdgeInsets.all(16),
       ),
     );
   }
