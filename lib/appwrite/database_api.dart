@@ -29,7 +29,6 @@
 ///    - `jam`: A relationship with the `jam` collection, linking this submission to a specific Jam.
 ///    - `comment` (String): An optional comment provided by the user with their submission.
 
-
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:photojam_app/config/app_constants.dart';
@@ -152,36 +151,37 @@ class DatabaseAPI {
     }
   }
 
-/// Updates a specific jam by its ID
-Future<void> updateJam(Map<String, dynamic> data) async {
-  try {
-    // Fetch the existing jam document
-    final existingJam = await databases.getDocument(
-      databaseId: appwriteDatabaseId,
-      collectionId: collectionJams,
-      documentId: data['jamId'],
-    );
+  /// Updates a specific jam by its ID
+  Future<void> updateJam(Map<String, dynamic> data) async {
+    try {
+      // Fetch the existing jam document
+      final existingJam = await databases.getDocument(
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJams,
+        documentId: data['jamId'],
+      );
 
-    // Merge the existing data with the new data
-    final updatedData = {
-      'title': data['title'] ?? existingJam.data['title'],
-      'date': data['date'] ?? existingJam.data['date'],
-      'zoom_link': data['zoom_link'] ?? existingJam.data['zoom_link'],
-      'selected_photos': data['selected_photos'] ?? existingJam.data['selected_photos'],
-    };
+      // Merge the existing data with the new data
+      final updatedData = {
+        'title': data['title'] ?? existingJam.data['title'],
+        'date': data['date'] ?? existingJam.data['date'],
+        'zoom_link': data['zoom_link'] ?? existingJam.data['zoom_link'],
+        'selected_photos':
+            data['selected_photos'] ?? existingJam.data['selected_photos'],
+      };
 
-    // Perform the update
-    await databases.updateDocument(
-      databaseId: appwriteDatabaseId,
-      collectionId: collectionJams,
-      documentId: data['jamId'],
-      data: updatedData,
-    );
-  } catch (e) {
-    LogService.instance.error('Error updating jam: $e');
-    rethrow;
+      // Perform the update
+      await databases.updateDocument(
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJams,
+        documentId: data['jamId'],
+        data: updatedData,
+      );
+    } catch (e) {
+      LogService.instance.error('Error updating jam: $e');
+      rethrow;
+    }
   }
-}
 
   /// Deletes a specific jam by ID
   Future<void> deleteJam(Map<String, dynamic> data) async {
@@ -258,7 +258,8 @@ Future<void> updateJam(Map<String, dynamic> data) async {
           final jamDate = DateTime.parse(dateValue);
           return jamDate.isAfter(now); // Keep only future jams
         } else {
-          LogService.instance.info("Warning: date is not a String for document ID ${doc.$id}");
+          LogService.instance
+              .info("Warning: date is not a String for document ID ${doc.$id}");
           return false;
         }
       }).toList();
@@ -269,7 +270,8 @@ Future<void> updateJam(Map<String, dynamic> data) async {
         total: upcomingJams.length,
       );
     } catch (e) {
-      LogService.instance.error('Error fetching upcoming jams for user $userId: $e');
+      LogService.instance
+          .error('Error fetching upcoming jams for user $userId: $e');
       rethrow;
     }
   }
@@ -319,7 +321,8 @@ Future<void> updateJam(Map<String, dynamic> data) async {
 
       return userSubmissions.documents;
     } catch (e) {
-      LogService.instance.error("Error fetching jams with submissions for user $userId: $e");
+      LogService.instance
+          .error("Error fetching jams with submissions for user $userId: $e");
       return []; // Return an empty list if the query fails
     }
   }
@@ -354,9 +357,11 @@ Future<void> updateJam(Map<String, dynamic> data) async {
         collectionId: collectionSubmissions,
         documentId: submissionId,
       );
-      LogService.instance.info("Submission with ID $submissionId deleted successfully.");
+      LogService.instance
+          .info("Submission with ID $submissionId deleted successfully.");
     } catch (e) {
-      LogService.instance.error("Error deleting submission with ID $submissionId: $e");
+      LogService.instance
+          .error("Error deleting submission with ID $submissionId: $e");
       rethrow;
     }
   }
@@ -370,13 +375,15 @@ Future<void> updateJam(Map<String, dynamic> data) async {
         queries: [Query.equal('jam', jamId)],
       );
     } catch (e) {
-      LogService.instance.error('Error fetching submissions for jam $jamId: $e');
+      LogService.instance
+          .error('Error fetching submissions for jam $jamId: $e');
       rethrow;
     }
   }
 
   /// Retrieve a single submission by associated jam and user
-  Future<Document> getSubmissionByJamAndUser(String jamId, String userId) async {
+  Future<Document> getSubmissionByJamAndUser(
+      String jamId, String userId) async {
     try {
       final response = await databases.listDocuments(
         databaseId: appwriteDatabaseId,
@@ -393,14 +400,15 @@ Future<void> updateJam(Map<String, dynamic> data) async {
         throw Exception('No submission found for jam $jamId and user $userId');
       }
     } catch (e) {
-      LogService.instance.error('Error fetching submission for jam $jamId and user $userId: $e');
+      LogService.instance.error(
+          'Error fetching submission for jam $jamId and user $userId: $e');
       rethrow;
     }
   }
 
   // Updates an existing submission with new photos and date
-  Future<void> updateSubmission(
-      String submissionId, List<String> photoUrls, String date, String comment) async {
+  Future<void> updateSubmission(String submissionId, List<String> photoUrls,
+      String date, String comment) async {
     try {
       await databases.updateDocument(
         databaseId: appwriteDatabaseId,
@@ -579,6 +587,101 @@ Future<void> updateJam(Map<String, dynamic> data) async {
     } catch (e) {
       LogService.instance.error('Error adding lesson to journey: $e');
       rethrow;
+    }
+  }
+
+  /// Updates facilitator for a specific jam
+  /// Updates facilitator for a specific jam
+  Future<void> updateJamFacilitator(String jamId, String? facilitatorId) async {
+    try {
+      LogService.instance.info(
+          'Starting updateJamFacilitator - jamId: $jamId, facilitatorId: $facilitatorId');
+
+      // Log the attempt to fetch existing jam
+      LogService.instance.info('Fetching existing jam document...');
+      final existingJam = await databases.getDocument(
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJams,
+        documentId: jamId,
+      );
+      LogService.instance
+          .info('Successfully fetched existing jam: ${existingJam.$id}');
+
+      // Create a clean update data object with only the fields we want to update
+      final updatedData = {
+        'title': existingJam.data['title'],
+        'date': existingJam.data['date'],
+        'zoom_link': existingJam.data['zoom_link'],
+        'facilitator_id': facilitatorId,
+        'selected_photos': existingJam.data['selected_photos'],
+      };
+
+      LogService.instance.info('Prepared update data: $updatedData');
+
+      // Log the update attempt
+      LogService.instance.info("""
+Attempting to update jam document with:
+- Database ID: $appwriteDatabaseId
+- Collection ID: $collectionJams
+- Document ID: $jamId
+- Updated Data: $updatedData
+""");
+
+      await databases.updateDocument(
+        databaseId: appwriteDatabaseId,
+        collectionId: collectionJams,
+        documentId: jamId,
+        data: updatedData,
+      );
+
+      LogService.instance.info(
+        facilitatorId != null
+            ? 'Successfully assigned facilitator $facilitatorId to jam $jamId'
+            : 'Successfully removed facilitator from jam $jamId',
+      );
+    } catch (e) {
+      if (e is AppwriteException) {
+        LogService.instance.error("""
+Error updating jam facilitator:
+- Code: ${e.code}
+- Message: ${e.message}
+- Type: ${e.type}
+- Response: ${e.response}
+""");
+      } else {
+        LogService.instance
+            .error('Unexpected error updating jam facilitator: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Get all available facilitators and admins
+  Future<List<Membership>> getAvailableFacilitators(Teams teams) async {
+    try {
+      LogService.instance.info('Fetching available facilitators and admins');
+
+      // Get team memberships for facilitators and admins
+      final memberships = await teams.listMemberships(
+        teamId: appwriteTeamId,
+        queries: [
+          Query.equal('confirm', true),
+        ],
+      );
+
+      // Filter memberships to only facilitators and admins
+      final facilitators = memberships.memberships
+          .where((membership) =>
+              membership.roles.contains('facilitator') ||
+              membership.roles.contains('admin'))
+          .toList();
+
+      LogService.instance
+          .info('Found ${facilitators.length} available facilitators/admins');
+      return facilitators;
+    } catch (e) {
+      LogService.instance.error('Error fetching available facilitators: $e');
+      return [];
     }
   }
 }

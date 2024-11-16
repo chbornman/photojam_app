@@ -199,4 +199,9 @@ Membership Verification Error:
       rethrow;
     }
   }
+
+  // Add these getters
+  bool get isAdmin => _cachedRole == 'admin';
+  bool get isFacilitator => _cachedRole == 'facilitator' || isAdmin;
+  String get currentUserId => _cachedUserId ?? '';
 }

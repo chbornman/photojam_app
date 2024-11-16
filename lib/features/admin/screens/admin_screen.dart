@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/features/admin/screens/content_management_screen.dart';
-import 'package:photojam_app/features/admin/screens/jamcalendar_page.dart';
+import 'package:photojam_app/features/admin/screens/jam_calendar_page.dart';
 import 'package:photojam_app/features/admin/screens/user_management_screen.dart';
 import 'package:photojam_app/features/admin/screens/system_logs.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
@@ -25,7 +25,7 @@ class AdminPage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => JamCalendar()),
+                  MaterialPageRoute(builder: (context) => JamCalendarPage()),
                 );
               },
             ),
