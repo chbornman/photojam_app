@@ -32,25 +32,132 @@ class _LoginFormState extends State<LoginForm> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildTextField(
+            // Email field
+            TextFormField(
               controller: _emailController,
-              label: 'Email Address',
-              prefixIcon: Icons.email_outlined,
-              keyboardType: TextInputType.emailAddress,
               enabled: !controller.isLoading,
+              keyboardType: TextInputType.emailAddress,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onBackground,
+                fontSize: 16,
+              ),
+              decoration: InputDecoration(
+                labelText: 'Email Address',
+                labelStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+                ),
+                prefixIcon: Icon(
+                  Icons.email_outlined,
+                  color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+                ),
+                errorText: controller.emailError,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.error,
+                    width: 2,
+                  ),
+                ),
+                fillColor: Theme.of(context).colorScheme.surface,
+                filled: true,
+                contentPadding: const EdgeInsets.all(16),
+              ),
             ),
             const SizedBox(height: 20),
-            _buildTextField(
+            
+            // Password field
+            TextFormField(
               controller: _passwordController,
-              label: 'Password',
-              prefixIcon: Icons.lock_outline,
               enabled: !controller.isLoading,
-              isPassword: true,
               obscureText: _obscurePassword,
-              onToggleVisibility: () =>
-                  setState(() => _obscurePassword = !_obscurePassword),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onBackground,
+                fontSize: 16,
+              ),
+              decoration: InputDecoration(
+                labelText: 'Password',
+                labelStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+                ),
+                prefixIcon: Icon(
+                  Icons.lock_outline,
+                  color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+                errorText: controller.passwordError,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.error,
+                    width: 2,
+                  ),
+                ),
+                fillColor: Theme.of(context).colorScheme.surface,
+                filled: true,
+                contentPadding: const EdgeInsets.all(16),
+              ),
             ),
             const SizedBox(height: 12),
+            
+            // Forgot Password button
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
@@ -69,6 +176,8 @@ class _LoginFormState extends State<LoginForm> {
               ),
             ),
             const SizedBox(height: 24),
+            
+            // Sign In button
             FilledButton(
               onPressed: controller.isLoading
                   ? null
@@ -108,6 +217,8 @@ class _LoginFormState extends State<LoginForm> {
               ),
             ),
             const SizedBox(height: 8),
+            
+            // Register link
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -135,77 +246,6 @@ class _LoginFormState extends State<LoginForm> {
         ),
         if (controller.isLoading) const LoadingOverlay(),
       ],
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    IconData? prefixIcon,
-    TextInputType? keyboardType,
-    bool enabled = true,
-    bool isPassword = false,
-    bool? obscureText,
-    VoidCallback? onToggleVisibility,
-  }) {
-    return TextFormField(
-      controller: controller,
-      enabled: enabled,
-      obscureText: isPassword ? (obscureText ?? true) : false,
-      keyboardType: keyboardType,
-      style: TextStyle(
-        color: Theme.of(context).colorScheme.onBackground,
-        fontSize: 16,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
-        ),
-        prefixIcon: prefixIcon != null
-            ? Icon(
-                prefixIcon,
-                color:
-                    Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
-              )
-            : null,
-        suffixIcon: isPassword
-            ? IconButton(
-                icon: Icon(
-                  obscureText ?? true
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onBackground
-                      .withOpacity(0.7),
-                ),
-                onPressed: onToggleVisibility,
-              )
-            : null,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.outline,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
-            width: 2,
-          ),
-        ),
-        fillColor: Theme.of(context).colorScheme.surface,
-        filled: true,
-        contentPadding: const EdgeInsets.all(16),
-      ),
     );
   }
 }
