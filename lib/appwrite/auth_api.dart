@@ -1,9 +1,9 @@
-// lib/services/auth_api.dart
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart';
 import 'package:flutter/foundation.dart';
 import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/core/services/role_service.dart';
 
 enum AuthStatus {
   uninitialized,
@@ -14,12 +14,15 @@ enum AuthStatus {
 class AuthAPI extends ChangeNotifier {
   final Client client;
   final Account account;
+  final RoleService roleService;
 
   User? _currentUser;
   AuthStatus _status = AuthStatus.uninitialized;
   String? _sessionId;
 
-  AuthAPI(this.client) : account = Account(client) {
+  AuthAPI(this.client)
+      : account = Account(client),
+        roleService = RoleService(client) {
     _initializeAuth();
   }
 
@@ -39,34 +42,36 @@ class AuthAPI extends ChangeNotifier {
     } catch (e) {
       _status = AuthStatus.unauthenticated;
       LogService.instance.info('Auth initialized - No authenticated user');
+      await roleService.clearRoleCache(); // Clear role cache when no auth
     } finally {
       notifyListeners();
     }
   }
 
-Future<User> createAccount({
-  required String email,
-  required String password,
-  required String name,
-}) async {
-  try {
-    LogService.instance.info('Creating account for: $email');
+  Future<User> createAccount({
+    required String email,
+    required String password,
+    required String name,
+  }) async {
+    try {
+      LogService.instance.info('Creating account for: $email');
 
-    final user = await account.create(
-      userId: ID.unique(),
-      email: email,
-      password: password,
-      name: name,
-    );
+      final user = await account.create(
+        userId: ID.unique(),
+        email: email,
+        password: password,
+        name: name,
+      );
 
-    LogService.instance.info('Account created: ${user.$id}');
+      LogService.instance.info('Account created: ${user.$id}');
+      await roleService.clearRoleCache(); // Clear role cache for new account
 
-    return user;
-  } catch (e) {
-    LogService.instance.error('Account creation failed: $e');
-    rethrow;
+      return user;
+    } catch (e) {
+      LogService.instance.error('Account creation failed: $e');
+      rethrow;
+    }
   }
-}
 
   Future<void> signIn({
     required String email,
@@ -75,8 +80,9 @@ Future<User> createAccount({
     try {
       LogService.instance.info('Signing in: $email');
       
-      // Ensure clean session state
+      // Ensure clean session state and clear role cache
       await _clearCurrentSession();
+      await roleService.clearRoleCache();
       
       // Create new session
       final session = await account.createEmailPasswordSession(
@@ -102,6 +108,8 @@ Future<User> createAccount({
       LogService.instance.info('Starting OAuth sign in: $provider');
       
       await _clearCurrentSession();
+      await roleService.clearRoleCache();
+      
       final session = await account.createOAuth2Session(provider: provider);
       
       _sessionId = session.$id;
@@ -121,6 +129,7 @@ Future<User> createAccount({
     try {
       LogService.instance.info('Signing out user: ${_currentUser?.$id}');
       await _clearCurrentSession();
+      await roleService.clearRoleCache(); // Clear role cache on sign out
       
       _currentUser = null;
       _status = AuthStatus.unauthenticated;

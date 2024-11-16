@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/config/app_constants.dart';
 import 'package:photojam_app/core/services/log_service.dart';
-import 'package:photojam_app/core/services/role_service.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
 import 'package:provider/provider.dart';
@@ -26,8 +25,7 @@ class _AccountPageState extends State<AccountPage> {
 
   Future<Map<String, dynamic>> _loadUserData() async {
     final authAPI = Provider.of<AuthAPI>(context, listen: false);
-    final roleService = Provider.of<RoleService>(context, listen: false);
-
+    final roleService = authAPI.roleService;
     try {
       // Use the new getters from AuthAPI
       return {

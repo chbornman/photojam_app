@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
-import 'package:photojam_app/core/services/role_service.dart';
 import 'package:photojam_app/features/journeys/providers/journey_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
@@ -33,8 +32,7 @@ class _SignUpJourneyDialogState extends State<SignUpJourneyDialog> {
     try {
       final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
       final auth = Provider.of<AuthAPI>(context, listen: false);
-      final roleService = Provider.of<RoleService>(context, listen: false);
-
+      final roleService = auth.roleService;
       final userId = auth.userId;
       if (userId == null) {
         _showError('User not logged in');
@@ -55,7 +53,8 @@ class _SignUpJourneyDialogState extends State<SignUpJourneyDialog> {
 
       // Get user's current journeys
       final userJourneys = await databaseApi.getJourneysByUser(userId);
-      final userJourneyIds = userJourneys.documents.map((doc) => doc.$id).toSet();
+      final userJourneyIds =
+          userJourneys.documents.map((doc) => doc.$id).toSet();
 
       // Filter out journeys user is already part of
       availableJourneys = allJourneys.documents
@@ -115,7 +114,8 @@ class _SignUpJourneyDialogState extends State<SignUpJourneyDialog> {
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Successfully signed up for the journey!')),
+        const SnackBar(
+            content: Text('Successfully signed up for the journey!')),
       );
 
       // Refresh journeys list

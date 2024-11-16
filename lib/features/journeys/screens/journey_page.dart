@@ -1,4 +1,3 @@
-// lib/features/journeys/screens/journey_page.dart
 import 'package:flutter/material.dart';
 import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
@@ -6,17 +5,16 @@ import 'package:photojam_app/dialogs/signup_journey_dialog.dart';
 import 'package:provider/provider.dart';
 import '../providers/journey_provider.dart';
 import '../widgets/journey_list.dart';
-import 'package:photojam_app/core/services/role_service.dart';
 
 class JourneyPage extends StatelessWidget {
   const JourneyPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<RoleService>(
-      builder: (context, roleService, _) {
+    return Consumer<AuthAPI>(
+      builder: (context, authAPI, _) {
         return FutureBuilder<String>(
-          future: roleService.getCurrentUserRole(),
+          future: authAPI.roleService.getCurrentUserRole(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -62,7 +60,8 @@ class _JourneyPageContent extends StatelessWidget {
   Widget _buildContent(BuildContext context) {
     final auth = context.read<AuthAPI>();
     final userId = auth.userId;
-    if (userId == null) return const Center(child: Text('User ID not available'));
+    if (userId == null)
+      return const Center(child: Text('User ID not available'));
 
     if (userRole == 'nonmember') {
       return Column(
@@ -89,7 +88,8 @@ class _JourneyPageContent extends StatelessWidget {
     final journeyProvider = context.read<JourneyProvider>();
     await showDialog(
       context: context,
-      builder: (context) => SignUpJourneyDialog(journeyProvider: journeyProvider),
+      builder: (context) =>
+          SignUpJourneyDialog(journeyProvider: journeyProvider),
     );
   }
 }

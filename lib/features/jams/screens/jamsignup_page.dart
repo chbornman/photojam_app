@@ -8,7 +8,6 @@ import 'package:photojam_app/appwrite/auth_api.dart';
 import 'package:photojam_app/appwrite/database_api.dart';
 import 'package:photojam_app/appwrite/storage_api.dart';
 import 'package:photojam_app/core/services/log_service.dart';
-import 'package:photojam_app/core/services/role_service.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
 import 'package:photojam_app/core/widgets/standard_button.dart';
 import 'package:photojam_app/features/jams/models/photo_submission.dart';
@@ -29,7 +28,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
   final List<io.File?> _photos = List.filled(_maxPhotos, null);
   final TextEditingController _commentController = TextEditingController();
   final ImagePicker _imagePicker = ImagePicker();
-  
+
   String? _selectedJamId;
   String? _selectedJamName;
   List<Document> _jams = [];
@@ -38,7 +37,6 @@ class _JamSignupPageState extends State<JamSignupPage> {
   late final DatabaseAPI _databaseApi;
   late final PhotoUploadService _photoUploadService;
   late final AuthAPI _authApi;
-  late final RoleService _roleService;
 
   @override
   void initState() {
@@ -57,7 +55,6 @@ class _JamSignupPageState extends State<JamSignupPage> {
     final storageApi = context.read<StorageAPI>();
     _photoUploadService = PhotoUploadService(storageApi);
     _authApi = context.read<AuthAPI>();
-    _roleService = context.read<RoleService>();
     _fetchJamEvents();
   }
 
@@ -124,7 +121,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
       if (pickedFile == null) return;
 
       final file = io.File(pickedFile.path);
-      
+
       if (!_photoUploadService.isPhotoSizeValid(file)) {
         await _showFileSizeWarningDialog();
         return;
@@ -144,7 +141,7 @@ class _JamSignupPageState extends State<JamSignupPage> {
   // Submission Processing
   Future<void> _processSubmission() async {
     if (!_validateSubmission()) return;
-    
+
     setState(() => _isLoading = true);
 
     try {
@@ -177,7 +174,8 @@ class _JamSignupPageState extends State<JamSignupPage> {
     }
   }
 
-  Future<void> _submitPhotos(String userId, Document? existingSubmission) async {
+  Future<void> _submitPhotos(
+      String userId, Document? existingSubmission) async {
     final photoUrls = await _photoUploadService.uploadPhotos(
       photos: _photos,
       jamName: _selectedJamName!,
@@ -268,7 +266,8 @@ class _JamSignupPageState extends State<JamSignupPage> {
   Future<void> _showFileSizeWarningDialog() {
     return _showDialog(
       title: "File Size Warning",
-      content: "Selected photo exceeds the 50MB size limit. Please choose a smaller photo.",
+      content:
+          "Selected photo exceeds the 50MB size limit. Please choose a smaller photo.",
     );
   }
 
@@ -303,11 +302,9 @@ class _JamSignupPageState extends State<JamSignupPage> {
       context: context,
       builder: (context) => StandardDialog(
         title: "No Photos Selected",
-        content: const Text(
-          "You have not selected any photos. "
-          "Submitting will delete your existing submission and its photos. "
-          "Do you want to proceed?"
-        ),
+        content: const Text("You have not selected any photos. "
+            "Submitting will delete your existing submission and its photos. "
+            "Do you want to proceed?"),
         submitButtonLabel: "Delete Submission",
         submitButtonOnPressed: () => Navigator.pop(context, true),
       ),
@@ -319,11 +316,9 @@ class _JamSignupPageState extends State<JamSignupPage> {
       context: context,
       builder: (context) => StandardDialog(
         title: "Existing Submission",
-        content: const Text(
-          "You have already submitted photos for this Jam. "
-          "Submitting again will overwrite your previous submission. "
-          "Do you want to proceed?"
-        ),
+        content: const Text("You have already submitted photos for this Jam. "
+            "Submitting again will overwrite your previous submission. "
+            "Do you want to proceed?"),
         submitButtonLabel: "Overwrite",
         submitButtonOnPressed: () => Navigator.pop(context, true),
       ),
@@ -340,10 +335,10 @@ class _JamSignupPageState extends State<JamSignupPage> {
         submitButtonOnPressed: () async {
           Navigator.pop(context);
           if (!mounted) return;
-          
-          final userRole = await _roleService.getCurrentUserRole();
+
+          final userRole = await _authApi.roleService.getCurrentUserRole();
           if (!mounted) return;
-          
+
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
