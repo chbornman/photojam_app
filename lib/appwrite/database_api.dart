@@ -1,3 +1,35 @@
+/// PhotoJam Collections Overview
+///
+/// This comment provides an overview of the main collections in the PhotoJam application:
+///
+/// 1. **Jam Collection** (`photojam-collection-jam`)
+///    Represents a 'Jam' event in the application.
+///    - `submission`: A relationship with the `submission` collection, linking all user submissions for this specific Jam.
+///    - `title` (String, Required): The name or title of the Jam event.
+///    - `date` (Datetime, Required): The scheduled date and time for the Jam.
+///    - `zoom_link` (Url, Required): The URL of the Zoom meeting for this Jam.
+///    - `journey`: A relationship with the `journey` collection, indicating the learning journey this Jam is part of, if applicable.
+///    - `facilitator_id` (String): The ID of the facilitator responsible for this Jam.
+///    - 'selected_photos' (List<Url>): A list of URLs pointing to the selected photos for this Jam.
+///
+/// 2. **Journey Collection** (`photojam-collection-journey`)
+///    Represents a 'Journey' in the application, which may include multiple Jams and associated lessons.
+///    - `jam`: A relationship with the `jam` collection, linking all Jam events associated with this journey.
+///    - `title` (String, Required): The name or title of the journey.
+///    - `lessons` (List<Url>): A list of URLs pointing to the lesson resources linked to this journey.
+///    - `participant_ids` (List<String>): A list of user IDs representing the participants of this journey.
+///    - `start_date` (Datetime, Required): The start date of the journey.
+///    - `active` (Boolean, Required): Indicates whether the journey is currently active.
+///
+/// 3. **Submission Collection** (`photojam-collection-submission`)
+///    Represents a 'Submission' made by users for a Jam event.
+///    - `user_id` (String, Required): The ID of the user who made the submission.
+///    - `date` (Datetime, Required): The date and time when the submission was made.
+///    - `photos` (List<Url>): A list of URLs pointing to the photos submitted.
+///    - `jam`: A relationship with the `jam` collection, linking this submission to a specific Jam.
+///    - `comment` (String): An optional comment provided by the user with their submission.
+
+
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:photojam_app/config/app_constants.dart';
@@ -120,24 +152,36 @@ class DatabaseAPI {
     }
   }
 
-  /// Updates a specific jam by its ID
-  Future<void> updateJam(Map<String, dynamic> data) async {
-    try {
-      await databases.updateDocument(
-        databaseId: appwriteDatabaseId,
-        collectionId: collectionJams,
-        documentId: data['jamId'],
-        data: {
-          'title': data['title'],
-          'date': data['date'],
-          'zoom_link': data['zoom_link'],
-        },
-      );
-    } catch (e) {
-      LogService.instance.error('Error updating jam: $e');
-      rethrow;
-    }
+/// Updates a specific jam by its ID
+Future<void> updateJam(Map<String, dynamic> data) async {
+  try {
+    // Fetch the existing jam document
+    final existingJam = await databases.getDocument(
+      databaseId: appwriteDatabaseId,
+      collectionId: collectionJams,
+      documentId: data['jamId'],
+    );
+
+    // Merge the existing data with the new data
+    final updatedData = {
+      'title': data['title'] ?? existingJam.data['title'],
+      'date': data['date'] ?? existingJam.data['date'],
+      'zoom_link': data['zoom_link'] ?? existingJam.data['zoom_link'],
+      'selected_photos': data['selected_photos'] ?? existingJam.data['selected_photos'],
+    };
+
+    // Perform the update
+    await databases.updateDocument(
+      databaseId: appwriteDatabaseId,
+      collectionId: collectionJams,
+      documentId: data['jamId'],
+      data: updatedData,
+    );
+  } catch (e) {
+    LogService.instance.error('Error updating jam: $e');
+    rethrow;
   }
+}
 
   /// Deletes a specific jam by ID
   Future<void> deleteJam(Map<String, dynamic> data) async {
