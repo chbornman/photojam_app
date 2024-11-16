@@ -77,7 +77,6 @@ class _AccountPageState extends State<AccountPage> {
                   _buildUserInfo(context, userData),
                   const SizedBox(height: 20),
                   _buildAccountManagementCards(userData),
-                  const SizedBox(height: 10),
                   _buildRoleBasedCards(context, userData),
                 ],
               ),
