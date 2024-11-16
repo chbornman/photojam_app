@@ -14,15 +14,14 @@ enum AuthStatus {
 class AuthAPI extends ChangeNotifier {
   final Client client;
   final Account account;
-  final RoleService roleService;
+  late final RoleService roleService;
 
   User? _currentUser;
   AuthStatus _status = AuthStatus.uninitialized;
   String? _sessionId;
 
-  AuthAPI(this.client)
-      : account = Account(client),
-        roleService = RoleService(client) {
+  AuthAPI(this.client) : account = Account(client) {
+    roleService = RoleService(client);
     _initializeAuth();
   }
 
@@ -64,7 +63,12 @@ class AuthAPI extends ChangeNotifier {
       );
 
       LogService.instance.info('Account created: ${user.$id}');
-      await roleService.clearRoleCache(); // Clear role cache for new account
+      await roleService.clearRoleCache();
+
+      // Sign in immediately after account creation
+      await _signInInternal(email: email, password: password);
+
+      LogService.instance.info('Registration process complete');
 
       return user;
     } catch (e) {
@@ -73,27 +77,27 @@ class AuthAPI extends ChangeNotifier {
     }
   }
 
-  Future<void> signIn({
+  Future<void> _signInInternal({
     required String email,
     required String password,
   }) async {
     try {
       LogService.instance.info('Signing in: $email');
-      
-      // Ensure clean session state and clear role cache
+
+      // Ensure clean session state
       await _clearCurrentSession();
       await roleService.clearRoleCache();
-      
+
       // Create new session
       final session = await account.createEmailPasswordSession(
         email: email,
         password: password,
       );
-      
+
       _sessionId = session.$id;
       _currentUser = await account.get();
       _status = AuthStatus.authenticated;
-      
+
       LogService.instance.info('Sign in successful: ${_currentUser?.$id}');
       notifyListeners();
     } catch (e) {
@@ -103,20 +107,28 @@ class AuthAPI extends ChangeNotifier {
     }
   }
 
+  Future<void> signIn({
+    required String email,
+    required String password,
+  }) async {
+    await _signInInternal(email: email, password: password);
+  }
+
   Future<void> signInWithOAuth(OAuthProvider provider) async {
     try {
       LogService.instance.info('Starting OAuth sign in: $provider');
-      
+
       await _clearCurrentSession();
       await roleService.clearRoleCache();
-      
+
       final session = await account.createOAuth2Session(provider: provider);
-      
+
       _sessionId = session.$id;
       _currentUser = await account.get();
       _status = AuthStatus.authenticated;
-      
-      LogService.instance.info('OAuth sign in successful: ${_currentUser?.$id}');
+
+      LogService.instance
+          .info('OAuth sign in successful: ${_currentUser?.$id}');
       notifyListeners();
     } catch (e) {
       _status = AuthStatus.unauthenticated;
@@ -130,11 +142,11 @@ class AuthAPI extends ChangeNotifier {
       LogService.instance.info('Signing out user: ${_currentUser?.$id}');
       await _clearCurrentSession();
       await roleService.clearRoleCache(); // Clear role cache on sign out
-      
+
       _currentUser = null;
       _status = AuthStatus.unauthenticated;
       _sessionId = null;
-      
+
       LogService.instance.info('Sign out successful');
       notifyListeners();
     } catch (e) {
@@ -157,10 +169,10 @@ class AuthAPI extends ChangeNotifier {
   Future<void> updateName(String newName) async {
     try {
       LogService.instance.info('Updating name to: $newName');
-      
+
       await account.updateName(name: newName);
       _currentUser = await account.get();
-      
+
       LogService.instance.info('Name updated successfully');
       notifyListeners();
     } catch (e) {
@@ -175,13 +187,13 @@ class AuthAPI extends ChangeNotifier {
   }) async {
     try {
       LogService.instance.info('Updating email to: $newEmail');
-      
+
       await account.updateEmail(
         email: newEmail,
         password: password,
       );
       _currentUser = await account.get();
-      
+
       LogService.instance.info('Email updated successfully');
       notifyListeners();
     } catch (e) {
@@ -196,12 +208,12 @@ class AuthAPI extends ChangeNotifier {
   }) async {
     try {
       LogService.instance.info('Updating password');
-      
+
       await account.updatePassword(
         password: newPassword,
         oldPassword: oldPassword,
       );
-      
+
       LogService.instance.info('Password updated successfully');
     } catch (e) {
       LogService.instance.error('Password update failed: $e');
@@ -233,7 +245,7 @@ class AuthAPI extends ChangeNotifier {
   // Session Management
   Future<String?> getSessionId() async {
     if (_sessionId != null) return _sessionId;
-    
+
     try {
       final session = await account.getSession(sessionId: 'current');
       _sessionId = session.$id;

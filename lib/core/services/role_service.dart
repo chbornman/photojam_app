@@ -12,7 +12,6 @@ class RoleService {
   String? _cachedRole;
   String? _cachedUserId;
 
-  // Add debounce timer
   Timer? _debounceTimer;
   bool _isCheckingRole = false;
 
@@ -30,28 +29,18 @@ class RoleService {
   }
 
   Future<String> getCurrentUserRole() async {
-    if (_isCheckingRole) {
-      LogService.instance.info('Role check in progress, waiting...');
-      await _waitForRoleCheck();
-    }
-
-    _debounceTimer?.cancel();
-
+    // Don't use _authAPI.isAuthenticated here as it might be out of sync
+    // Instead, check by trying to get the user
     try {
-      _isCheckingRole = true;
-
-      // Get current user
       final currentUser = await _account.get();
       LogService.instance.info('Current user ID: ${currentUser.$id}');
 
-      // If user hasn't changed and we have a cached role, return it
       if (_cachedUserId == currentUser.$id && _cachedRole != null) {
         LogService.instance.info(
             'Returning cached role: $_cachedRole for user: $_cachedUserId');
         return _cachedRole!;
       }
 
-      // Update cached user ID
       _cachedUserId = currentUser.$id;
 
       try {
@@ -87,33 +76,16 @@ Team access check failed:
 This is expected for non-team members
 """);
         }
-        // Any error accessing team memberships means user is not a member
         _cachedRole = 'nonmember';
         LogService.instance
             .info('Setting role to nonmember due to team access restriction');
         return _cachedRole!;
       }
     } catch (e) {
-      if (e is AppwriteException) {
-        LogService.instance.error("""
-AppwriteException in getCurrentUserRole:
-- Code: ${e.code}
-- Message: ${e.message}
-- Type: ${e.type}
-""");
-
-        if (e.code == 401) {
-          // Only clear cache on auth errors
-          _cachedRole = null;
-          _cachedUserId = null;
-          throw Exception('User not authenticated');
-        }
-      }
-
-      LogService.instance.error('Unexpected error getting user role: $e');
+      LogService.instance.info('Not authenticated, returning nonmember role');
+      _cachedRole = 'nonmember';
+      _cachedUserId = null;
       return 'nonmember';
-    } finally {
-      _isCheckingRole = false;
     }
   }
 
