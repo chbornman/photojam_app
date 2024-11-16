@@ -245,23 +245,64 @@ class _JamCalendarPageState extends State<JamCalendarPage> {
                         eventLoader: _getEventsForDay,
                         startingDayOfWeek: StartingDayOfWeek.sunday,
                         calendarStyle: CalendarStyle(
+                          // Use theme colors for markers
                           markersMaxCount: 3,
                           markerDecoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
+                            color: theme.colorScheme
+                                .secondary, // Using secondary (pink) for markers
                             shape: BoxShape.circle,
                           ),
+                          // Selected day styling
                           selectedDecoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
+                            color: theme.colorScheme
+                                .primary, // Using primary (yellow) for selected
                             shape: BoxShape.circle,
                           ),
+                          selectedTextStyle: TextStyle(
+                            color: theme.colorScheme
+                                .onPrimary, // Text color on selected day
+                            fontWeight: FontWeight.bold,
+                          ),
+                          // Today styling
                           todayDecoration: BoxDecoration(
                             color: theme.colorScheme.primary.withOpacity(0.3),
                             shape: BoxShape.circle,
                           ),
+                          todayTextStyle: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          // Default day text style
+                          defaultTextStyle: theme.textTheme.bodyMedium!,
+                          // Weekend text style
+                          weekendTextStyle:
+                              theme.textTheme.bodyMedium!.copyWith(
+                            color: theme.colorScheme.secondary,
+                          ),
+                          // Outside days text style
+                          outsideTextStyle:
+                              theme.textTheme.bodyMedium!.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          ),
                         ),
-                        headerStyle: const HeaderStyle(
+                        headerStyle: HeaderStyle(
                           formatButtonVisible: false,
                           titleCentered: true,
+                          titleTextStyle: theme.textTheme.headlineSmall!,
+                          leftChevronIcon: Icon(
+                            Icons.chevron_left,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                          rightChevronIcon: Icon(
+                            Icons.chevron_right,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        daysOfWeekStyle: DaysOfWeekStyle(
+                          weekdayStyle: theme.textTheme.bodyMedium!,
+                          weekendStyle: theme.textTheme.bodyMedium!.copyWith(
+                            color: theme.colorScheme.secondary,
+                          ),
                         ),
                         onDaySelected: (selectedDay, focusedDay) {
                           LogService.instance.info(
