@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/appwrite/auth_api.dart';
+import 'package:photojam_app/appwrite/auth/models/auth_state.dart';
+import 'package:photojam_app/appwrite/auth/repositories/auth_repository.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 
 class RegisterController extends ChangeNotifier {
-  final AuthAPI _authAPI;
+    final AuthRepository _authRepo;
+  final AuthState _authState;
   final BuildContext context;
   bool _isLoading = false;
 
@@ -13,7 +15,7 @@ class RegisterController extends ChangeNotifier {
   String? _passwordError;
   String? _confirmPasswordError;
 
-  RegisterController(this._authAPI, this.context);
+  RegisterController(this._authRepo, this._authState, this.context);
 
   bool get isLoading => _isLoading;
   String? get nameError => _nameError;
@@ -94,7 +96,7 @@ class RegisterController extends ChangeNotifier {
     try {
       LogService.instance.info("Creating new user account for: $email");
 
-      await _authAPI.createAccount(
+      await _authRepo.createAccount(
         name: name,
         email: email,
         password: password,
@@ -102,17 +104,17 @@ class RegisterController extends ChangeNotifier {
 
       LogService.instance.info("Account created, signing in");
 
-      await _authAPI.signIn(
+      await _authRepo.signIn(
         email: email,
         password: password,
       );
 
-      if (!_authAPI.isAuthenticated) {
+      if (!_authState.isAuthenticated) {
         throw Exception('Failed to authenticate after registration');
       }
 
       LogService.instance.info("Initial sign in successful");
-      await _authAPI.signOut();
+      await _authRepo.signOut();
       LogService.instance.info("Registration process complete");
 
       if (context.mounted) {

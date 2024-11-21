@@ -25,17 +25,23 @@ dependencies:
   share_plus: ^10.1.1
   table_calendar: ^3.1.2
   reorderables: ^0.6.0
-  add_2_calendar: ^2.0.1
+  add_2_calendar: ^3.0.1
   uni_links: ^0.5.1
+  get_it: ^8.0.2
+  flutter_riverpod: ^2.6.1
+  freezed_annotation: ^2.4.4
   # flutter_stripe: ^11.2.0
   # TODO square_in_app_payments: ^1.7.9
 
-  
+
 dev_dependencies:
   flutter_launcher_icons: ^0.14.1
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  freezed: ^2.4.5  # For code generation
+  build_runner: ^2.4.6
+  json_serializable: ^6.7.1  # If you need JSON serialization
 
 flutter_icons:
   android: true

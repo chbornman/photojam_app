@@ -1,15 +1,15 @@
-// lib/features/jams/services/photo_upload_service.dart
 import 'dart:io' as io;
 import 'package:intl/intl.dart';
 import 'package:appwrite/models.dart';
-import 'package:photojam_app/appwrite/storage_api.dart';
+import 'package:photojam_app/appwrite/storage/repositories/storage_repository.dart';
+import 'package:photojam_app/appwrite/storage/models/storage_types.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 
 class PhotoUploadService {
-  final StorageAPI _storageApi;
+  final StorageRepository _storageRepository;
   static const int maxPhotoSize = 50 * 1024 * 1024; // 50MB
 
-  PhotoUploadService(this._storageApi);
+  PhotoUploadService(this._storageRepository);
 
   Future<List<String>> uploadPhotos({
     required List<io.File?> photos,
@@ -28,12 +28,24 @@ class PhotoUploadService {
           await _deleteExistingPhoto(existingSubmission, i);
         }
 
-        final photoId = await _storageApi.uploadPhoto(
-          await photo.readAsBytes(),
-          fileName,
+        // Upload the new photo
+        final fileBytes = await photo.readAsBytes();
+        final storageFile = await _storageRepository.uploadFile(
+          bucket: StorageBucket.photos,
+          fileName: fileName,
+          fileBytes: fileBytes,
         );
-        final photoUrl = await _storageApi.getPhotoUrl(photoId);
+
+        // Get the preview URL for the uploaded photo
+        final photoUrl = await _storageRepository.getFilePreviewUrl(
+          bucket: StorageBucket.photos,
+          fileId: storageFile.id,
+          width: 2000, // You can adjust these values based on your needs
+          height: 2000,
+        );
+
         photoUrls.add(photoUrl);
+        LogService.instance.info("Uploaded photo: $fileName with ID: ${storageFile.id}");
       }
     }
 
@@ -46,7 +58,10 @@ class PhotoUploadService {
     for (String url in photos) {
       try {
         final fileId = _extractFileIdFromUrl(url);
-        await _storageApi.deletePhoto(fileId);
+        await _storageRepository.deleteFile(
+          bucket: StorageBucket.photos,
+          fileId: fileId,
+        );
         LogService.instance.info("Deleted photo with file ID: $fileId");
       } catch (e) {
         LogService.instance.error("Error deleting photo: $e");
@@ -65,7 +80,10 @@ class PhotoUploadService {
     if (index < photos.length) {
       final oldUrl = photos[index];
       final fileId = _extractFileIdFromUrl(oldUrl);
-      await _storageApi.deletePhoto(fileId);
+      await _storageRepository.deleteFile(
+        bucket: StorageBucket.photos,
+        fileId: fileId,
+      );
     }
   }
 

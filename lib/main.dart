@@ -1,88 +1,87 @@
 import 'package:flutter/material.dart';
-import 'package:appwrite/appwrite.dart';
 import 'package:flutter/services.dart';
-import 'package:photojam_app/appwrite/database_api.dart';
-import 'package:photojam_app/appwrite/storage_api.dart';
-import 'package:photojam_app/config/app_constants.dart';
-import 'package:photojam_app/appwrite/auth_api.dart';
-import 'package:photojam_app/config/app_theme.dart';
-import 'package:photojam_app/core/services/deep_link_handler.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
+import 'package:photojam_app/appwrite/auth/providers/auth_providers.dart';
+import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
 import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/empty_page.dart';
 import 'package:photojam_app/features/auth/screens/login_screen.dart';
 import 'package:photojam_app/app.dart';
-import 'package:photojam_app/features/journeys/models/journey_repository.dart';
-import 'package:photojam_app/features/journeys/providers/journey_provider.dart';
 import 'package:photojam_app/features/splashscreen.dart';
-import 'package:provider/provider.dart';
 import 'package:uni_links/uni_links.dart';
+
+
 
 void main() async {
   LogService.instance.info("App started");
   WidgetsFlutterBinding.ensureInitialized();
-
+  
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  final client = Client()
-      .setEndpoint(appwriteEndpointId)
-      .setProject(appwriteProjectId)
-      .setSelfSigned();
-
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider<AuthAPI>(create: (_) => AuthAPI(client)),
-        Provider<DatabaseAPI>(create: (_) => DatabaseAPI(client)),
-        Provider<StorageAPI>(create: (_) => StorageAPI(client)),
-        ChangeNotifierProvider(
-          create: (context) => JourneyProvider(
-            JourneyRepository(
-              Provider.of<DatabaseAPI>(context, listen: false),
-            ),
-          ),
-        ),
-      ],
-      child: const MyApp(),
+    const ProviderScope(
+      child: MyApp(),
     ),
-  );
+  ); 
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  _MyAppState createState() => _MyAppState();
+  ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends ConsumerState<MyApp> {
   bool _showSplash = true;
 
   @override
   void initState() {
     super.initState();
     _initializeDeepLinks();
+    // Initialize auth state
+    ref.read(authStateProvider.notifier).checkAuthStatus();
   }
 
   Future<void> _initializeDeepLinks() async {
     try {
-      // Handle initial URI if app was launched from deep link
       final initialUri = await getInitialUri();
       if (initialUri != null && mounted) {
-        LogService.instance.info("Handling initial deep link: $initialUri");
-        await DeepLinkHandler.handleDeepLink(initialUri, context);
+        LogService.instance.info("Processing initial deep link: $initialUri");
+        await _handleDeepLink(initialUri);
       }
 
-      // Handle deep links while app is running
       uriLinkStream.listen(
         (Uri? uri) async {
           if (uri != null && mounted) {
-            await DeepLinkHandler.handleDeepLink(uri, context);
+            await _handleDeepLink(uri);
           }
         },
-        onError: (err) =>
-            LogService.instance.error("Deep link stream error: $err"),
+        onError: (err) => LogService.instance.error("Deep link error: $err"),
       );
     } catch (e) {
-      LogService.instance.error("Error initializing deep links: $e");
+      LogService.instance.error("Deep link initialization error: $e");
+    }
+  }
+
+  Future<void> _handleDeepLink(Uri uri) async {
+    if (uri.path.contains('/verify-membership')) {
+      final params = uri.queryParameters;
+      final requiredParams = ['teamId', 'membershipId', 'userId', 'secret'];
+      
+      if (requiredParams.every(params.containsKey)) {
+        try {
+          final authRepository = ref.read(authRepositoryProvider);
+          // After verification, refresh the role
+          ref.invalidate(userRoleProvider);
+          // Refresh auth state
+          ref.read(authStateProvider.notifier).checkAuthStatus();
+          LogService.instance.info("Membership verification successful");
+        } catch (e) {
+          LogService.instance.error("Membership verification failed: $e");
+        }
+      }
     }
   }
 
@@ -93,39 +92,87 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'PhotoJam App',
-      theme: getLightTheme(),
-      darkTheme: getDarkTheme(),
+      title: 'PhotoJam',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+      ),
       home: _showSplash
           ? SplashScreen(onAnimationComplete: _onSplashComplete)
-          : Consumer<AuthAPI>(
-              builder: (context, authAPI, _) {
-                if (!authAPI.isAuthenticated) {
-                  return const LoginPage();
-                }
-
-                return FutureBuilder<String>(
-                  future: authAPI.roleService.getCurrentUserRole(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Scaffold(
-                        body: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-
-                    if (snapshot.hasError) {
-                      LogService.instance
-                          .error("Error loading user role: ${snapshot.error}");
-                      return const Scaffold(
-                        body: Center(child: Text("Error loading user role")),
-                      );
-                    }
-
-                    return App(userRole: snapshot.data ?? 'nonmember');
+          : Consumer(
+              builder: (context, ref, _) {
+                final authState = ref.watch(authStateProvider);
+                
+                return authState.when(
+                  initial: () => const LoadingScreen(),
+                  loading: () => const LoadingScreen(),
+                  authenticated: (user) {
+                    // Watch the user role using our new provider
+                    final roleAsync = ref.watch(userRoleProvider);
+                    
+                    return roleAsync.when(
+                      data: (role) => App(userRole: role),
+                      loading: () => const LoadingScreen(),
+                      error: (error, _) => ErrorScreen(
+                        message: "Role check failed: $error",
+                      ),
+                    );
                   },
+                  unauthenticated: () => const EmptyPage(),//LoginPage(),
+                  error: (message) => ErrorScreen(message: message),
                 );
               },
             ),
+    );
+  }
+}
+
+class LoadingScreen extends StatelessWidget {
+  const LoadingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+}
+
+class ErrorScreen extends StatelessWidget {
+  final String message;
+
+  const ErrorScreen({super.key, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.red),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  // Provide a way to retry or go back
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const EmptyPage()),//LoginPage()),
+                  );
+                },
+                child: const Text('Back to Login'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

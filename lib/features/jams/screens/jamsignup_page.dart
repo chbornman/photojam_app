@@ -1,433 +1,418 @@
-import 'dart:io' as io;
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
-import 'package:appwrite/models.dart';
-import 'package:photojam_app/app.dart';
-import 'package:photojam_app/appwrite/auth_api.dart';
-import 'package:photojam_app/appwrite/database_api.dart';
-import 'package:photojam_app/appwrite/storage_api.dart';
-import 'package:photojam_app/core/services/log_service.dart';
-import 'package:photojam_app/core/widgets/standard_dialog.dart';
-import 'package:photojam_app/core/widgets/standard_button.dart';
-import 'package:photojam_app/features/jams/models/photo_submission.dart';
-import 'package:photojam_app/features/jams/services/photo_upload_service.dart';
-import 'package:photojam_app/features/jams/widgets/photo_selector.dart';
-import 'package:photojam_app/features/jams/widgets/jam_dropdown.dart';
+// import 'dart:io' as io;
+// import 'package:flutter/material.dart';
+// import 'package:flutter_riverpod/flutter_riverpod.dart';
+// import 'package:image_picker/image_picker.dart';
+// import 'package:appwrite/models.dart';
+// import 'package:photojam_app/appwrite/auth/models/user_model.dart';
+// import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
+// import 'package:photojam_app/appwrite/database/models/jam_model.dart';
+// import 'package:photojam_app/appwrite/database/models/submission_model.dart';
+// import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
+// import 'package:photojam_app/appwrite/database/providers/submission_provider.dart';
+// import 'package:photojam_app/appwrite/storage/models/storage_types.dart';
+// import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
+// import 'package:photojam_app/core/services/log_service.dart';
+// import 'package:photojam_app/core/widgets/standard_dialog.dart';
+// import 'package:photojam_app/core/widgets/standard_button.dart';
+// import 'package:photojam_app/features/jams/services/photo_upload_service.dart';
+// import 'package:photojam_app/features/jams/widgets/photo_selector.dart';
+// import 'package:photojam_app/appwrite/auth/providers/auth_providers.dart';
 
-class JamSignupPage extends StatefulWidget {
-  const JamSignupPage({super.key});
 
-  @override
-  State<JamSignupPage> createState() => _JamSignupPageState();
-}
+// class JamSignupPage extends ConsumerStatefulWidget {
+//   const JamSignupPage({super.key});
 
-class _JamSignupPageState extends State<JamSignupPage> {
-  static const int _maxPhotos = 3;
+//   @override
+//   ConsumerState<JamSignupPage> createState() => _JamSignupPageState();
+// }
 
-  final List<io.File?> _photos = List.filled(_maxPhotos, null);
-  final TextEditingController _commentController = TextEditingController();
-  final ImagePicker _imagePicker = ImagePicker();
+// class _JamSignupPageState extends ConsumerState<JamSignupPage> {
+//   static const int _maxPhotos = 3;
+//   late final Future<AppUser?> _userFuture = ref.read(authRepositoryProvider).getCurrentUser();
 
-  String? _selectedJamId;
-  String? _selectedJamName;
-  List<Document> _jams = [];
-  bool _isLoading = false;
 
-  late final DatabaseAPI _databaseApi;
-  late final PhotoUploadService _photoUploadService;
-  late final AuthAPI _authApi;
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeServices();
-  }
+//   final List<io.File?> _photos = List.filled(_maxPhotos, null);
+//   final TextEditingController _commentController = TextEditingController();
+//   final ImagePicker _imagePicker = ImagePicker();
 
-  @override
-  void dispose() {
-    _commentController.dispose();
-    super.dispose();
-  }
+//   String? _selectedJamId;
+//   List<Jam> _jams = [];
+//   bool _isLoading = false;
 
-  void _initializeServices() {
-    _databaseApi = context.read<DatabaseAPI>();
-    final storageApi = context.read<StorageAPI>();
-    _photoUploadService = PhotoUploadService(storageApi);
-    _authApi = context.read<AuthAPI>();
-    _fetchJamEvents();
-  }
+//   late final PhotoUploadService _photoUploadService;
 
-  // Event Handlers
-  Future<void> _onJamSelected(String? jamId) async {
-    if (jamId == null) return;
+//   @override
+//   void initState() {
+//     super.initState();
+//           final auth = ref.read(authRepositoryProvider);
+//     _initializeServices();
+//   }
 
-    setState(() {
-      _selectedJamId = jamId;
-    });
+//   @override
+//   void dispose() {
+//     _commentController.dispose();
+//     super.dispose();
+//   }
 
-    try {
-      final jamData = await _databaseApi.getJamById(jamId);
-      if (!mounted) return;
+//   void _initializeServices() {
+//     final storageRepository = ref.read(storageRepositoryProvider);
+//     _photoUploadService = PhotoUploadService(storageRepository);
+//     _fetchJams();
+//   }
 
-      setState(() {
-        _selectedJamName = jamData.data['title'] as String? ?? "Unknown Jam";
-      });
-    } catch (e) {
-      LogService.instance.error('Error fetching jam details: $e');
-      _showErrorSnackBar('Failed to load jam details');
-    }
-  }
+//   Future<void> _fetchJams() async {
+//     try {
+//       final jamRepository = ref.read(jamRepositoryProvider);
+//       final jams = await jamRepository.getAllJams(activeOnly: true);
+      
+//       if (!mounted) return;
+//       setState(() => _jams = jams);
+//     } catch (e) {
+//       LogService.instance.error('Error fetching jams: $e');
+//       _showErrorSnackBar('Failed to load jams');
+//     }
+//   }
 
-  Future<void> _handleSubmit() async {
-    if (_selectedJamId == null) {
-      await _showNoJamSelectedDialog();
-      return;
-    }
+//   Future<void> _selectPhoto(int index) async {
+//     try {
+//       final pickedFile = await _imagePicker.pickImage(
+//         source: ImageSource.gallery,
+//         imageQuality: 80,
+//       );
 
-    if (_photos.every((photo) => photo == null)) {
-      await _handleEmptySubmission();
-      return;
-    }
+//       if (pickedFile == null) return;
 
-    await _processSubmission();
-  }
+//       final file = io.File(pickedFile.path);
+//       final storageRepository = ref.read(storageRepositoryProvider);
 
-  // Data Fetching
-  Future<void> _fetchJamEvents() async {
-    if (!mounted) return;
+//       if (file.lengthSync() > storageRepository.getMaxFileSizeForBucket(StorageBucket.photos)) {
+//         await _showFileSizeWarningDialog();
+//         return;
+//       }
 
-    try {
-      final response = await _databaseApi.getJams();
-      if (!mounted) return;
+//       setState(() => _photos[index] = file);
+//     } catch (e) {
+//       LogService.instance.error('Error selecting photo: $e');
+//       _showErrorSnackBar('Failed to select photo');
+//     }
+//   }
 
-      setState(() {
-        _jams = response.documents;
-      });
-    } catch (e) {
-      LogService.instance.error('Error fetching jam events: $e');
-      _showErrorSnackBar('Failed to load jam events');
-    }
-  }
+//   void _removePhoto(int index) {
+//     setState(() => _photos[index] = null);
+//   }
 
-  // Photo Management
-  Future<void> _selectPhoto(int index) async {
-    try {
-      final pickedFile = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-      );
+//   Future<void> _handleSubmit() async {
+//     if (_selectedJamId == null) {
+//       await _showNoJamSelectedDialog();
+//       return;
+//     }
 
-      if (pickedFile == null) return;
+//     if (_photos.every((photo) => photo == null)) {
+//       await _handleEmptySubmission();
+//       return;
+//     }
 
-      final file = io.File(pickedFile.path);
+//     await _processSubmission();
+//   }
 
-      if (!_photoUploadService.isPhotoSizeValid(file)) {
-        await _showFileSizeWarningDialog();
-        return;
-      }
+//   Future<void> _processSubmission() async {
+//     if (!_validateSubmission()) return;
 
-      setState(() => _photos[index] = file);
-    } catch (e) {
-      LogService.instance.error('Error selecting photo: $e');
-      _showErrorSnackBar('Failed to select photo');
-    }
-  }
+//     setState(() => _isLoading = true);
 
-  void _removePhoto(int index) {
-    setState(() => _photos[index] = null);
-  }
+//     try {
+//       final user = await authState.getCurrentUser();
+//       if (user?.id == null) throw Exception('User not authenticated');
 
-  // Submission Processing
-  Future<void> _processSubmission() async {
-    if (!_validateSubmission()) return;
+//       final submissionRepository = ref.read(submissionRepositoryProvider);
+//       final existingSubmission = await submissionRepository.getUserSubmissionForJam(
+//         _selectedJamId!,
+//         user?.id,
+//       );
 
-    setState(() => _isLoading = true);
+//       if (existingSubmission != null) {
+//         final shouldOverwrite = await _showOverwriteConfirmationDialog();
+//         if (!shouldOverwrite) {
+//           setState(() => _isLoading = false);
+//           return;
+//         }
+//       }
 
-    try {
-      final userId = _authApi.userId!;
-      final existingSubmission = await _databaseApi.getUserSubmissionForJam(
-        _selectedJamId!,
-        userId,
-      );
+//       await _submitPhotos(user.id, existingSubmission);
+//       if (!mounted) return;
+//       await _showSuccessAndNavigate();
+//     } catch (e) {
+//       LogService.instance.error("Error during submission: $e");
+//       if (!mounted) return;
+//       _showErrorSnackBar('Failed to submit photos');
+//     } finally {
+//       if (mounted) setState(() => _isLoading = false);
+//     }
+//   }
 
-      if (existingSubmission != null) {
-        final shouldOverwrite = await _showOverwriteConfirmationDialog();
-        if (!shouldOverwrite) {
-          setState(() => _isLoading = false);
-          return;
-        }
-      }
+//   Future<void> _submitPhotos(String userId, Submission? existingSubmission) async {
+//     final selectedJam = _jams.firstWhere((jam) => jam.id == _selectedJamId);
+//     final authState = ref.read(authStateProvider);
 
-      await _submitPhotos(userId, existingSubmission);
+//     final photoUrls = await _photoUploadService.uploadPhotos(
+//       photos: _photos,
+//       jamName: selectedJam.title,
+//       username: authState.username ?? 'unknown',
+//       existingSubmission: existingSubmission?.toDocument(),
+//     );
 
-      if (!mounted) return;
-      await _showSuccessAndNavigate();
-    } catch (e) {
-      LogService.instance.error("Error during photo submission: $e");
-      if (!mounted) return;
-      _showErrorSnackBar('Failed to submit photos');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
+//     final submissionRepository = ref.read(submissionRepositoryProvider);
+//     final jamRepository = ref.read(jamRepositoryProvider);
 
-  Future<void> _submitPhotos(
-      String userId, Document? existingSubmission) async {
-    final photoUrls = await _photoUploadService.uploadPhotos(
-      photos: _photos,
-      jamName: _selectedJamName!,
-      username: _authApi.username ?? 'unknown',
-      existingSubmission: existingSubmission,
-    );
+//     if (existingSubmission != null) {
+//       await submissionRepository.updateSubmission(
+//         existingSubmission.id,
+//         photoUrls,
+//         DateTime.now().toIso8601String(),
+//         _commentController.text,
+//       );
+//     } else {
+//       final newSubmission = await submissionRepository.createSubmission(
+//         selectedJam.id,
+//         photoUrls,
+//         userId,
+//         _commentController.text,
+//       );
 
-    final submission = PhotoSubmission(
-      jamId: _selectedJamId!,
-      photoUrls: photoUrls,
-      userId: userId,
-      comment: _commentController.text,
-    );
+//       await jamRepository.addSubmissionToJam(selectedJam.id, newSubmission.id);
+//     }
+//   }
 
-    if (existingSubmission != null) {
-      await _databaseApi.updateSubmission(
-        existingSubmission.$id,
-        submission.photoUrls,
-        submission.submissionDate.toIso8601String(),
-        submission.comment ?? '',
-      );
-    } else {
-      await _databaseApi.createSubmission(
-        submission.jamId,
-        submission.photoUrls,
-        submission.userId,
-        submission.comment ?? '',
-      );
-    }
-  }
+//   Future<void> _handleEmptySubmission() async {
+//     final shouldDelete = await _showDeleteConfirmationDialog();
+//     if (shouldDelete) {
+//       await _deleteExistingSubmission();
+//     }
+//   }
 
-  Future<void> _handleEmptySubmission() async {
-    final shouldDelete = await _showDeleteConfirmationDialog();
-    if (shouldDelete) {
-      await _deleteExistingSubmission();
-    }
-  }
+//   Future<void> _deleteExistingSubmission() async {
+//     if (_selectedJamId == null) return;
 
-  Future<void> _deleteExistingSubmission() async {
-    if (_selectedJamId == null || !_authApi.isAuthenticated) return;
+//     try {
+//       final authState = ref.read(authProvider);
+//       final userId = authState.userId;
+//       if (userId == null) throw Exception('User not authenticated');
 
-    try {
-      final existingSubmission = await _databaseApi.getUserSubmissionForJam(
-        _selectedJamId!,
-        _authApi.userId!,
-      );
+//       final submissionRepository = ref.read(submissionRepositoryProvider);
+//       final existingSubmission = await submissionRepository.getUserSubmissionForJam(
+//         _selectedJamId!,
+//         userId,
+//       );
 
-      if (existingSubmission != null) {
-        await _photoUploadService.deleteSubmissionPhotos(existingSubmission);
-        await _databaseApi.deleteSubmission(existingSubmission.$id);
-      }
+//       if (existingSubmission != null) {
+//         await _photoUploadService.deleteSubmissionPhotos(existingSubmission.toDocument());
+//         await submissionRepository.deleteSubmission(existingSubmission.id);
+//       }
 
-      if (!mounted) return;
-      Navigator.pop(context);
-    } catch (e) {
-      LogService.instance.error('Error deleting submission: $e');
-      _showErrorSnackBar('Failed to delete submission');
-    }
-  }
+//       if (!mounted) return;
+//       Navigator.pop(context);
+//     } catch (e) {
+//       LogService.instance.error('Error deleting submission: $e');
+//       _showErrorSnackBar('Failed to delete submission');
+//     }
+//   }
 
-  // Validation
-  bool _validateSubmission() {
-    if (!_authApi.isAuthenticated || _authApi.userId == null) {
-      _showErrorSnackBar('User not authenticated');
-      return false;
-    }
+//   bool _validateSubmission() {
+//     final authState = ref.read(authProvider);
+//     if (!authState.isAuthenticated || authState.userId == null) {
+//       _showErrorSnackBar('User not authenticated');
+//       return false;
+//     }
 
-    if (_selectedJamId == null || _selectedJamName == null) {
-      _showErrorSnackBar('Please select a jam event');
-      return false;
-    }
+//     if (_selectedJamId == null) {
+//       _showErrorSnackBar('Please select a jam event');
+//       return false;
+//     }
 
-    return true;
-  }
+//     return true;
+//   }
 
-  // UI Feedback
-  void _showErrorSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error,
-      ),
-    );
-  }
+//   void _showErrorSnackBar(String message) {
+//     if (!mounted) return;
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(
+//         content: Text(message),
+//         backgroundColor: Theme.of(context).colorScheme.error,
+//       ),
+//     );
+//   }
 
-  // Dialog Methods
-  Future<void> _showFileSizeWarningDialog() {
-    return _showDialog(
-      title: "File Size Warning",
-      content:
-          "Selected photo exceeds the 50MB size limit. Please choose a smaller photo.",
-    );
-  }
+//   Future<void> _showDialog({
+//     required String title,
+//     required String content,
+//   }) {
+//     return showDialog(
+//       context: context,
+//       builder: (context) => AlertDialog(
+//         title: Text(title),
+//         content: Text(content),
+//         actions: [
+//           TextButton(
+//             onPressed: () => Navigator.pop(context),
+//             child: const Text("OK"),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
 
-  Future<void> _showNoJamSelectedDialog() {
-    return _showDialog(
-      title: "Select a Jam",
-      content: "Please select a Jam event before submitting photos.",
-    );
-  }
+//   Future<void> _showFileSizeWarningDialog() {
+//     return _showDialog(
+//       title: "File Size Warning",
+//       content: "Selected photo exceeds the maximum size limit. Please choose a smaller photo.",
+//     );
+//   }
 
-  Future<void> _showDialog({
-    required String title,
-    required String content,
-  }) {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
-          ),
-        ],
-      ),
-    );
-  }
+//   Future<void> _showNoJamSelectedDialog() {
+//     return _showDialog(
+//       title: "Select a Jam",
+//       content: "Please select a Jam event before submitting photos.",
+//     );
+//   }
 
-  Future<bool> _showDeleteConfirmationDialog() {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => StandardDialog(
-        title: "No Photos Selected",
-        content: const Text("You have not selected any photos. "
-            "Submitting will delete your existing submission and its photos. "
-            "Do you want to proceed?"),
-        submitButtonLabel: "Delete Submission",
-        submitButtonOnPressed: () => Navigator.pop(context, true),
-      ),
-    ).then((value) => value ?? false);
-  }
+//   Future<bool> _showDeleteConfirmationDialog() {
+//     return showDialog<bool>(
+//       context: context,
+//       builder: (context) => StandardDialog(
+//         title: "No Photos Selected",
+//         content: const Text(
+//           "You have not selected any photos. "
+//           "Submitting will delete your existing submission and its photos. "
+//           "Do you want to proceed?"
+//         ),
+//         submitButtonLabel: "Delete Submission",
+//         submitButtonOnPressed: () => Navigator.pop(context, true),
+//       ),
+//     ).then((value) => value ?? false);
+//   }
 
-  Future<bool> _showOverwriteConfirmationDialog() {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => StandardDialog(
-        title: "Existing Submission",
-        content: const Text("You have already submitted photos for this Jam. "
-            "Submitting again will overwrite your previous submission. "
-            "Do you want to proceed?"),
-        submitButtonLabel: "Overwrite",
-        submitButtonOnPressed: () => Navigator.pop(context, true),
-      ),
-    ).then((value) => value ?? false);
-  }
+//   Future<bool> _showOverwriteConfirmationDialog() {
+//     return showDialog<bool>(
+//       context: context,
+//       builder: (context) => StandardDialog(
+//         title: "Existing Submission",
+//         content: const Text(
+//           "You have already submitted photos for this Jam. "
+//           "Submitting again will overwrite your previous submission. "
+//           "Do you want to proceed?"
+//         ),
+//         submitButtonLabel: "Overwrite",
+//         submitButtonOnPressed: () => Navigator.pop(context, true),
+//       ),
+//     ).then((value) => value ?? false);
+//   }
 
-  Future<void> _showSuccessAndNavigate() async {
-    await showDialog(
-      context: context,
-      builder: (context) => StandardDialog(
-        title: "Submission Successful",
-        content: const Text("Your photos have been submitted successfully."),
-        submitButtonLabel: "OK",
-        submitButtonOnPressed: () async {
-          Navigator.pop(context);
-          if (!mounted) return;
+//   Future<void> _showSuccessAndNavigate() async {
+//     await showDialog(
+//       context: context,
+//       builder: (context) => StandardDialog(
+//         title: "Submission Successful",
+//         content: const Text("Your photos have been submitted successfully."),
+//         submitButtonLabel: "OK",
+//         submitButtonOnPressed: () {
+//           Navigator.pop(context);
+//           Navigator.pop(context);
+//         },
+//         showCancelButton: false,
+//       ),
+//     );
+//   }
 
-          final userRole = await _authApi.roleService.getCurrentUserRole();
-          if (!mounted) return;
+//   Widget _buildJamDropdown() {
+//     return DropdownButtonFormField<String>(
+//       value: _selectedJamId,
+//       hint: const Text('Select a Jam'),
+//       items: _jams.map((jam) {
+//         return DropdownMenuItem(
+//           value: jam.id,
+//           child: Text(jam.title),
+//         );
+//       }).toList(),
+//       onChanged: (value) => setState(() => _selectedJamId = value),
+//       decoration: InputDecoration(
+//         border: OutlineInputBorder(
+//           borderRadius: BorderRadius.circular(16.0),
+//         ),
+//       ),
+//     );
+//   }
 
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (context) => App(userRole: userRole),
-            ),
-            (route) => false,
-          );
-        },
-        showCancelButton: false,
-      ),
-    );
-  }
+//   Widget _buildCommentField() {
+//     return TextField(
+//       controller: _commentController,
+//       decoration: InputDecoration(
+//         labelText: 'Note to facilitator (optional)',
+//         labelStyle: TextStyle(
+//           color: Theme.of(context).colorScheme.onSurface,
+//         ),
+//         border: OutlineInputBorder(
+//           borderRadius: BorderRadius.circular(16.0),
+//         ),
+//       ),
+//       maxLines: 3,
+//     );
+//   }
 
-  // UI Components
-  Widget _buildCommentField() {
-    return TextField(
-      controller: _commentController,
-      decoration: InputDecoration(
-        labelText: 'Note to facilitator (optional)',
-        labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16.0),
-        ),
-      ),
-      maxLines: 3,
-    );
-  }
+//   Widget _buildSubmitButton() {
+//     final bool isDisabled = _selectedJamId == null ||
+//         _jams.isEmpty ||
+//         _photos.every((photo) => photo == null);
 
-  Widget _buildSubmitButton() {
-    final bool isDisabled = _selectedJamId == null ||
-        _jams.isEmpty ||
-        _photos.every((photo) => photo == null);
+//     return StandardButton(
+//       label: const Text("Submit Photos"),
+//       onPressed: isDisabled ? null : _handleSubmit,
+//     );
+//   }
 
-    return StandardButton(
-      label: const Text("Submit Photos"),
-      onPressed: isDisabled ? null : _handleSubmit,
-    );
-  }
-
-  // Build Method
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Jam Signup"),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-      ),
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                JamDropdown(
-                  jams: _jams,
-                  selectedJamId: _selectedJamId,
-                  onChanged: _onJamSelected,
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _maxPhotos,
-                    (index) => PhotoSelector(
-                      photo: _photos[index],
-                      onSelect: () => _selectPhoto(index),
-                      onRemove: () => _removePhoto(index),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                _buildCommentField(),
-                const SizedBox(height: 20),
-                _buildSubmitButton(),
-              ],
-            ),
-          ),
-          if (_isLoading)
-            Container(
-              color: Colors.black54,
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: const Text("Jam Signup"),
+//         backgroundColor: Theme.of(context).colorScheme.surface,
+//       ),
+//       body: Stack(
+//         children: [
+//           Padding(
+//             padding: const EdgeInsets.all(16.0),
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.stretch,
+//               children: [
+//                 _buildJamDropdown(),
+//                 const SizedBox(height: 20),
+//                 Row(
+//                   mainAxisAlignment: MainAxisAlignment.center,
+//                   children: List.generate(
+//                     _maxPhotos,
+//                     (index) => PhotoSelector(
+//                       photo: _photos[index],
+//                       onSelect: () => _selectPhoto(index),
+//                       onRemove: () => _removePhoto(index),
+//                     ),
+//                   ),
+//                 ),
+//                 const SizedBox(height: 20),
+//                 _buildCommentField(),
+//                 const SizedBox(height: 20),
+//                 _buildSubmitButton(),
+//               ],
+//             ),
+//           ),
+//           if (_isLoading)
+//             Container(
+//               color: Colors.black54,
+//               child: const Center(
+//                 child: CircularProgressIndicator(),
+//               ),
+//             ),
+//         ],
+//       ),
+//     );
+//   }
+// }
