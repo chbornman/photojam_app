@@ -6,6 +6,7 @@ import 'package:photojam_app/appwrite/auth/providers/auth_providers.dart';
 import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/empty_page.dart';
+import 'package:photojam_app/error_screen.dart';
 import 'package:photojam_app/features/auth/screens/login_screen.dart';
 import 'package:photojam_app/app.dart';
 import 'package:photojam_app/features/splashscreen.dart';
@@ -118,7 +119,7 @@ class _MyAppState extends ConsumerState<MyApp> {
                       ),
                     );
                   },
-                  unauthenticated: () => const EmptyPage(),//LoginPage(),
+                  unauthenticated: () => const LoginPage(),
                   error: (message) => ErrorScreen(message: message),
                 );
               },
@@ -135,43 +136,6 @@ class LoadingScreen extends StatelessWidget {
     return const Scaffold(
       body: Center(
         child: CircularProgressIndicator(),
-      ),
-    );
-  }
-}
-
-class ErrorScreen extends StatelessWidget {
-  final String message;
-
-  const ErrorScreen({super.key, required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.red),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  // Provide a way to retry or go back
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const EmptyPage()),//LoginPage()),
-                  );
-                },
-                child: const Text('Back to Login'),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

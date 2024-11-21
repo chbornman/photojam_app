@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/empty_page.dart';
+import 'package:photojam_app/features/auth/screens/login_screen.dart';
 import 'package:photojam_app/features/facilitator/screens/facilitator_screen.dart';
 import 'package:photojam_app/features/jams/screens/jams_page.dart';
 import 'package:photojam_app/core/widgets/standard_appbar.dart';
@@ -34,7 +35,7 @@ class _AppState extends ConsumerState<App> {
   void _validateAccess() {
     final isAdmin = widget.userRole == 'admin';
     final isFacilitator = widget.userRole == 'facilitator' || isAdmin;
-    
+
     // If current index is for admin/facilitator pages but user lost permission,
     // redirect to home
     if ((_currentIndex == 4 && !isFacilitator) ||
@@ -48,12 +49,12 @@ class _AppState extends ConsumerState<App> {
     final isFacilitator = userRole == 'facilitator' || isAdmin;
 
     return [
-      EmptyPage(),  //const JamPage(),
-      EmptyPage(),  //const JourneyPage(),
-      EmptyPage(),  //const PhotosPage(),
-      EmptyPage(),  //const AccountPage(),
-      EmptyPage(),  //if (isFacilitator) const FacilitatorPage(),
-      EmptyPage(),  //if (isAdmin) const AdminPage(),
+      EmptyPage(), //const JamPage(),
+      EmptyPage(), //const JourneyPage(),
+      EmptyPage(), //const PhotosPage(),
+      EmptyPage(), //const AccountPage(),
+      EmptyPage(), //if (isFacilitator) const FacilitatorPage(),
+      EmptyPage(), //if (isAdmin) const AdminPage(),
     ];
   }
 
@@ -85,13 +86,17 @@ class _AppState extends ConsumerState<App> {
   Widget build(BuildContext context) {
     final isAdmin = widget.userRole == 'admin';
     final isFacilitator = widget.userRole == 'facilitator' || isAdmin;
-    
+
     // Watch auth state to handle sign out and session expiry
     ref.listen(authStateProvider, (previous, current) {
       current.whenOrNull(
         unauthenticated: () {
-          // Handle session expiry or force logout
-          Navigator.of(context).pushReplacementNamed('/login');
+          // Updated to use MaterialPageRoute instead of named route
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const LoginPage(),
+            ),
+          );
         },
         error: (message) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -129,10 +134,11 @@ class _AppState extends ConsumerState<App> {
         children: screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.shifting, 
+        type: BottomNavigationBarType.shifting,
         currentIndex: _currentIndex,
         selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+        unselectedItemColor:
+            Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
         onTap: (index) {
           if (mounted) {
             setState(() => _currentIndex = index);
