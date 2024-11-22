@@ -3,7 +3,6 @@
 // import 'package:flutter/material.dart';
 // import 'package:photojam_app/features/account/controllers/account_controller.dart';
 // import 'package:photojam_app/features/account/models/update_dialogs.dart';
-// import 'package:provider/provider.dart';
 // import 'package:photojam_app/core/widgets/standard_card.dart';
 
 // class AccountManagement extends StatelessWidget {

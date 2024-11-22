@@ -10,7 +10,6 @@
 // import 'package:photojam_app/core/widgets/standard_button.dart';
 // import 'package:photojam_app/core/widgets/standard_card.dart';
 // import 'package:photojam_app/core/widgets/standard_dialog.dart';
-// import 'package:provider/provider.dart';
 // import 'dart:typed_data';
 // import 'package:file_picker/file_picker.dart';
 // import 'package:photojam_app/dialogs/create_journey_dialog.dart'; // Import the new dialog

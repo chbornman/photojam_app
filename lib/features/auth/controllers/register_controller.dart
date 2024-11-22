@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/appwrite/auth/models/auth_state.dart';
-import 'package:photojam_app/appwrite/auth/repositories/auth_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/features/auth/exceptions/register_exception.dart';
+import 'package:photojam_app/appwrite/auth/providers/auth_providers.dart';
+import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 
 class RegisterController extends ChangeNotifier {
-    final AuthRepository _authRepo;
-  final AuthState _authState;
-  final BuildContext context;
+  final WidgetRef _ref;
   bool _isLoading = false;
-
-  // Add validation state
   String? _nameError;
   String? _emailError;
   String? _passwordError;
   String? _confirmPasswordError;
 
-  RegisterController(this._authRepo, this._authState, this.context);
+  RegisterController(this._ref);
 
   bool get isLoading => _isLoading;
   String? get nameError => _nameError;
@@ -64,7 +63,7 @@ class RegisterController extends ChangeNotifier {
     if (confirmPassword.isEmpty) {
       _confirmPasswordError = 'Please confirm your password';
       isValid = false;
-    } else if (password != confirmPassword) {
+    } else if (confirmPassword != password) {
       _confirmPasswordError = 'Passwords do not match';
       isValid = false;
     }
@@ -94,35 +93,30 @@ class RegisterController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      LogService.instance.info("Creating new user account for: $email");
-
-      await _authRepo.createAccount(
+      LogService.instance.info("Attempting to register user: $email");
+      
+      final authRepo = _ref.read(authRepositoryProvider);
+      
+      // Create account
+      final user = await authRepo.createAccount(
+        email: email,
+        password: password,
         name: name,
-        email: email,
-        password: password,
       );
 
-      LogService.instance.info("Account created, signing in");
+      // Sign in after successful registration
+      await _ref.read(authStateProvider.notifier).signIn(email, password);
 
-      await _authRepo.signIn(
-        email: email,
-        password: password,
-      );
-
-      if (!_authState.isAuthenticated) {
-        throw Exception('Failed to authenticate after registration');
-      }
-
-      LogService.instance.info("Initial sign in successful");
-      await _authRepo.signOut();
-      LogService.instance.info("Registration process complete");
-
-      if (context.mounted) {
-        Navigator.pop(context);
-      }
+      LogService.instance.info("Registration successful for user: ${user.name}");
+    } on AppwriteException catch (e) {
+      LogService.instance.error("Appwrite registration failed: ${e.message}");
+      throw RegisterException(e.message.toString());
     } catch (e) {
-      LogService.instance.error("Registration failed: $e");
-      rethrow;
+      LogService.instance.error("Unexpected error during registration: $e");
+      if (e is RegisterException) {
+        rethrow;
+      }
+      throw const RegisterException('An unexpected error occurred');
     } finally {
       _isLoading = false;
       notifyListeners();

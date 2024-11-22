@@ -4,7 +4,6 @@
 // import 'package:photojam_app/appwrite/database/models/journey_model.dart';
 // import 'package:photojam_app/core/utils/markdownviewer.dart';
 // import 'package:photojam_app/features/journeys/widgets/journeycontainer.dart';
-// import 'package:provider/provider.dart';
 
 // class JourneyTile extends StatelessWidget {
 //   final Journey journey;

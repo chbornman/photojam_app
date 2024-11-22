@@ -1,7 +1,6 @@
 // import 'package:flutter/material.dart';
 // import 'package:photojam_app/features/account/controllers/account_controller.dart';
 // import 'package:photojam_app/core/utils/url_launcher.dart';
-// import 'package:provider/provider.dart';
 // import 'package:photojam_app/core/widgets/standard_card.dart';
 // import 'package:photojam_app/config/app_constants.dart';
 

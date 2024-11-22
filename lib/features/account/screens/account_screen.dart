@@ -3,7 +3,6 @@
 // import 'package:photojam_app/core/services/log_service.dart';
 // import 'package:photojam_app/core/widgets/standard_card.dart';
 // import 'package:photojam_app/core/widgets/standard_dialog.dart';
-// import 'package:provider/provider.dart';
 // import 'package:url_launcher/url_launcher.dart';
 
 // class AccountPage extends StatefulWidget {

@@ -1,6 +1,5 @@
 // // lib/features/journeys/widgets/journey_list.dart
 // import 'package:flutter/material.dart';
-// import 'package:provider/provider.dart';
 // import '../../../appwrite/database/providers/journey_provider.dart';
 // import 'journey_tile.dart';
 

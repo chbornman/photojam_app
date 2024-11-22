@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/features/photos/controllers/photos_controller.dart';
 import 'package:photojam_app/features/photos/widgets/submission_list.dart';
-import 'package:provider/provider.dart';
 
 class PhotosContent extends StatelessWidget {
   const PhotosContent({super.key});

@@ -1,7 +1,6 @@
 // import 'package:flutter/material.dart';
 // import 'package:photojam_app/core/services/log_service.dart';
 // import 'package:photojam_app/core/services/team_service.dart';
-// import 'package:provider/provider.dart';
 
 // class SelectFacilitatorDialog extends StatelessWidget {
 //   final String jamId;

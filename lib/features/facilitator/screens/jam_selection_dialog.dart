@@ -1,5 +1,4 @@
 // import 'package:flutter/material.dart';
-// import 'package:provider/provider.dart';
 // import 'package:photojam_app/core/services/log_service.dart';
 // import 'package:photojam_app/features/facilitator/screens/photo_selection_screen.dart';
 

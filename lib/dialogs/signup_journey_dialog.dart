@@ -1,6 +1,5 @@
 // import 'package:flutter/material.dart';
 // import 'package:photojam_app/appwrite/database/providers/journey_provider.dart';
-// import 'package:provider/provider.dart';
 // import 'package:photojam_app/core/services/log_service.dart';
 
 // class SignUpJourneyDialog extends StatefulWidget {

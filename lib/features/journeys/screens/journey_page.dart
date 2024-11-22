@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
 import 'package:photojam_app/dialogs/signup_journey_dialog.dart';
-import 'package:provider/provider.dart';
 import '../../../appwrite/database/providers/journey_provider.dart';
 import '../widgets/journey_list.dart';
 

@@ -1,7 +1,6 @@
 // import 'package:flutter/material.dart';
 // import 'package:appwrite/appwrite.dart';
 // import 'package:appwrite/models.dart';
-// import 'package:provider/provider.dart';
 // import 'package:photojam_app/core/services/log_service.dart';
 // import 'package:photojam_app/features/admin/screens/jam_event.dart';
 // import 'package:photojam_app/features/admin/screens/jam_event_card.dart';

@@ -3,7 +3,6 @@
 // import 'package:photojam_app/core/widgets/standard_submissioncard.dart';
 // import 'package:photojam_app/features/photos/screens/photoscroll_screen.dart';
 // import 'package:photojam_app/features/photos/controllers/photos_controller.dart';
-// import 'package:provider/provider.dart';
 
 // class SubmissionItem extends StatelessWidget {
 //   final Submission submission;
