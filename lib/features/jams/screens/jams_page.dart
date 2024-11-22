@@ -64,7 +64,7 @@ class _JamPageState extends ConsumerState<JamPage> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const EmptyPage()),// JamSignupPage()),
+          MaterialPageRoute(builder: (context) => const JamSignupPage()),
         );
       },
     );

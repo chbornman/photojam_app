@@ -1,4 +1,5 @@
 import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart';
 import 'package:photojam_app/appwrite/auth/models/user_model.dart';
 import 'package:photojam_app/appwrite/auth/repositories/auth_repository.dart';
 import 'package:photojam_app/config/app_constants.dart';
@@ -205,4 +206,15 @@ class AppwriteAuthRepository implements AuthRepository {
       throw _handleAuthError(e);
     }
   }
+
+    @override
+  Future<Session> getCurrentSession() async {
+    try {
+      final session = await _account.getSession(sessionId: 'current');
+      return session;
+    } catch (e) {
+      throw _handleAuthError(e);
+    }
+  }
+
 }

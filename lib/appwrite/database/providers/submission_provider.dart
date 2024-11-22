@@ -106,7 +106,7 @@ class SubmissionsNotifier extends StateNotifier<AsyncValue<List<Submission>>> {
       
       return submission;
     } catch (error) {
-      LogService.instance.error('Error creating submission: $error');
+      LogService.instance.error('Error when creating submission: $error');
       rethrow;
     }
   }

@@ -31,12 +31,24 @@ class Submission {
     );
   }
 
+  Document toDocument() {
+    return Document(
+      $id: id,
+      data: toJson(),  // Use toJson() to maintain consistency
+      $collectionId: 'photojam-collection-submission', // Updated to match actual collection ID
+      $databaseId: 'default',
+      $createdAt: dateCreation.toIso8601String(),
+      $updatedAt: dateUpdated.toIso8601String(),
+      $permissions: []
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'user_id': userId,
     'date_creation': dateCreation.toIso8601String(),
     'photos': photos,
-    'jam': jamId,
-    'comment': comment,
+    'jam': {'\$id': jamId},  // Updated to match the structure expected by Appwrite
+    'comment': comment ?? '',  // Ensure comment is never null
     'date_updated': dateUpdated.toIso8601String(),
   };
 }

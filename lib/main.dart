@@ -11,19 +11,17 @@ import 'package:photojam_app/app.dart';
 import 'package:photojam_app/features/splashscreen.dart';
 import 'package:uni_links/uni_links.dart';
 
-
-
 void main() async {
   LogService.instance.info("App started");
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   runApp(
     const ProviderScope(
       child: MyApp(),
     ),
-  ); 
+  );
 }
 
 class MyApp extends ConsumerStatefulWidget {
@@ -40,6 +38,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   void initState() {
     super.initState();
     _initializeDeepLinks();
+    LogService.instance.info("=== Starting Authentication Flow ===");
     // Initialize auth state
     ref.read(authStateProvider.notifier).checkAuthStatus();
   }
@@ -69,7 +68,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     if (uri.path.contains('/verify-membership')) {
       final params = uri.queryParameters;
       final requiredParams = ['teamId', 'membershipId', 'userId', 'secret'];
-      
+
       if (requiredParams.every(params.containsKey)) {
         try {
           // After verification, refresh the role
@@ -94,20 +93,20 @@ class _MyAppState extends ConsumerState<MyApp> {
       title: 'PhotoJam',
       theme: getLightTheme(),
       darkTheme: getDarkTheme(),
-      themeMode: ThemeMode.system, 
+      themeMode: ThemeMode.system,
       home: _showSplash
           ? SplashScreen(onAnimationComplete: _onSplashComplete)
           : Consumer(
               builder: (context, ref, _) {
                 final authState = ref.watch(authStateProvider);
-                
+
                 return authState.when(
                   initial: () => const LoadingScreen(),
                   loading: () => const LoadingScreen(),
                   authenticated: (user) {
                     // Watch the user role using our new provider
                     final roleAsync = ref.watch(userRoleProvider);
-                    
+
                     return roleAsync.when(
                       data: (role) => App(userRole: role),
                       loading: () => const LoadingScreen(),

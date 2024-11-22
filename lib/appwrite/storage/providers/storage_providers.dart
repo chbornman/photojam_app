@@ -1,4 +1,3 @@
-// lib/appwrite/storage/providers/storage_providers.dart
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/appwrite_config.dart';
@@ -33,6 +32,16 @@ class StorageNotifier extends StateNotifier<AsyncValue<List<StorageFile>>> {
     loadFiles();
   }
 
+  // New method to get max file size based on bucket type
+  int getMaxFileSizeForBucket() {
+    switch (bucket) {
+      case StorageBucket.photos:
+        return 50 * 1024 * 1024; // 50MB in bytes
+      case StorageBucket.lessons:
+        return 20 * 1024 * 1024; // 20MB in bytes
+    }
+  }
+
   Future<void> loadFiles() async {
     try {
       state = const AsyncValue.loading();
@@ -45,6 +54,11 @@ class StorageNotifier extends StateNotifier<AsyncValue<List<StorageFile>>> {
 
   Future<StorageFile> uploadFile(String fileName, Uint8List bytes) async {
     try {
+      // Add file size validation
+      if (bytes.length > getMaxFileSizeForBucket()) {
+        throw Exception('File size exceeds maximum allowed size for this bucket type');
+      }
+
       final file = await _repository.uploadFile(
         bucket: bucket,
         fileName: fileName,
@@ -80,12 +94,12 @@ class StorageNotifier extends StateNotifier<AsyncValue<List<StorageFile>>> {
     );
   }
 
-  Future<String> getFilePreviewUrl(String fileId, {int? width, int? height}) async {
+  Future<String> getFilePreviewUrl(String fileId) async {
     return await _repository.getFilePreviewUrl(
       bucket: bucket,
       fileId: fileId,
-      width: width,
-      height: height,
+      width: 2000,  // Default width for photos
+      height: 2000, // Default height for photos
     );
   }
 }

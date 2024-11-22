@@ -4,11 +4,13 @@ import 'package:photojam_app/appwrite/storage/models/file_model.dart';
 import 'package:photojam_app/appwrite/storage/models/storage_types.dart';
 import 'package:photojam_app/appwrite/storage/repositories/storage_repository.dart';
 
-
 class AppwriteStorageRepository with StorageHelper implements StorageRepository {
   final Storage _storage;
 
   AppwriteStorageRepository(this._storage);
+
+  @override
+  Storage get storage => _storage;  // Add this getter
 
   @override
   Future<StorageFile> uploadFile({
@@ -84,11 +86,11 @@ class AppwriteStorageRepository with StorageHelper implements StorageRepository 
   Future<String> getFilePreviewUrl({
     required StorageBucket bucket,
     required String fileId,
-    int? width,
-    int? height,
-  }) async {  // Made async and added await
+    required int width,
+    required int height,
+  }) async {
     try {
-      final url = await _storage.getFilePreview(
+      final url = _storage.getFilePreview(
         bucketId: bucket.id,
         fileId: fileId,
         width: width,
@@ -108,7 +110,6 @@ class AppwriteStorageRepository with StorageHelper implements StorageRepository 
   }
 }
 
-// Add StorageHelper mixin to the same file or move to storage_helper.dart
 mixin StorageHelper {
   bool isValidFileForBucket(StorageBucket bucket, String fileName) {
     final extension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));

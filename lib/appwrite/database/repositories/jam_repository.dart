@@ -122,33 +122,32 @@ class JamRepository {
     }
   }
 
-  Future<List<Jam>> getAllJams({
-    bool activeOnly = true,
-    DateTime? after,
-  }) async {
-    try {
-      final queries = <String>[];
+Future<List<Jam>> getAllJams({
+  bool activeOnly = true,
+  DateTime? after,
+}) async {
+  try {
+    final queries = <String>[];
 
-      if (activeOnly) {
-        queries.add('equal("is_active", true)');
-      }
-
-      if (after != null) {
-        queries
-            .add('greaterThan("event_datetime", "${after.toIso8601String()}")');
-      }
-
-      final docs = await _db.listDocuments(
-        collectionId,
-        queries: queries,
-      );
-
-      return docs.documents.map((doc) => Jam.fromDocument(doc)).toList();
-    } catch (e) {
-      LogService.instance.error('Error fetching all jams: $e');
-      rethrow;
+    if (activeOnly) {
+      queries.add(Query.equal('is_active', true));
     }
+
+    if (after != null) {
+      queries.add(Query.greaterThan('event_datetime', after.toIso8601String()));
+    }
+
+    final docs = await _db.listDocuments(
+      collectionId,
+      queries: queries,
+    );
+
+    return docs.documents.map((doc) => Jam.fromDocument(doc)).toList();
+  } catch (e) {
+    LogService.instance.error('Error fetching all jams: $e');
+    rethrow;
   }
+}
 
   Future<void> addSubmissionToJam(String jamId, String submissionId) async {
     try {
