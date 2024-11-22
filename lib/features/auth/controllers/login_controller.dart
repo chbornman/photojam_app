@@ -1,4 +1,3 @@
-// login_controller.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:appwrite/appwrite.dart';
@@ -11,6 +10,7 @@ class LoginController extends ChangeNotifier {
   bool _isLoading = false;
   String? _emailError;
   String? _passwordError;
+  bool _mounted = true;
 
   LoginController(this._ref);
 
@@ -18,7 +18,14 @@ class LoginController extends ChangeNotifier {
   String? get emailError => _emailError;
   String? get passwordError => _passwordError;
 
+  @override
+  void dispose() {
+    _mounted = false;
+    super.dispose();
+  }
+
   void _clearErrors() {
+    if (!_mounted) return;
     _emailError = null;
     _passwordError = null;
     notifyListeners();
@@ -28,6 +35,7 @@ class LoginController extends ChangeNotifier {
     required String email,
     required String password,
   }) {
+    if (!_mounted) return false;
     bool isValid = true;
     _clearErrors();
 
@@ -52,7 +60,7 @@ class LoginController extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    if (_isLoading) return;
+    if (_isLoading || !_mounted) return;
 
     if (!_validateInputs(
       email: email,
@@ -62,7 +70,7 @@ class LoginController extends ChangeNotifier {
     }
 
     _isLoading = true;
-    notifyListeners();
+    if (_mounted) notifyListeners();
 
     try {
       LogService.instance.info("Attempting to sign in with email: $email");
@@ -73,15 +81,17 @@ class LoginController extends ChangeNotifier {
       // Use the state notifier to handle sign in
       await authStateNotifier.signIn(email, password);
 
-      // Check the current state after sign in attempt
-      final currentState = _ref.read(authStateProvider);
-
-      currentState.maybeWhen(
-        error: (message) {
-          throw LoginException(message);
-        },
-        orElse: () {}, // Do nothing for other states
-      );
+      // Only check the current state if still mounted
+      if (_mounted) {
+        final currentState = _ref.read(authStateProvider);
+        
+        currentState.maybeWhen(
+          error: (message) {
+            throw LoginException(message);
+          },
+          orElse: () {}, // Do nothing for other states
+        );
+      }
     } on AppwriteException catch (e) {
       LogService.instance.error("Appwrite login failed: ${e.message}");
       throw LoginException(e.message.toString());
@@ -92,8 +102,10 @@ class LoginController extends ChangeNotifier {
       }
       throw const LoginException('An unexpected error occurred');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (_mounted) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 }
