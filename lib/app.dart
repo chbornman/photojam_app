@@ -49,7 +49,7 @@ class _AppState extends ConsumerState<App> {
     final isFacilitator = userRole == 'facilitator' || isAdmin;
 
     return [
-      EmptyPage(), //const JamPage(),
+      const JamPage(),
       EmptyPage(), //const JourneyPage(),
       EmptyPage(), //const PhotosPage(),
       EmptyPage(), //const AccountPage(),
@@ -86,6 +86,7 @@ class _AppState extends ConsumerState<App> {
   Widget build(BuildContext context) {
     final isAdmin = widget.userRole == 'admin';
     final isFacilitator = widget.userRole == 'facilitator' || isAdmin;
+    final theme = Theme.of(context);
 
     // Watch auth state to handle sign out and session expiry
     ref.listen(authStateProvider, (previous, current) {
@@ -120,7 +121,7 @@ class _AppState extends ConsumerState<App> {
                 IconButton(
                   icon: Icon(
                     Icons.logout,
-                    color: Theme.of(context).colorScheme.onPrimary,
+                    color: theme.colorScheme.onPrimary,
                   ),
                   onPressed: _signOut,
                   tooltip: 'Sign Out',
@@ -136,46 +137,53 @@ class _AppState extends ConsumerState<App> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.shifting,
         currentIndex: _currentIndex,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor:
-            Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+        selectedItemColor: theme.colorScheme.onPrimary,
+        unselectedItemColor: theme.colorScheme.onPrimary.withOpacity(0.7),
+        showSelectedLabels: true,
         onTap: (index) {
           if (mounted) {
             setState(() => _currentIndex = index);
           }
         },
         items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.camera_alt),
             label: 'Jams',
+            backgroundColor: theme.colorScheme.primary,
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.book),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.book),
             label: 'Journeys',
+            backgroundColor: theme.colorScheme.primary,
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.subscriptions),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.subscriptions),
             label: 'Photos',
+            backgroundColor: theme.colorScheme.primary,
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.account_circle),
             label: 'Account',
+            backgroundColor: theme.colorScheme.primary,
           ),
           if (isFacilitator)
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.group),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.group),
               label: 'Facilitate',
+              backgroundColor: theme.colorScheme.primary,
             ),
           if (isAdmin)
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.admin_panel_settings),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.admin_panel_settings),
               label: 'Admin',
+              backgroundColor: theme.colorScheme.primary,
             ),
         ],
       ),
     );
   }
 }
+
 
 String getTitleForIndex(int index) {
   switch (index) {

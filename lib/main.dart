@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
+import 'package:photojam_app/config/app_theme.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/error_screen.dart';
 import 'package:photojam_app/features/auth/screens/login_screen.dart';
@@ -91,10 +92,9 @@ class _MyAppState extends ConsumerState<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'PhotoJam',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
+      theme: getLightTheme(),
+      darkTheme: getDarkTheme(),
+      themeMode: ThemeMode.system, 
       home: _showSplash
           ? SplashScreen(onAnimationComplete: _onSplashComplete)
           : Consumer(
