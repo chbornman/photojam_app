@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
-import 'package:photojam_app/appwrite/auth/providers/auth_providers.dart';
 import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
 import 'package:photojam_app/core/services/log_service.dart';
-import 'package:photojam_app/empty_page.dart';
 import 'package:photojam_app/error_screen.dart';
 import 'package:photojam_app/features/auth/screens/login_screen.dart';
 import 'package:photojam_app/app.dart';
@@ -73,7 +71,6 @@ class _MyAppState extends ConsumerState<MyApp> {
       
       if (requiredParams.every(params.containsKey)) {
         try {
-          final authRepository = ref.read(authRepositoryProvider);
           // After verification, refresh the role
           ref.invalidate(userRoleProvider);
           // Refresh auth state

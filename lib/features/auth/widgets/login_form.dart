@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/empty_page.dart';
 import 'package:photojam_app/features/auth/controllers/login_controller.dart';
 import 'package:photojam_app/features/auth/screens/register_screen.dart';
 import 'package:photojam_app/core/widgets/loading_overlay.dart';

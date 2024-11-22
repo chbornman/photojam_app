@@ -2,10 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:appwrite/appwrite.dart';
-import 'package:photojam_app/appwrite/auth/models/auth_state.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/features/auth/exceptions/login_exception.dart';
-import 'package:photojam_app/appwrite/auth/providers/auth_providers.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 
 class LoginController extends ChangeNotifier {
