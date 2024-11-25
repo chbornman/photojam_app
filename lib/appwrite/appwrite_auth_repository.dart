@@ -8,8 +8,9 @@ import 'package:photojam_app/core/services/log_service.dart';
 class AppwriteAuthRepository implements AuthRepository {
   final Account _account;
   final Teams _teams;
+  final Client _client;  // Add this
 
-  AppwriteAuthRepository(this._account, this._teams);
+  AppwriteAuthRepository(this._account, this._teams, this._client);  // Update constructor
 
   @override
   Future<AppUser> createAccount({
@@ -31,14 +32,19 @@ class AppwriteAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AppUser> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<AppUser> signIn(
+      {required String email, required String password}) async {
     try {
-      await _account.createEmailPasswordSession(
+      // Create session and store it
+      final session = await _account.createEmailPasswordSession(
           email: email, password: password);
+
+      // Get user details
       final user = await _account.get();
+
+      // Set the session on the client
+      _client.setSession(session.$id); // Add this line
+
       return AppUser.fromAccount(user);
     } catch (e) {
       throw _handleAuthError(e);
@@ -207,7 +213,7 @@ class AppwriteAuthRepository implements AuthRepository {
     }
   }
 
-    @override
+  @override
   Future<Session> getCurrentSession() async {
     try {
       final session = await _account.getSession(sessionId: 'current');
@@ -216,5 +222,4 @@ class AppwriteAuthRepository implements AuthRepository {
       throw _handleAuthError(e);
     }
   }
-
 }

@@ -27,21 +27,29 @@ class Jam {
     required this.isActive,
   });
 
-  factory Jam.fromDocument(Document doc) {
-    return Jam(
-      id: doc.$id,
-      submissionIds: List<String>.from(doc.data['submission'] ?? []),
-      title: doc.data['title'],
-      eventDatetime: DateTime.parse(doc.data['event_datetime']),
-      zoomLink: doc.data['zoom_link'],
-      facilitatorId: doc.data['facilitator_id'],
-      selectedPhotos: List<String>.from(doc.data['selected_photos'] ?? []),
-      lessonId: doc.data['lesson']?['\$id'],
-      dateCreated: DateTime.parse(doc.data['date_created']),
-      dateUpdated: DateTime.parse(doc.data['date_updated']),
-      isActive: doc.data['is_active'],
-    );
-  }
+factory Jam.fromDocument(Document doc) {
+  final data = doc.data;
+
+  return Jam(
+    id: doc.$id,
+    submissionIds: data['submission'] is List
+        ? List<String>.from(data['submission'].map((s) => s['\$id']))
+        : [],
+    title: data['title'] ?? '',
+    eventDatetime: DateTime.parse(data['event_datetime'] ?? DateTime.now().toIso8601String()),
+    zoomLink: data['zoom_link'] ?? '',
+    facilitatorId: data['facilitator_id'],
+    selectedPhotos: data['selected_photos'] is List
+        ? List<String>.from(data['selected_photos'])
+        : [],
+    lessonId: data['lesson'] is Map
+        ? data['lesson']['\$id']
+        : data['lesson'] as String?,
+    dateCreated: DateTime.parse(data['date_created'] ?? DateTime.now().toIso8601String()),
+    dateUpdated: DateTime.parse(data['date_updated'] ?? DateTime.now().toIso8601String()),
+    isActive: data['is_active'] ?? false,
+  );
+}
 
   Map<String, dynamic> toJson() => {
     'submission': submissionIds,

@@ -1,0 +1,160 @@
+.
+├── app.dart
+├── appwrite
+│   ├── appwrite_auth_repository.dart
+│   ├── appwrite_config.dart
+│   ├── appwrite_database_repository.dart
+│   ├── appwrite_storage_repository.dart
+│   ├── auth
+│   │   ├── models
+│   │   │   ├── auth_state.dart
+│   │   │   ├── auth_state.freezed.dart
+│   │   │   └── user_model.dart
+│   │   ├── providers
+│   │   │   ├── auth_providers.dart
+│   │   │   ├── auth_state_provider.dart
+│   │   │   ├── membership_providers.dart
+│   │   │   └── user_role_provider.dart
+│   │   └── repositories
+│   │       └── auth_repository.dart
+│   ├── database
+│   │   ├── models
+│   │   │   ├── jam_model.dart
+│   │   │   ├── journey_model.dart
+│   │   │   ├── lesson_model.dart
+│   │   │   └── submission_model.dart
+│   │   ├── providers
+│   │   │   ├── jam_provider.dart
+│   │   │   ├── journey_provider.dart
+│   │   │   ├── lesson_provider.dart
+│   │   │   └── submission_provider.dart
+│   │   └── repositories
+│   │       ├── base_repository.dart
+│   │       ├── jam_repository.dart
+│   │       ├── journey_repository.dart
+│   │       ├── lesson_repository.dart
+│   │       └── submission_repository.dart
+│   └── storage
+│       ├── models
+│       │   ├── file_model.dart
+│       │   └── storage_types.dart
+│       ├── providers
+│       │   └── storage_providers.dart
+│       └── repositories
+│           └── storage_repository.dart
+├── config
+│   ├── app_constants.dart
+│   └── app_theme.dart
+├── core
+│   ├── services
+│   │   ├── log_service.dart
+│   │   └── photo_cache_service.dart
+│   ├── utils
+│   │   ├── deep_link_handler.dart
+│   │   ├── markdown_utilities.dart
+│   │   ├── markdownviewer.dart
+│   │   └── url_launcher.dart
+│   └── widgets
+│       ├── loading_overlay.dart
+│       ├── standard_appbar.dart
+│       ├── standard_button.dart
+│       ├── standard_card.dart
+│       ├── standard_dialog.dart
+│       └── standard_submissioncard.dart
+├── dialogs
+│   ├── create_jam_dialog.dart
+│   ├── create_journey_dialog.dart
+│   ├── delete_jam_dialog.dart
+│   ├── delete_journey_dialog.dart
+│   ├── error_dialog.dart
+│   ├── signup_journey_dialog.dart
+│   ├── update_jam_dialog.dart
+│   └── update_journey_dialog.dart
+├── empty_page.dart
+├── error_screen.dart
+├── features
+│   ├── account
+│   │   ├── controllers
+│   │   │   └── account_controller.dart
+│   │   ├── models
+│   │   │   ├── account_content.dart
+│   │   │   └── update_dialogs.dart
+│   │   ├── screens
+│   │   │   ├── account_screen.dart
+│   │   │   ├── facilitator_signup_screen.dart
+│   │   │   └── membership_signup_screen.dart
+│   │   └── widgets
+│   │       ├── account_management.dart
+│   │       ├── role_based_actions.dart
+│   │       └── user_info.dart
+│   ├── admin
+│   │   ├── screens
+│   │   │   ├── admin_screen.dart
+│   │   │   ├── content_management_screen.dart
+│   │   │   ├── jam_calendar_page.dart
+│   │   │   ├── jam_event.dart
+│   │   │   ├── jam_event_card.dart
+│   │   │   ├── journey_lessons_edit.dart
+│   │   │   ├── select_facilitator_dialog.dart
+│   │   │   ├── system_logs.dart
+│   │   │   └── user_management_screen.dart
+│   │   └── widgets
+│   ├── auth
+│   │   ├── controllers
+│   │   │   ├── login_controller.dart
+│   │   │   └── register_controller.dart
+│   │   ├── exceptions
+│   │   │   ├── login_exception.dart
+│   │   │   └── register_exception.dart
+│   │   ├── models
+│   │   ├── screens
+│   │   │   ├── login_screen.dart
+│   │   │   └── register_screen.dart
+│   │   └── widgets
+│   │       ├── login_form.dart
+│   │       └── register_form.dart
+│   ├── facilitator
+│   │   ├── controllers
+│   │   ├── models
+│   │   ├── screens
+│   │   │   ├── facilitator_screen.dart
+│   │   │   ├── jam_selection_dialog.dart
+│   │   │   └── photo_selection_screen.dart
+│   │   └── widgets
+│   ├── jams
+│   │   ├── controllers
+│   │   ├── models
+│   │   │   └── photo_submission.dart
+│   │   ├── screens
+│   │   │   ├── jamdetails_page.dart
+│   │   │   ├── jams_page.dart
+│   │   │   └── jamsignup_page.dart
+│   │   ├── services
+│   │   │   └── photo_upload_service.dart
+│   │   └── widgets
+│   │       ├── jam_dropdown.dart
+│   │       └── photo_selector.dart
+│   ├── journeys
+│   │   ├── controllers
+│   │   ├── screens
+│   │   │   └── journey_page.dart
+│   │   └── widgets
+│   │       ├── journey_list.dart
+│   │       ├── journey_tile.dart
+│   │       └── journeycontainer.dart
+│   ├── photos
+│   │   ├── controllers
+│   │   │   └── photos_controller.dart
+│   │   ├── models
+│   │   ├── screens
+│   │   │   ├── photos_content.dart
+│   │   │   ├── photos_screen.dart
+│   │   │   └── photoscroll_screen.dart
+│   │   └── widgets
+│   │       ├── submission_item.dart
+│   │       └── submission_list.dart
+│   └── splashscreen.dart
+├── main.dart
+└── tree.txt
+
+55 directories, 103 files
