@@ -50,11 +50,11 @@ class _AppState extends ConsumerState<App> {
 
     return [
       const JamPage(),
-      EmptyPage(), //const JourneyPage(),
-      EmptyPage(), //const PhotosPage(),
+      const JourneyPage(),
+      const PhotosPage(),
       EmptyPage(), //const AccountPage(),
       if (isFacilitator) const FacilitatorPage(),
-      EmptyPage(), //if (isAdmin) const AdminPage(),
+      if (isAdmin) const AdminPage(),
     ];
   }
 

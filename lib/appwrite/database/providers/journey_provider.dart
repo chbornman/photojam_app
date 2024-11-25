@@ -125,4 +125,6 @@ class JourneysNotifier extends StateNotifier<AsyncValue<List<Journey>>> {
       rethrow;
     }
   }
+
+  
 }
