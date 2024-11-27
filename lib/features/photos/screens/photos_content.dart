@@ -1,61 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photojam_app/appwrite/database/models/submission_model.dart';
 import 'package:photojam_app/features/photos/controllers/photos_controller.dart';
+import 'package:photojam_app/features/photos/screens/photos_screen.dart';
 import 'package:photojam_app/features/photos/widgets/submission_list.dart';
 
-class PhotosContent extends StatelessWidget {
-  const PhotosContent({super.key});
+class PhotosContent extends ConsumerWidget {
+  final List<Submission> submissions;
+
+  const PhotosContent({
+    super.key,
+    required this.submissions,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Hi'),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.read(photosControllerProvider.notifier);
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      body: RefreshIndicator(
+        onRefresh: () => controller.fetchSubmissions(),
+        child: submissions.isEmpty
+          ? Center(
+              child: Text(
+                "No submitted photos yet!",
+                style: TextStyle(
+                  fontSize: 18.0,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            )
+          : SubmissionList(submissions: submissions),
       ),
     );
   }
+}
 
-  // @override
-  // Widget build(BuildContext context) {
-  //   final controller = context.watch<PhotosController>();
 
-  //   return Scaffold(
-  //     backgroundColor: Theme.of(context).colorScheme.surface,
-  //     body: RefreshIndicator(
-  //       onRefresh: controller.fetchSubmissions,
-  //       child: Builder(
-  //         builder: (context) {
-  //           if (controller.isLoading) {
-  //             return const Center(child: CircularProgressIndicator());
-  //           }
 
-  //           if (controller.error != null) {
-  //             return Center(
-  //               child: Text(
-  //                 controller.error!,
-  //                 style: TextStyle(
-  //                   fontSize: 18.0,
-  //                   color: Theme.of(context).colorScheme.error,
-  //                 ),
-  //               ),
-  //             );
-  //           }
+class PhotosPage extends ConsumerWidget {
+  const PhotosPage({super.key});
 
-  //           if (!controller.hasSubmissions) {
-  //             return Center(
-  //               child: Text(
-  //                 "No submitted photos yet!",
-  //                 style: TextStyle(
-  //                   fontSize: 18.0,
-  //                   color: Theme.of(context).colorScheme.onSurface,
-  //                 ),
-  //               ),
-  //             );
-  //           }
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final photosState = ref.watch(photosControllerProvider);
 
-  //           return SubmissionList(submissions: controller.submissions);
-  //         },
-  //       ),
-  //     ),
-  //   );
-  // }
+    return photosState.when(
+      data: (submissions) => PhotosContent(submissions: submissions),
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stackTrace) => Scaffold(
+        body: Center(
+          child: Text(
+            error.toString(),
+            style: TextStyle(
+              fontSize: 18.0,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

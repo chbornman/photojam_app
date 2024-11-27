@@ -51,4 +51,25 @@ class Submission {
     'comment': comment ?? '',  // Ensure comment is never null
     'date_updated': dateUpdated.toIso8601String(),
   };
+
+    Submission copyWith({
+    String? id,
+    String? userId,
+    DateTime? dateCreation,
+    List<String>? photos,
+    String? jamId,
+    String? comment,
+    DateTime? dateUpdated,
+  }) {
+    return Submission(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      dateCreation: dateCreation ?? this.dateCreation,
+      photos: photos ?? this.photos,
+      jamId: jamId ?? this.jamId,
+      comment: comment ?? this.comment,
+      dateUpdated: dateUpdated ?? this.dateUpdated,
+    );
+  }
+
 }

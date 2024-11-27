@@ -1,140 +1,108 @@
-// import 'dart:typed_data';
-// import 'package:flutter/material.dart';
-// import 'package:photojam_app/appwrite/database/models/submission_model.dart';
-// import 'package:photojam_app/core/services/log_service.dart';
-// import 'package:photojam_app/core/services/photo_cache_service.dart';
+import 'dart:typed_data';
 
-// class PhotosController extends ChangeNotifier {
-//   final AuthAPI _authAPI;
-//   final DatabaseAPI _databaseAPI;
-//   final StorageAPI _storageAPI;
-//   final PhotoCacheService _cacheService;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photojam_app/appwrite/auth/providers/auth_providers.dart';
+import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
+import 'package:photojam_app/appwrite/database/models/submission_model.dart';
+import 'package:photojam_app/appwrite/database/providers/submission_provider.dart';
+import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
+import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/core/services/photo_cache_service.dart';
 
-//   List<Submission> _submissions = [];
-//   bool _isLoading = true;
-//   String? _error;
-//   bool _disposed = false;
+class PhotosController extends StateNotifier<AsyncValue<List<Submission>>> {
+  final Ref ref;
+  final PhotoCacheService _cacheService;
 
-//   PhotosController({
-//     required AuthAPI authAPI,
-//     required DatabaseAPI databaseAPI,
-//     required Storga storageAPI,
-//     required PhotoCacheService cacheService,
-//   })  : _authAPI = authAPI,
-//         _databaseAPI = databaseAPI,
-//         _storageAPI = storageAPI,
-//         _cacheService = cacheService {
-//     fetchSubmissions();
-//   }
+  PhotosController({
+    required this.ref,
+    required PhotoCacheService cacheService,
+  })  : _cacheService = cacheService,
+        super(const AsyncValue.loading());
 
-//   bool get isLoading => _isLoading;
-//   List<Submission> get submissions => _submissions;
-//   String? get error => _error;
-//   bool get hasSubmissions => _submissions.isNotEmpty;
+  Future<void> fetchSubmissions() async {
+    try {
+      state = const AsyncValue.loading();
 
-//   @override
-//   void dispose() {
-//     _disposed = true;
-//     super.dispose();
-//   }
+      // Check authentication
+      final authState = ref.read(authStateProvider);
+      final user = authState.whenOrNull(
+        authenticated: (user) => user,
+      );
 
-//   void _setLoading(bool loading) {
-//     if (_disposed) return;
-//     _isLoading = loading;
-//     notifyListeners();
-//   }
+      if (user == null) {
+        throw Exception("User is not authenticated");
+      }
 
-//   void _setError(String? error) {
-//     if (_disposed) return;
-//     _error = error;
-//     notifyListeners();
-//   }
+      // Get current session
+      final session = await ref
+          .read(authRepositoryProvider)
+          .getCurrentSession();
 
-//   Future<void> fetchSubmissions() async {
-//     if (_disposed) return;
-    
-//     try {
-//       _setLoading(true);
-//       _setError(null);
-
-//       if (!_authAPI.isAuthenticated) {
-//         throw Exception("User is not authenticated");
-//       }
-
-//       final userId = _authAPI.userId;
-//       if (userId == null) {
-//         throw Exception("User ID not available");
-//       }
-
-//       final sessionId = await _authAPI.getSessionId();
-//       if (sessionId == null) {
-//         throw Exception("No valid session found");
-//       }
-
-//       if (_disposed) return;
-
-//       final response = await _databaseAPI.getSubmissionsByUser(userId: userId);
-//       if (_disposed) return;
-
-//       final submissions = await _processSubmissions(response, sessionId);
-//       if (_disposed) return;
-
-//       _submissions = submissions;
-//       _setLoading(false);
-//     } catch (e) {
-//       LogService.instance.error('Error fetching submissions: $e');
-//       _setError('Failed to load photos');
-//       _setLoading(false);
-//     }
-//   }
-
-//   Future<List<Submission>> _processSubmissions(
-//     dynamic response,
-//     String sessionId,
-//   ) async {
-//     List<Submission> submissions = [];
-
-//     for (var doc in response) {
-//       if (_disposed) break;
-
-//       try {
-//         final submission = await _processSubmission(doc, sessionId);
-//         if (submission != null) {
-//           submissions.add(submission);
-//         }
-//       } catch (e) {
-//         LogService.instance.error('Error processing submission: $e');
-//       }
-//     }
-
-//     submissions.sort((a, b) => b.dateCreation.compareTo(a.dateCreation));
-//     return submissions;
-//   }
-
-//   Future<Submission?> _processSubmission(
-//     dynamic doc,
-//     String sessionId,
-//   ) async {
-//     final photoUrls = List<String>.from(doc.data['photos'] ?? [])
-//         .take(3)
-//         .toList();
-    
-//     List<Uint8List?> photos = [];
-//     for (var photoUrl in photoUrls) {
-//       if (_disposed) return null;
+      // Use watch instead of read for the submissions provider
+      final submissionsProvider = ref.watch(userSubmissionsProvider(user.id));
       
-//       final imageData = await _cacheService.getImage(
-//         photoUrl,
-//         sessionId,
-//         () => _storageAPI.fetchAuthenticatedImage(photoUrl, sessionId),
-//       );
-//       photos.add(imageData);
-//     }
+      // Handle the AsyncValue state
+      final submissions = await submissionsProvider.when(
+        data: (submissions) => submissions,
+        loading: () => <Submission>[],
+        error: (error, stack) => throw error,
+      );
 
-//     return Submission(
-//       dateCreation: doc.data['date'] ?? 'Unknown Date',
-//       jamId: doc.data['jam']?['title'] ?? 'Untitled',
-//       photos: photos,
-//     );
-//   }
-// }
+      final processedSubmissions = 
+          await _processSubmissions(submissions, session.$id);
+
+      state = AsyncValue.data(processedSubmissions);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      LogService.instance.error('Error fetching submissions: $error');
+    }
+  }
+
+  Future<List<Submission>> _processSubmissions(
+    List<Submission> submissions,
+    String sessionId,
+  ) async {
+    List<Submission> processedSubmissions = [];
+
+    for (var submission in submissions) {
+      try {
+        final processedSubmission =
+            await _processSubmission(submission, sessionId);
+        if (processedSubmission != null) {
+          processedSubmissions.add(processedSubmission);
+        }
+      } catch (e) {
+        LogService.instance.error('Error processing submission: $e');
+      }
+    }
+
+    processedSubmissions.sort((a, b) => b.dateCreation.compareTo(a.dateCreation));
+    return processedSubmissions;
+  }
+
+  Future<Submission?> _processSubmission(
+    Submission submission,
+    String sessionId,
+  ) async {
+    final storageNotifier = ref.read(photoStorageProvider.notifier);
+    final photoUrls = submission.photos.take(3).toList();
+    
+    List<Uint8List?> photos = [];
+    for (var photoUrl in photoUrls) {
+      final imageData = await _cacheService.getImage(
+        photoUrl,
+        sessionId,
+        () => storageNotifier.downloadFile(photoUrl),
+      );
+      photos.add(imageData);
+    }
+
+    return submission.copyWith(
+      photos: photos.whereType<String>().toList(),
+    );
+  }
+
+  void refresh() {
+    fetchSubmissions();
+  }
+}
