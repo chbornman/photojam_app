@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:appwrite/models.dart';
 import 'package:intl/intl.dart';
+import 'package:photojam_app/appwrite/auth/role_utils.dart';
 import 'package:photojam_app/features/admin/screens/jam_event.dart';
 
 class JamEventCard extends StatelessWidget {
   final JamEvent event;
-  final bool isUserFacilitator;
-  final bool isUserAdmin;
+  final String userRole; // Changed to use single role string that comes from labels
   final String currentUserId;
-  final List<Membership> availableFacilitators;
+  final List<User> availableFacilitators; // Changed from Membership to User
   final Future<void> Function(String jamId, String facilitatorId)?
       onAssignFacilitator;
 
   const JamEventCard({
     super.key,
     required this.event,
-    required this.isUserFacilitator,
-    required this.isUserAdmin,
+    required this.userRole,
     required this.currentUserId,
     required this.availableFacilitators,
     this.onAssignFacilitator,
@@ -35,17 +34,26 @@ class JamEventCard extends StatelessWidget {
   }
 
   Widget _buildAssignButton(BuildContext context) {
-    if (!isUserFacilitator && !isUserAdmin) return const SizedBox.shrink();
+    // Use RoleUtils to check permissions
+    final labels = [userRole];
+    final isAdmin = RoleUtils.isAdmin(labels);
+    final isFacilitator = RoleUtils.isFacilitator(labels);
 
-    if (isUserAdmin) {
+    if (!isFacilitator && !isAdmin) return const SizedBox.shrink();
+
+    if (isAdmin) {
       return PopupMenuButton<String>(
         icon: const Icon(Icons.person_add),
         tooltip: 'Assign Facilitator',
         itemBuilder: (BuildContext context) => [
-          ...availableFacilitators.map((member) => PopupMenuItem<String>(
-                value: member.userId,
-                child: Text(member.userName),
-              )),
+          ...availableFacilitators
+              .where((user) => 
+                  user.labels.contains('facilitator') || 
+                  user.labels.contains('admin'))
+              .map((user) => PopupMenuItem<String>(
+                    value: user.$id,
+                    child: Text(user.name),
+                  )),
         ],
         onSelected: (String facilitatorId) {
           onAssignFacilitator?.call(event.id, facilitatorId);
@@ -53,7 +61,7 @@ class JamEventCard extends StatelessWidget {
       );
     }
 
-    if (isUserFacilitator) {
+    if (isFacilitator) {
       return IconButton(
         icon: const Icon(Icons.person_add),
         tooltip: 'Sign up as Facilitator',
@@ -108,23 +116,26 @@ class JamEventCard extends StatelessWidget {
 
   String _getFacilitatorName(String facilitatorId) {
     final facilitator = availableFacilitators.firstWhere(
-      (m) => m.userId == facilitatorId,
-      orElse: () => Membership(
+      (user) => user.$id == facilitatorId,
+      orElse: () => User(
         $id: 'unknown',
         $createdAt: '',
         $updatedAt: '',
-        userId: facilitatorId,
-        userName: 'Unknown',
-        userEmail: 'unknown@example.com',
-        teamId: '',
-        teamName: '',
-        invited: '',
-        joined: '',
-        confirm: false,
-        roles: const [],
+        name: 'Unknown',
+        email: 'unknown@example.com',
+        phone: '',
+        status: true,
+        emailVerification: false,
+        phoneVerification: false,
+        prefs: Preferences(data: {}),
+        labels: [], 
+        registration: '',
+        passwordUpdate: '',
         mfa: false,
+        targets: [],
+        accessedAt: '',
       ),
     );
-    return facilitator.userName;
+    return facilitator.name;
   }
 }
