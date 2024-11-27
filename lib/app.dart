@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photojam_app/appwrite/auth/role_utils.dart';
 import 'package:photojam_app/empty_page.dart';
 import 'package:photojam_app/features/auth/screens/login_screen.dart';
 import 'package:photojam_app/features/facilitator/screens/facilitator_screen.dart';
@@ -33,8 +34,10 @@ class _AppState extends ConsumerState<App> {
   }
 
   void _validateAccess() {
-    final isAdmin = widget.userRole == 'admin';
-    final isFacilitator = widget.userRole == 'facilitator' || isAdmin;
+    // Use RoleUtils to check permissions
+    final labels = [widget.userRole]; // Convert role to list for RoleUtils
+    final isAdmin = RoleUtils.isAdmin(labels);
+    final isFacilitator = RoleUtils.isFacilitator(labels);
 
     // If current index is for admin/facilitator pages but user lost permission,
     // redirect to home
@@ -45,8 +48,10 @@ class _AppState extends ConsumerState<App> {
   }
 
   List<Widget> _getScreens(String userRole) {
-    final isAdmin = userRole == 'admin';
-    final isFacilitator = userRole == 'facilitator' || isAdmin;
+    // Use RoleUtils to check permissions
+    final labels = [userRole]; // Convert role to list for RoleUtils
+    final isAdmin = RoleUtils.isAdmin(labels);
+    final isFacilitator = RoleUtils.isFacilitator(labels);
 
     return [
       const JamPage(),
@@ -84,15 +89,16 @@ class _AppState extends ConsumerState<App> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = widget.userRole == 'admin';
-    final isFacilitator = widget.userRole == 'facilitator' || isAdmin;
+    // Use RoleUtils to check permissions
+    final labels = [widget.userRole]; // Convert role to list for RoleUtils
+    final isAdmin = RoleUtils.isAdmin(labels);
+    final isFacilitator = RoleUtils.isFacilitator(labels);
     final theme = Theme.of(context);
 
     // Watch auth state to handle sign out and session expiry
     ref.listen(authStateProvider, (previous, current) {
       current.whenOrNull(
         unauthenticated: () {
-          // Updated to use MaterialPageRoute instead of named route
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => const LoginPage(),
@@ -183,7 +189,6 @@ class _AppState extends ConsumerState<App> {
     );
   }
 }
-
 
 String getTitleForIndex(int index) {
   switch (index) {

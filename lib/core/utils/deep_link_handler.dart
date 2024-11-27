@@ -48,7 +48,6 @@ class DeepLinkHandler {
             throw Exception('Membership verification is for a different user');
           }
           
-          // Verify the membership using Teams functionality from auth repository
           await ref.read(authStateProvider.notifier).checkAuthStatus();
           
           // Invalidate the user role provider to refresh the role

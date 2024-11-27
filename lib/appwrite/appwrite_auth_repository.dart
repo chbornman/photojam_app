@@ -39,7 +39,7 @@ class AppwriteAuthRepository implements AuthRepository {
   }) async {
     try {
       LogService.instance.info('Attempting sign in for email: $email');
-      
+
       final session = await _account.createEmailPasswordSession(
         email: email,
         password: password,
@@ -50,7 +50,7 @@ class AppwriteAuthRepository implements AuthRepository {
       LogService.instance.info('User details retrieved: ${user.$id}');
 
       _client.setSession(session.$id);
-      
+
       return AppUser.fromAccount(user);
     } catch (e) {
       LogService.instance.error('Sign in failed: $e');
@@ -89,9 +89,10 @@ class AppwriteAuthRepository implements AuthRepository {
       LogService.instance.info('Fetching user role from labels');
       final user = await _account.get();
       final labels = user.labels;
-      
+
       LogService.instance.info('User labels: $labels');
 
+      // Check labels in order of hierarchy
       if (labels.contains('admin')) {
         LogService.instance.info('User has admin role');
         return 'admin';
@@ -103,10 +104,12 @@ class AppwriteAuthRepository implements AuthRepository {
         return 'member';
       }
 
-      LogService.instance.info('No role label found, defaulting to nonmember');
+      LogService.instance
+          .info('No matching role label found, defaulting to nonmember');
       return 'nonmember';
     } catch (e) {
-      LogService.instance.info('Error fetching role, defaulting to nonmember: $e');
+      LogService.instance
+          .error('Error getting user role, defaulting to nonmember: $e');
       return 'nonmember';
     }
   }

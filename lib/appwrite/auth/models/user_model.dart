@@ -9,6 +9,7 @@ class AppUser {
   final DateTime createdAt;
   final DateTime updatedAt;
   final Preferences prefs;
+  final List<String> labels; // Add this
 
   AppUser({
     required this.id,
@@ -18,6 +19,7 @@ class AppUser {
     required this.createdAt,
     required this.updatedAt,
     required this.prefs,
+    required this.labels,
   });
 
   factory AppUser.fromAccount(User user) {
@@ -29,36 +31,7 @@ class AppUser {
       createdAt: DateTime.parse(user.$createdAt),
       updatedAt: DateTime.parse(user.$updatedAt),
       prefs: user.prefs,
+      labels: List<String>.from(user.labels),
     );
-  }
-
-  // Helper method to create a copy with updated fields
-  AppUser copyWith({
-    String? name,
-    Preferences? prefs,
-    bool? emailVerification,
-  }) {
-    return AppUser(
-      id: id,
-      email: email,
-      name: name ?? this.name,
-      emailVerification: emailVerification ?? this.emailVerification,
-      createdAt: createdAt,
-      updatedAt: updatedAt,
-      prefs: prefs ?? this.prefs,
-    );
-  }
-
-  // Convert to Map for storage or transmission
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'email': email,
-      'name': name,
-      'emailVerification': emailVerification,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-      'prefs': prefs.data, // Access the underlying Map from Preferences
-    };
   }
 }
