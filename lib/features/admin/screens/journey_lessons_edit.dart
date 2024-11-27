@@ -20,77 +20,109 @@ class JourneyLessonsEditPage extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<JourneyLessonsEditPage> createState() => _JourneyLessonsEditPageState();
+  ConsumerState<JourneyLessonsEditPage> createState() =>
+      _JourneyLessonsEditPageState();
 }
 
-class _JourneyLessonsEditPageState extends ConsumerState<JourneyLessonsEditPage> { // Change from JourneyPage  List<String> lessonTitles = [];
+class _JourneyLessonsEditPageState
+    extends ConsumerState<JourneyLessonsEditPage> {
   List<String> lessonTitles = [];
   List<String> lessonUrls = [];
-  bool isLoading = false;
+  bool isLoading = true;
   bool hasUnsavedChanges = false;
+  bool hasError = false;
+  String? errorMessage;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _loadLessons();
   }
 
   Future<void> _loadLessons() async {
-    setState(() => isLoading = true);
+    if (!mounted) return;
+
+    setState(() {
+      isLoading = true;
+      hasError = false;
+      errorMessage = null;
+    });
+
     try {
       LogService.instance
           .info("Loading lessons for journey: ${widget.journeyId}");
 
-      // Watch the journey provider
-      ref.watch(journeyByIdProvider(widget.journeyId)).when(data: (journey) {
-        if (journey == null) {
-          LogService.instance.error("Journey not found: ${widget.journeyId}");
-          throw Exception("Journey not found");
-        }
+      final journeyAsyncValue =
+          ref.watch(journeyByIdProvider(widget.journeyId));
 
-        List<String> lessonIds = journey.lessonIds;
-        List<String> titles = [];
+      journeyAsyncValue.when(
+        data: (journey) async {
+          if (journey == null) {
+            throw Exception("Journey not found");
+          }
 
-        // Watch lessons provider for each lesson
-        for (String lessonId in lessonIds) {
-          ref.watch(lessonByIdProvider(lessonId)).whenData((lesson) {
-            if (lesson != null) {
-              titles.add(lesson.title);
-            } else {
-              LogService.instance.error("Lesson not found: $lessonId");
-            }
-          });
-        }
+          List<String> titles = [];
+          List<String> urls = [];
 
-        if (mounted) {
+          // Create a list of Future<void> for each lesson load operation
+          final lessonFutures = journey.lessonIds.map((lessonId) async {
+            final lessonAsyncValue = ref.watch(lessonByIdProvider(lessonId));
+
+            lessonAsyncValue.when(
+              data: (lesson) {
+                if (lesson != null) {
+                  titles.add(lesson.title);
+                  urls.add(lessonId);
+                } else {
+                  LogService.instance.error("Lesson not found: $lessonId");
+                }
+              },
+              loading: () {}, // Handle loading state if needed
+              error: (error, stack) {
+                LogService.instance
+                    .error("Error loading lesson $lessonId: $error");
+              },
+            );
+          }).toList();
+
+          // Wait for all lessons to load
+          await Future.wait(lessonFutures);
+
+          if (mounted) {
+            setState(() {
+              lessonTitles = titles;
+              lessonUrls = urls;
+              isLoading = false;
+            });
+          }
+        },
+        loading: () => setState(() => isLoading = true),
+        error: (error, stack) {
+          LogService.instance.error("Error loading journey: $error");
           setState(() {
-            lessonTitles = titles;
-            lessonUrls = lessonIds;
+            hasError = true;
+            errorMessage = error.toString();
+            isLoading = false;
           });
-        }
-      }, loading: () {
-        LogService.instance.info("Loading journey data...");
-      }, error: (error, stack) {
-        LogService.instance.error("Error loading journey: $error\n$stack");
-        throw error;
-      });
-    } catch (e, stack) {
-      LogService.instance.error("Error loading lessons: $e\n$stack");
+        },
+      );
+    } catch (e) {
+      LogService.instance.error("Error loading lessons: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Error loading lessons: $e"),
-          backgroundColor: Colors.red,
-        ));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
+        setState(() {
+          hasError = true;
+          errorMessage = e.toString();
+          isLoading = false;
+        });
+        _showErrorSnackBar("Error loading lessons: $e");
       }
     }
   }
 
   Future<void> _addLesson() async {
     try {
+      LogService.instance.info("Starting lesson file selection");
+
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['md'],
@@ -98,8 +130,13 @@ class _JourneyLessonsEditPageState extends ConsumerState<JourneyLessonsEditPage>
       );
 
       if (result != null && result.files.single.bytes != null) {
+        setState(() => isLoading = true);
+
         String fileName = result.files.single.name;
         Uint8List fileBytes = result.files.single.bytes!;
+
+        LogService.instance
+            .info("Selected file: $fileName (${fileBytes.length} bytes)");
 
         // Upload to storage
         final storageNotifier = ref.read(lessonStorageProvider.notifier);
@@ -117,39 +154,35 @@ class _JourneyLessonsEditPageState extends ConsumerState<JourneyLessonsEditPage>
           journeyId: widget.journeyId,
         );
 
-        setState(() {
-          lessonTitles.add(title);
-          lessonUrls.add(file.id);
-          hasUnsavedChanges = true;
-        });
-
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Lesson added successfully"),
-            backgroundColor: Colors.green,
-          ));
+          setState(() {
+            lessonTitles.add(title);
+            lessonUrls.add(file.id);
+            hasUnsavedChanges = true;
+            isLoading = false;
+          });
+          _showSuccessSnackBar("Lesson added successfully");
         }
       }
     } catch (e) {
       LogService.instance.error("Error adding lesson: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Error adding lesson: $e"),
-          backgroundColor: Colors.red,
-        ));
+        setState(() => isLoading = false);
+        _showErrorSnackBar("Error adding lesson: $e");
       }
     }
   }
 
   Future<void> _confirmDeleteLesson(int index) async {
+    if (!mounted) return;
+
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Confirm Deletion"),
           content: Text(
-            "Are you sure you want to delete the lesson titled '${lessonTitles[index]}'?",
-          ),
+              "Are you sure you want to delete the lesson '${lessonTitles[index]}'?"),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -164,61 +197,64 @@ class _JourneyLessonsEditPageState extends ConsumerState<JourneyLessonsEditPage>
       },
     );
 
-    if (shouldDelete ?? false) {
-      try {
-        final lessonId = lessonUrls[index];
+    if (shouldDelete == true) {
+      await _deleteLesson(index);
+    }
+  }
 
-        // Delete from storage
-        await ref.read(lessonStorageProvider.notifier).deleteFile(lessonId);
-        LogService.instance.info("Deleted lesson file: $lessonId");
+  Future<void> _deleteLesson(int index) async {
+    try {
+      setState(() => isLoading = true);
 
+      final lessonId = lessonUrls[index];
+      LogService.instance.info("Deleting lesson: $lessonId");
+
+      // Delete from storage
+      await ref.read(lessonStorageProvider.notifier).deleteFile(lessonId);
+      LogService.instance.info("Deleted lesson file: $lessonId");
+
+      if (mounted) {
         setState(() {
           lessonTitles.removeAt(index);
           lessonUrls.removeAt(index);
           hasUnsavedChanges = true;
+          isLoading = false;
         });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Lesson deleted successfully"),
-            backgroundColor: Colors.green,
-          ));
-        }
-      } catch (e) {
-        LogService.instance.error("Error deleting lesson: $e");
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("Error deleting lesson: $e"),
-            backgroundColor: Colors.red,
-          ));
-        }
+        _showSuccessSnackBar("Lesson deleted successfully");
+      }
+    } catch (e) {
+      LogService.instance.error("Error deleting lesson: $e");
+      if (mounted) {
+        setState(() => isLoading = false);
+        _showErrorSnackBar("Error deleting lesson: $e");
       }
     }
   }
 
   Future<void> _saveChanges() async {
     try {
+      setState(() => isLoading = true);
+      LogService.instance
+          .info("Saving lesson changes for journey: ${widget.journeyId}");
+
       await ref.read(journeysProvider.notifier).updateJourney(
             widget.journeyId,
             lessonIds: lessonUrls,
           );
 
-      setState(() => hasUnsavedChanges = false);
-
       if (mounted) {
+        setState(() {
+          hasUnsavedChanges = false;
+          isLoading = false;
+        });
+        _showSuccessSnackBar("Lessons updated successfully");
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Lessons updated successfully"),
-          backgroundColor: Colors.green,
-        ));
       }
     } catch (e) {
       LogService.instance.error("Error saving lessons: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Error saving lessons: $e"),
-          backgroundColor: Colors.red,
-        ));
+        setState(() => isLoading = false);
+        _showErrorSnackBar("Error saving lessons: $e");
       }
     }
   }
@@ -251,6 +287,22 @@ class _JourneyLessonsEditPageState extends ConsumerState<JourneyLessonsEditPage>
     return shouldDiscard ?? false;
   }
 
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.red,
+    ));
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.green,
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -259,50 +311,79 @@ class _JourneyLessonsEditPageState extends ConsumerState<JourneyLessonsEditPage>
         appBar: AppBar(
           title: Text("Manage Lessons for ${widget.journeyTitle}"),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.check),
-              onPressed: _saveChanges,
+            if (!isLoading && !hasError)
+              IconButton(
+                icon: const Icon(Icons.check),
+                onPressed: hasUnsavedChanges ? _saveChanges : null,
+              ),
+          ],
+        ),
+        body: _buildBody(),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              errorMessage ?? "An error occurred while loading lessons",
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            StandardButton(
+              onPressed: _loadLessons,
+              label: const Text("Retry"),
             ),
           ],
         ),
-        body: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  StandardButton(
-                    onPressed: _addLesson,
-                    label: const Text("Add New Lesson"),
+      );
+    }
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: StandardButton(
+            onPressed: _addLesson,
+            label: const Text("Add New Lesson"),
+          ),
+        ),
+        Expanded(
+          child: ReorderableListView(
+            onReorder: (oldIndex, newIndex) {
+              setState(() {
+                if (newIndex > oldIndex) newIndex -= 1;
+                final lessonTitle = lessonTitles.removeAt(oldIndex);
+                final lessonUrl = lessonUrls.removeAt(oldIndex);
+                lessonTitles.insert(newIndex, lessonTitle);
+                lessonUrls.insert(newIndex, lessonUrl);
+                hasUnsavedChanges = true;
+              });
+            },
+            children: List.generate(lessonTitles.length, (index) {
+              return ListTile(
+                key: ValueKey(lessonUrls[index]),
+                title: Text(lessonTitles[index]),
+                trailing: IconButton(
+                  icon: Icon(
+                    Icons.delete,
+                    color: Theme.of(context).colorScheme.error,
                   ),
-                  Expanded(
-                    child: ReorderableListView(
-                      onReorder: (oldIndex, newIndex) {
-                        setState(() {
-                          if (newIndex > oldIndex) newIndex -= 1;
-                          final lessonTitle = lessonTitles.removeAt(oldIndex);
-                          final lessonUrl = lessonUrls.removeAt(oldIndex);
-                          lessonTitles.insert(newIndex, lessonTitle);
-                          lessonUrls.insert(newIndex, lessonUrl);
-                          hasUnsavedChanges = true;
-                        });
-                      },
-                      children: List.generate(lessonTitles.length, (index) {
-                        return ListTile(
-                          key: ValueKey(lessonUrls[index]),
-                          title: Text(lessonTitles[index]),
-                          trailing: IconButton(
-                            icon: Icon(
-                              Icons.delete,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                            onPressed: () => _confirmDeleteLesson(index),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-                ],
-              ),
-      ),
+                  onPressed: () => _confirmDeleteLesson(index),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
     );
   }
 }
