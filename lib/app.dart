@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/auth/role_utils.dart';
 import 'package:photojam_app/config/app_constants.dart';
-import 'package:photojam_app/empty_page.dart';
 import 'package:photojam_app/features/auth/login_screen.dart';
 import 'package:photojam_app/features/facilitator/facilitator_screen.dart';
 import 'package:photojam_app/features/jams/jams_page.dart';
@@ -12,6 +11,7 @@ import 'package:photojam_app/features/journeys/journey_page.dart';
 import 'package:photojam_app/features/admin/admin_screen.dart';
 import 'package:photojam_app/features/photos/photos_screen.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
+import 'package:photojam_app/features/snippet/snippet_screen.dart';
 
 class App extends ConsumerStatefulWidget {
   final String userRole;
@@ -53,7 +53,7 @@ class _AppState extends ConsumerState<App> {
 
     return [
       const JamPage(),
-      const EmptyPage(),//SnippetScreen(),
+      const SnippetScreen(),
       if (isMember) const JourneyPage(),
       const PhotosPage(),
       const AccountScreen(),
