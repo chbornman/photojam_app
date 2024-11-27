@@ -12,7 +12,6 @@ abstract class StorageRepository {
     required StorageBucket bucket,
     required String fileName,
     required Uint8List fileBytes,
-    List<String>? permissions,
   });
   
   Future<Uint8List> downloadFile({

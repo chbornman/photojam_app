@@ -186,6 +186,17 @@ class SubmissionRepository {
     }
   }
 
+  Future<List<Submission>> getAllSubmissions() async {
+    try {
+      LogService.instance.info('Fetching all submissions');
+      final docs = await _db.listDocuments(collectionId);
+      return docs.documents.map((doc) => Submission.fromDocument(doc)).toList();
+    } catch (e) {
+      LogService.instance.error('Error fetching all submissions: $e');
+      rethrow;
+    }
+  }
+
   Future<Submission> updateSubmission({
     required String submissionId,
     List<String>? photos,

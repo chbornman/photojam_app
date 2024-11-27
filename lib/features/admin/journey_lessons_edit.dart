@@ -119,59 +119,88 @@ class _JourneyLessonsEditPageState
     }
   }
 
-  Future<void> _addLesson() async {
-    try {
-      LogService.instance.info("Starting lesson file selection");
+Future<void> _addLesson() async {
+  try {
+    LogService.instance.info("Starting lesson file selection");
 
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['md'],
-        withData: true,
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['md'],
+      withData: true,
+    );
+
+    if (result != null && result.files.single.bytes != null) {
+      setState(() => isLoading = true);
+
+      String fileName = result.files.single.name;
+      Uint8List fileBytes = result.files.single.bytes!;
+
+      LogService.instance.info("Selected file details:");
+      LogService.instance.info("- Original filename: $fileName");
+      LogService.instance.info("- File size: ${fileBytes.length} bytes");
+      
+      // Log the full file path if available
+      if (result.files.single.path != null) {
+        LogService.instance.info("- Original file path: ${result.files.single.path}");
+      }
+
+      // Upload to storage
+      final storageNotifier = ref.read(lessonStorageProvider.notifier);
+      
+      // Log before upload attempt
+      LogService.instance.info("Attempting to upload file to storage:");
+      LogService.instance.info("- Destination filename: $fileName");
+      LogService.instance.info("- Content type: ${result.files.single.extension}");
+
+      final file = await storageNotifier.uploadFile(fileName, fileBytes);
+      
+      // Log successful upload details
+      LogService.instance.info("File upload successful:");
+      LogService.instance.info("- Storage file ID: ${file.id}");
+      LogService.instance.info("- Storage file name: ${file.name}");
+      LogService.instance.info("- Storage file size: ${file.sizeBytes}");
+      LogService.instance.info("- Storage MIME type: ${file.mimeType}");
+
+      // Create lesson
+      final lessonsNotifier = ref.read(lessonsProvider.notifier);
+      final content = String.fromCharCodes(fileBytes);
+      final title = extractTitleFromMarkdown(fileBytes);
+
+      LogService.instance.info("Creating lesson record:");
+      LogService.instance.info("- Lesson title: $title");
+      LogService.instance.info("- Journey ID: ${widget.journeyId}");
+      LogService.instance.info("- Content length: ${content.length} characters");
+
+      await lessonsNotifier.createLesson(
+        title: title,
+        content: content,
+        journeyId: widget.journeyId,
       );
 
-      if (result != null && result.files.single.bytes != null) {
-        setState(() => isLoading = true);
-
-        String fileName = result.files.single.name;
-        Uint8List fileBytes = result.files.single.bytes!;
-
-        LogService.instance
-            .info("Selected file: $fileName (${fileBytes.length} bytes)");
-
-        // Upload to storage
-        final storageNotifier = ref.read(lessonStorageProvider.notifier);
-        final file = await storageNotifier.uploadFile(fileName, fileBytes);
-        LogService.instance.info("Uploaded lesson file: ${file.id}");
-
-        // Create lesson
-        final lessonsNotifier = ref.read(lessonsProvider.notifier);
-        final content = String.fromCharCodes(fileBytes);
-        final title = extractTitleFromMarkdown(fileBytes);
-
-        await lessonsNotifier.createLesson(
-          title: title,
-          content: content,
-          journeyId: widget.journeyId,
-        );
-
-        if (mounted) {
-          setState(() {
-            lessonTitles.add(title);
-            lessonUrls.add(file.id);
-            hasUnsavedChanges = true;
-            isLoading = false;
-          });
-          _showSuccessSnackBar("Lesson added successfully");
-        }
-      }
-    } catch (e) {
-      LogService.instance.error("Error adding lesson: $e");
       if (mounted) {
-        setState(() => isLoading = false);
-        _showErrorSnackBar("Error adding lesson: $e");
+        setState(() {
+          lessonTitles.add(title);
+          lessonUrls.add(file.id);
+          hasUnsavedChanges = true;
+          isLoading = false;
+        });
+        
+        LogService.instance.info("Lesson creation complete:");
+        LogService.instance.info("- Total lessons: ${lessonTitles.length}");
+        LogService.instance.info("- Latest lesson URL: ${file.id}");
+        
+        _showSuccessSnackBar("Lesson added successfully");
       }
     }
+  } catch (e, stackTrace) {
+    LogService.instance.error("Error adding lesson: $e");
+    LogService.instance.error("Stack trace: $stackTrace");
+    if (mounted) {
+      setState(() => isLoading = false);
+      _showErrorSnackBar("Error adding lesson: $e");
+    }
   }
+}
 
   Future<void> _confirmDeleteLesson(int index) async {
     if (!mounted) return;

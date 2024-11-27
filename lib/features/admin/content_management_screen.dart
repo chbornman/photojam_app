@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/database/models/jam_model.dart';
 import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/journey_provider.dart';
+import 'package:photojam_app/appwrite/database/providers/lesson_provider.dart';
+import 'package:photojam_app/appwrite/database/providers/submission_provider.dart';
+import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/dialogs/create_jam_dialog.dart';
 import 'package:photojam_app/dialogs/create_journey_dialog.dart';
@@ -12,6 +15,73 @@ import 'package:photojam_app/dialogs/update_jam_dialog.dart';
 import 'package:photojam_app/dialogs/update_journey_dialog.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
 import 'package:photojam_app/features/journeys/journey_page.dart';
+
+// Add this new widget above the ContentManagementPage class:
+
+class DangerActionCard extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const DangerActionCard({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  State<DangerActionCard> createState() => _DangerActionCardState();
+}
+
+class _DangerActionCardState extends State<DangerActionCard> {
+  bool isUnlocked = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return StandardCard(
+      icon: isUnlocked ? widget.icon : Icons.lock,
+      title: widget.title,
+      action: IconButton(
+        icon: Icon(
+          isUnlocked ? Icons.lock_open : Icons.lock_outline,
+          color: isUnlocked ? Colors.red : null,
+        ),
+        onPressed: () {
+          setState(() {
+            isUnlocked = !isUnlocked;
+          });
+          if (!isUnlocked) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Action locked'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Warning: Dangerous action unlocked'),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        },
+      ),
+      onTap: isUnlocked
+          ? widget.onTap
+          : () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Unlock this action first'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
+    );
+  }
+}
 
 class ContentManagementPage extends ConsumerStatefulWidget {
   const ContentManagementPage({super.key});
@@ -338,36 +408,35 @@ class _ContentManagementPageState extends ConsumerState<ContentManagementPage> {
     );
   }
 
-Future<void> _fetchAndOpenUpdateJourneyPage() async {
-  setState(() => _isLoading = true);
-  try {
-    final journeysAsync = ref.read(journeysProvider);
-    
-    journeysAsync.when(
-      data: (journeys) {
-        if (!mounted) return;
-        
-        final journeyMap = {
-          for (var journey in journeys) journey.title: journey.id
-        };
-        
-        // Show dialog to select the journey
-        _openJourneySelectionDialog(journeyMap);
-      },
-      loading: () => setState(() => _isLoading = true),
-      error: (error, stack) {
-        LogService.instance.error("Error fetching journeys: $error");
-        _showMessage("Error fetching journeys: $error", isError: true);
-      }
-    );
-  } catch (e) {
-    LogService.instance.error("Error fetching journeys for lesson update: $e");
-    _showMessage("Error fetching journeys", isError: true);
-  } finally {
-    if (mounted) setState(() => _isLoading = false);
-  }
-}
+  Future<void> _fetchAndOpenUpdateJourneyPage() async {
+    setState(() => _isLoading = true);
+    try {
+      final journeysAsync = ref.read(journeysProvider);
 
+      journeysAsync.when(
+          data: (journeys) {
+            if (!mounted) return;
+
+            final journeyMap = {
+              for (var journey in journeys) journey.title: journey.id
+            };
+
+            // Show dialog to select the journey
+            _openJourneySelectionDialog(journeyMap);
+          },
+          loading: () => setState(() => _isLoading = true),
+          error: (error, stack) {
+            LogService.instance.error("Error fetching journeys: $error");
+            _showMessage("Error fetching journeys: $error", isError: true);
+          });
+    } catch (e) {
+      LogService.instance
+          .error("Error fetching journeys for lesson update: $e");
+      _showMessage("Error fetching journeys", isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   void _openJourneySelectionDialog(Map<String, String> journeyMap) {
     String? selectedTitle;
@@ -418,17 +487,307 @@ Future<void> _fetchAndOpenUpdateJourneyPage() async {
     );
   }
 
-void _openUpdateJourneyPage(String journeyId, String journeyTitle) {
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (context) => JourneyPage(
-        journeyId: journeyId,
-        journeyTitle: journeyTitle,
-        isEditMode: true, 
+  void _openUpdateJourneyPage(String journeyId, String journeyTitle) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => JourneyPage(
+          journeyId: journeyId,
+          journeyTitle: journeyTitle,
+          isEditMode: true,
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
+
+  Future<void> _deleteSubmissionsAndPhotos() async {
+    setState(() => _isLoading = true);
+    try {
+      final submissionsAsync = ref.read(submissionsProvider);
+
+      await submissionsAsync.whenData((submissions) async {
+        if (submissions.isEmpty) {
+          _showMessage("No submissions found", isError: true);
+          return;
+        }
+
+        // Show confirmation dialog
+        final result = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Delete All Submissions"),
+            content: Text(
+                "Are you sure you want to delete ${submissions.length} submissions and their associated photos? This action cannot be undone."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text("Delete All"),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+              ),
+            ],
+          ),
+        );
+
+        if (result != true) return;
+
+        var successCount = 0;
+        var errorCount = 0;
+
+        // Delete submissions and their associated photos
+        for (final submission in submissions) {
+          try {
+            // Delete photos from storage
+            for (final photoId in submission.photos) {
+              try {
+                final storageNotifier = ref.read(photoStorageProvider.notifier);
+                await storageNotifier.deleteFile(photoId);
+                LogService.instance.info("Deleted photo: $photoId");
+              } catch (e) {
+                LogService.instance.error("Error deleting photo $photoId: $e");
+                errorCount++;
+              }
+            }
+
+            // Delete submission document
+            await ref
+                .read(submissionsProvider.notifier)
+                .deleteSubmission(submission.id);
+            LogService.instance.info("Deleted submission: ${submission.id}");
+            successCount++;
+          } catch (e) {
+            LogService.instance.error("Error deleting submission: $e");
+            errorCount++;
+          }
+        }
+
+        _showMessage("Deleted $successCount submissions. Errors: $errorCount");
+      });
+    } catch (e) {
+      LogService.instance.error("Error in deletion process: $e");
+      _showMessage("Error deleting submissions: $e", isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _deleteLessonsAndFiles() async {
+    setState(() => _isLoading = true);
+    try {
+      final lessonsAsync = ref.read(lessonsProvider);
+
+      await lessonsAsync.whenData((lessons) async {
+        if (lessons.isEmpty) {
+          _showMessage("No lessons found", isError: true);
+          return;
+        }
+
+        // Show confirmation dialog
+        final result = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Delete All Lessons"),
+            content: Text(
+                "Are you sure you want to delete ${lessons.length} lessons and their associated files? This action cannot be undone."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text("Delete All"),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+              ),
+            ],
+          ),
+        );
+
+        if (result != true) return;
+
+        var successCount = 0;
+        var errorCount = 0;
+
+        // Delete lessons and their associated files
+        final storageNotifier = ref.read(lessonStorageProvider.notifier);
+
+        for (final lesson in lessons) {
+          try {
+            // Extract file ID from content URI
+            final fileId = lesson.content.pathSegments.last;
+
+            // Delete lesson file from storage
+            try {
+              await storageNotifier.deleteFile(fileId);
+              LogService.instance.info("Deleted lesson file: $fileId");
+            } catch (e) {
+              LogService.instance
+                  .error("Error deleting lesson file $fileId: $e");
+              errorCount++;
+            }
+
+            // Delete lesson document
+            await ref
+                .read(lessonsProvider.notifier)
+                .deleteLessonContent(lesson.id);
+            LogService.instance.info("Deleted lesson: ${lesson.id}");
+            successCount++;
+          } catch (e) {
+            LogService.instance.error("Error deleting lesson: $e");
+            errorCount++;
+          }
+        }
+
+        _showMessage("Deleted $successCount lessons. Errors: $errorCount");
+      });
+    } catch (e) {
+      LogService.instance.error("Error in deletion process: $e");
+      _showMessage("Error deleting lessons: $e", isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _deleteAllPhotosFromStorage() async {
+    setState(() => _isLoading = true);
+    try {
+      final storageNotifier = ref.read(photoStorageProvider.notifier);
+      final filesAsync = ref.read(photoStorageProvider);
+
+      filesAsync.when(
+        data: (files) async {
+          if (files.isEmpty) {
+            _showMessage("No photos found in storage", isError: true);
+            return;
+          }
+
+          // Show confirmation dialog
+          final result = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("Delete All Photos from Storage"),
+              content: Text(
+                  "Are you sure you want to delete ${files.length} photos from storage? This action cannot be undone."),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text("Cancel"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text("Delete All"),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                ),
+              ],
+            ),
+          );
+
+          if (result != true) return;
+
+          var successCount = 0;
+          var errorCount = 0;
+
+          // Delete all files from storage
+          for (final file in files) {
+            try {
+              await storageNotifier.deleteFile(file.id);
+              LogService.instance
+                  .info("Deleted photo from storage: ${file.id}");
+              successCount++;
+            } catch (e) {
+              LogService.instance.error("Error deleting photo ${file.id}: $e");
+              errorCount++;
+            }
+          }
+
+          _showMessage(
+              "Deleted $successCount photos from storage. Errors: $errorCount");
+        },
+        loading: () => setState(() => _isLoading = true),
+        error: (error, stack) {
+          LogService.instance.error("Error loading photos: $error");
+          _showMessage("Error loading photos: $error", isError: true);
+        },
+      );
+    } catch (e) {
+      LogService.instance.error("Error in photo deletion process: $e");
+      _showMessage("Error deleting photos: $e", isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _deleteAllLessonsFromStorage() async {
+    setState(() => _isLoading = true);
+    try {
+      final storageNotifier = ref.read(lessonStorageProvider.notifier);
+      final filesAsync = ref.read(lessonStorageProvider);
+
+      filesAsync.when(
+        data: (files) async {
+          if (files.isEmpty) {
+            _showMessage("No lesson files found in storage", isError: true);
+            return;
+          }
+
+          // Show confirmation dialog
+          final result = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("Delete All Lesson Files from Storage"),
+              content: Text(
+                  "Are you sure you want to delete ${files.length} lesson files from storage? This action cannot be undone."),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text("Cancel"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text("Delete All"),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                ),
+              ],
+            ),
+          );
+
+          if (result != true) return;
+
+          var successCount = 0;
+          var errorCount = 0;
+
+          // Delete all files from storage
+          for (final file in files) {
+            try {
+              await storageNotifier.deleteFile(file.id);
+              LogService.instance
+                  .info("Deleted lesson file from storage: ${file.id}");
+              successCount++;
+            } catch (e) {
+              LogService.instance
+                  .error("Error deleting lesson file ${file.id}: $e");
+              errorCount++;
+            }
+          }
+
+          _showMessage(
+              "Deleted $successCount lesson files from storage. Errors: $errorCount");
+        },
+        loading: () => setState(() => _isLoading = true),
+        error: (error, stack) {
+          LogService.instance.error("Error loading lesson files: $error");
+          _showMessage("Error loading lesson files: $error", isError: true);
+        },
+      );
+    } catch (e) {
+      LogService.instance.error("Error in lesson file deletion process: $e");
+      _showMessage("Error deleting lesson files: $e", isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -482,490 +841,29 @@ void _openUpdateJourneyPage(String journeyId, String journeyTitle) {
                     title: "Delete Jam",
                     onTap: _fetchAndOpenDeleteJamDialog,
                   ),
+                  DangerActionCard(
+                    icon: Icons.delete_forever,
+                    title: "Delete All Lessons and Files",
+                    onTap: _deleteLessonsAndFiles,
+                  ),
+                  DangerActionCard(
+                    icon: Icons.delete_sweep,
+                    title: "Delete All Submissions and Photos",
+                    onTap: _deleteSubmissionsAndPhotos,
+                  ),
+                  DangerActionCard(
+                    icon: Icons.photo_library_outlined,
+                    title: "Delete All Photos from Storage",
+                    onTap: _deleteAllPhotosFromStorage,
+                  ),
+                  DangerActionCard(
+                    icon: Icons.folder_delete_outlined,
+                    title: "Delete All Lesson Files from Storage",
+                    onTap: _deleteAllLessonsFromStorage,
+                  ),
                 ],
               ),
             ),
     );
   }
 }
-
-
-
-//   void _fetchAndOpenDeleteJourneyDialog() async {
-//     setState(() => isLoading = true);
-//     try {
-//       DocumentList journeyList = await database.listJourneys();
-//       Map<String, String> journeyMap = {
-//         for (var doc in journeyList.documents) doc.data['title']: doc.$id
-//       };
-
-//       showDialog(
-//         context: context,
-//         builder: (context) => DeleteJourneyDialog(
-//           journeyMap: journeyMap,
-//           onJourneyDeleted: (journeyId) async {
-//             await _executeAction(
-//               database.deleteJourney,
-//               {"journeyId": journeyId},
-//               "Journey deleted successfully",
-//             );
-//           },
-//         ),
-//       );
-//     } catch (e) {
-//       _showMessage("Error fetching journeys: $e", isError: true);
-//     } finally {
-//       setState(() => isLoading = false);
-//     }
-//   }
-
-//   void _fetchAndOpenUpdateJamDialog() async {
-//     // Capture the stable parent context
-//     final parentContext = context;
-
-//     setState(() => isLoading = true);
-//     try {
-//       DocumentList jamList = await database.listJams();
-//       Map<String, String> jamMap = {
-//         for (var doc in jamList.documents) doc.data['title']: doc.$id
-//       };
-
-//       showDialog(
-//         context: parentContext, // Use parentContext here
-//         builder: (context) {
-//           String? selectedJamTitle;
-
-//           return AlertDialog(
-//             title: Text("Select Jam to Update"),
-//             content: StatefulBuilder(
-//               builder: (context, setState) {
-//                 return DropdownButtonFormField<String>(
-//                   value: selectedJamTitle,
-//                   hint: Text("Select Jam"),
-//                   items: jamMap.keys.map((title) {
-//                     return DropdownMenuItem(
-//                       value: title,
-//                       child: Text(title),
-//                     );
-//                   }).toList(),
-//                   onChanged: (value) {
-//                     setState(() {
-//                       selectedJamTitle = value;
-//                     });
-//                   },
-//                   decoration: InputDecoration(labelText: "Select Jam"),
-//                 );
-//               },
-//             ),
-//             actions: [
-//               TextButton(
-//                 onPressed: () =>
-//                     Navigator.of(parentContext).pop(), // Use parentContext
-//                 child: Text("Cancel"),
-//               ),
-//               TextButton(
-//                 onPressed: () async {
-//                   if (selectedJamTitle != null) {
-//                     final jamId = jamMap[selectedJamTitle]!;
-//                     Navigator.of(parentContext).pop(); // Close selection dialog
-
-//                     try {
-//                       final jamDoc = await database.getJamById(jamId);
-//                       Map<String, dynamic> initialData = {
-//                         "title": jamDoc.data['title'] ?? '',
-//                         "date": jamDoc.data['date'] ?? '',
-//                         "zoom_link": jamDoc.data['zoom_link'] ?? '',
-//                       };
-
-//                       // Use parentContext for the next dialog
-//                       showDialog(
-//                         context: parentContext,
-//                         builder: (context) => UpdateJamDialog(
-//                           jamId: jamId,
-//                           initialData: initialData,
-//                           onJamUpdated: (updatedData) async {
-//                             await _executeAction(
-//                               database.updateJam,
-//                               updatedData,
-//                               "Jam updated successfully",
-//                             );
-//                           },
-//                         ),
-//                       );
-//                     } catch (e) {
-//                       _showMessage("Error fetching jam details: $e",
-//                           isError: true);
-//                     }
-//                   }
-//                 },
-//                 child: Text("Update"),
-//               ),
-//             ],
-//           );
-//         },
-//       );
-//     } catch (e) {
-//       _showMessage("Error fetching jams: $e", isError: true);
-//     } finally {
-//       setState(() => isLoading = false);
-//     }
-//   }
-
-//   void _fetchAndOpenDeleteJamDialog() async {
-//     setState(() => isLoading = true);
-//     try {
-//       DocumentList jamList = await database.listJams();
-//       Map<String, String> jamMap = {
-//         for (var doc in jamList.documents) doc.data['title']: doc.$id
-//       };
-
-//       showDialog(
-//         context: context,
-//         builder: (context) => DeleteJamDialog(
-//           jamMap: jamMap,
-//           onJamDeleted: (jamId) async {
-//             await _executeAction(
-//               database.deleteJam,
-//               {"jamId": jamId},
-//               "Jam deleted successfully",
-//             );
-//           },
-//         ),
-//       );
-//     } catch (e) {
-//       _showMessage("Error fetching jams: $e", isError: true);
-//     } finally {
-//       setState(() => isLoading = false);
-//     }
-//   }
-
-//   void _fetchAndOpenAddLessonDialog(String journeyTitle) async {
-//     setState(() => isLoading = true);
-//     try {
-//       // Get the journey ID for the provided journey title
-//       DocumentList journeyList = await database.listJourneys();
-//       final journeyDoc = journeyList.documents.firstWhere(
-//         (doc) => doc.data['title'] == journeyTitle,
-//         orElse: () => throw Exception("Journey not found"),
-//       );
-
-//       final journeyId = journeyDoc.$id;
-//       _openAddLessonDialog(journeyId, journeyTitle);
-//     } catch (e) {
-//       _showMessage("Error fetching journey: $e", isError: true);
-//     } finally {
-//       setState(() => isLoading = false);
-//     }
-//   }
-
-//   void _openAddLessonDialog(String journeyId, String journeyTitle) {
-//     Uint8List? selectedFileBytes;
-//     String? selectedFileName;
-
-//     showDialog(
-//       context: context,
-//       builder: (context) {
-//         return StandardDialog(
-//           title: "Add Lesson to $journeyTitle",
-//           content: StatefulBuilder(
-//             builder: (context, setState) {
-//               return Column(
-//                 mainAxisSize: MainAxisSize.min,
-//                 children: [
-//                   StandardButton(
-//                     label: Text(selectedFileName ?? "Select Lesson File"),
-//                     onPressed: () async {
-//                       FilePickerResult? result =
-//                           await FilePicker.platform.pickFiles(
-//                         type: FileType.custom,
-//                         allowedExtensions: ['md'], // Allow only markdown files
-//                         withData: true, // Load file data directly into memory
-//                       );
-
-//                       if (result != null && result.files.single.bytes != null) {
-//                         setState(() {
-//                           selectedFileName = result.files.single.name;
-//                           selectedFileBytes = result.files.single.bytes;
-//                         });
-//                         LogService.instance.info(
-//                             "File selected: $selectedFileName - ${selectedFileBytes?.lengthInBytes ?? 0} bytes");
-//                       } else {
-//                         LogService.instance
-//                             .error("No file selected or file has no bytes.");
-//                       }
-//                     },
-//                   ),
-//                 ],
-//               );
-//             },
-//           ),
-//           submitButtonLabel: "Upload",
-//           submitButtonOnPressed: () async {
-//             if (!mounted) return; // Ensure widget is still mounted
-//             if (selectedFileBytes == null) {
-//               _showMessage("Please select a lesson file.", isError: true);
-//               return;
-//             }
-
-//             try {
-//               // Step 1: Upload file using the Storage API
-//               LogService.instance.info(
-//                   "Uploading file: $selectedFileName with ${selectedFileBytes!.lengthInBytes} bytes");
-//               final fileUrl = await storage.uploadLesson(
-//                   selectedFileBytes!, selectedFileName!);
-
-//               // Step 2: Add the uploaded file URL to the journey
-//               LogService.instance.info("File uploaded. URL: $fileUrl");
-//               await database.addLessonToJourney(journeyId, fileUrl);
-
-//               Navigator.of(context).pop();
-//               _showMessage("Lesson uploaded successfully");
-//             } catch (e) {
-//               LogService.instance.error("Error uploading lesson: $e");
-//               _showMessage("Error uploading lesson: $e", isError: true);
-//             }
-//           },
-//         );
-//       },
-//     );
-//   }
-
-//   void _openUpdateJourneyDialog(Map<String, String> journeyMap) {
-//     String? selectedTitle;
-
-//     // Capture the parent context
-//     final parentContext = context;
-
-//     showDialog(
-//       context: parentContext, // Use parentContext here
-//       builder: (context) {
-//         return AlertDialog(
-//           title: Text("Select Journey to Update"),
-//           content: StatefulBuilder(
-//             builder: (context, setState) {
-//               return DropdownButtonFormField<String>(
-//                 value: selectedTitle,
-//                 hint: Text("Select Journey"),
-//                 items: journeyMap.keys.map((title) {
-//                   return DropdownMenuItem(
-//                     value: title,
-//                     child: Text(title),
-//                   );
-//                 }).toList(),
-//                 onChanged: (value) async {
-//                   setState(() {
-//                     selectedTitle = value;
-//                   });
-//                 },
-//               );
-//             },
-//           ),
-//           actions: [
-//             TextButton(
-//               onPressed: () =>
-//                   Navigator.of(parentContext).pop(), // Close dialog
-//               child: Text("Cancel"),
-//             ),
-//             TextButton(
-//               onPressed: () async {
-//                 if (selectedTitle != null) {
-//                   final journeyId = journeyMap[selectedTitle]!;
-//                   Navigator.of(parentContext).pop(); // Close selection dialog
-
-//                   try {
-//                     final journeyDoc = await database.getJourneyById(journeyId);
-//                     Map<String, dynamic> initialData = {
-//                       "title": journeyDoc.data['title'] ?? '',
-//                       "start_date": journeyDoc.data['start_date'] ?? '',
-//                       "active": journeyDoc.data['active'] ?? false,
-//                     };
-
-//                     // Use parentContext when showing the next dialog
-//                     showDialog(
-//                       context: parentContext,
-//                       builder: (context) => UpdateJourneyDialog(
-//                         journeyId: journeyId,
-//                         initialData: initialData,
-//                         onJourneyUpdated: (updatedData) async {
-//                           await _executeAction(
-//                             database.updateJourney,
-//                             updatedData,
-//                             "Journey updated successfully",
-//                           );
-//                         },
-//                       ),
-//                     );
-//                   } catch (e) {
-//                     LogService.instance
-//                         .error("Error fetching journey details: $e");
-//                     _showMessage("Error fetching journey details: $e",
-//                         isError: true);
-//                   }
-//                 }
-//               },
-//               child: Text("Update"),
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//   }
-
-//   void _openCreateJourneyDialog() {
-//     showDialog(
-//       context: context,
-//       builder: (context) {
-//         return CreateJourneyDialog(
-//           onJourneyCreated: (journeyData) async {
-//             // Call the `createJourney` method on the database API
-//             await _executeAction(
-//               database.createJourney,
-//               journeyData,
-//               "Journey created successfully",
-//             );
-//           },
-//         );
-//       },
-//     );
-//   }
-
-//   void _openCreateJamDialog() {
-//     showDialog(
-//       context: context,
-//       builder: (context) => CreateJamDialog(
-//         onJamCreated: (jamData) async {
-//           await _executeAction(
-//             database.createJam,
-//             jamData,
-//             "Jam created successfully",
-//           );
-//         },
-//       ),
-//     );
-//   }
-
-//   void _fetchAndOpenUpdateJourneyPage() async {
-//     setState(() => isLoading = true);
-//     try {
-//       // Fetch the list of journeys
-//       DocumentList journeyList = await database.listJourneys();
-//       Map<String, String> journeyMap = {
-//         for (var doc in journeyList.documents) doc.data['title']: doc.$id
-//       };
-
-//       // Show a dialog to select the journey
-//       _openJourneySelectionDialog(journeyMap);
-//     } catch (e) {
-//       _showMessage("Error fetching journeys: $e", isError: true);
-//     } finally {
-//       setState(() => isLoading = false);
-//     }
-//   }
-
-//   void _openJourneySelectionDialog(Map<String, String> journeyMap) {
-//     String? selectedTitle;
-
-//     showDialog(
-//       context: context,
-//       builder: (context) {
-//         return AlertDialog(
-//           title: Text("Select Journey"),
-//           content: StatefulBuilder(
-//             builder: (context, setState) {
-//               return DropdownButtonFormField<String>(
-//                 value: selectedTitle,
-//                 hint: Text("Select Journey"),
-//                 items: journeyMap.keys.map((title) {
-//                   return DropdownMenuItem(
-//                     value: title,
-//                     child: Text(title),
-//                   );
-//                 }).toList(),
-//                 onChanged: (value) {
-//                   setState(() {
-//                     selectedTitle = value;
-//                   });
-//                 },
-//               );
-//             },
-//           ),
-//           actions: [
-//             TextButton(
-//               onPressed: () => Navigator.of(context).pop(), // Close dialog
-//               child: Text("Cancel"),
-//             ),
-//             TextButton(
-//               onPressed: () {
-//                 if (selectedTitle != null) {
-//                   // Get the journeyId from the selectedTitle
-//                   final journeyId = journeyMap[selectedTitle]!;
-//                   Navigator.of(context).pop(); // Close dialog
-//                   _openUpdateJourneyPage(journeyId, selectedTitle!);
-//                 }
-//               },
-//               child: Text("Open"),
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//   }
-
-
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text("Content Management"),
-//       ),
-//       body: Padding(
-//         padding: const EdgeInsets.all(16.0),
-//         child: GridView.count(
-//           crossAxisCount: 1, // Set to single column for better readability
-//           crossAxisSpacing: 8.0,
-//           mainAxisSpacing: 8.0,
-//           childAspectRatio: 6,
-//           shrinkWrap: true,
-//           children: [
-//             StandardCard(
-//               icon: Icons.add,
-//               title: "Create Journey",
-//               onTap: _openCreateJourneyDialog,
-//             ),
-//             StandardCard(
-//               icon: Icons.edit,
-//               title: "Update Journey",
-//               onTap: _fetchAndOpenUpdateJourneyDialog,
-//             ),
-//             StandardCard(
-//               icon: Icons.list,
-//               title: "Update Journey Lessons",
-//               onTap: _fetchAndOpenUpdateJourneyPage,
-//             ),
-//             StandardCard(
-//               icon: Icons.delete,
-//               title: "Delete Journey",
-//               onTap: _fetchAndOpenDeleteJourneyDialog,
-//             ),
-//             StandardCard(
-//               icon: Icons.add,
-//               title: "Create Jam",
-//               onTap: _openCreateJamDialog,
-//             ),
-//             StandardCard(
-//               icon: Icons.edit,
-//               title: "Update Jam",
-//               onTap: _fetchAndOpenUpdateJamDialog,
-//             ),
-//             StandardCard(
-//               icon: Icons.delete,
-//               title: "Delete Jam",
-//               onTap: _fetchAndOpenDeleteJamDialog,
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }

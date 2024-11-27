@@ -13,61 +13,60 @@ class LessonRepository {
 
   LessonRepository(this._db, this._storage);
 
-  Future<Lesson> createLesson({
-    required String title,
-    required String content,
-    required int version,
-    String? journeyId,
-    String? jamId,
-  }) async {
-    try {
-      LogService.instance.info('Creating lesson with title: $title');
+Future<Lesson> createLesson({
+  required String title,
+  required String content,
+  required int version,
+  String? journeyId,
+  String? jamId,
+}) async {
+  try {
+    LogService.instance.info('Creating lesson with title: $title');
 
-      // First upload content to storage
-      final contentFile = await _storage.uploadFile(
-        '$title.md',
-        Uint8List.fromList(content.codeUnits),
-      );
-      LogService.instance.info('Uploaded content file: ${contentFile.id}');
+    // First upload content to storage
+    final contentFile = await _storage.uploadFile(
+      '$title.md',
+      Uint8List.fromList(content.codeUnits),
+    );
+    LogService.instance.info('Uploaded content file: ${contentFile.id}');
 
-      // Get the file URL
-      final contentUrl = _storage.storage
-          .getFileView(
-            bucketId: AppConstants.bucketLessonsId,
-            fileId: contentFile.id,
-          )
-          .toString();
-      LogService.instance.info('Generated content URL: $contentUrl');
+    // Get the file URL as a string - using direct storage access
+    final contentUrl = _storage.storage
+        .getFileView(
+          bucketId: AppConstants.bucketLessonsId,
+          fileId: contentFile.id,
+        )
+        .toString();
+    LogService.instance.info('Generated content URL: $contentUrl');
 
-      final now = DateTime.now().toIso8601String();
+    final now = DateTime.now().toIso8601String();
 
-      final documentData = {
-        'title': title,
-        'content': contentUrl,
-        'version': version,
-        'is_active': true,
-        'journey': journeyId != null ? {'\$id': journeyId} : null,
-        'jam': jamId != null ? {'\$id': jamId} : null,
-        'date_creation': now,
-        'date_updated': now,
-      };
+    final documentData = {
+      'title': title,
+      'content': contentUrl,
+      'version': version,
+      'is_active': true,
+      'journey': journeyId != null ? {'\$id': journeyId} : null,
+      'jam': jamId != null ? {'\$id': jamId} : null,
+      'date_creation': now,
+      'date_updated': now,
+    };
 
-      LogService.instance
-          .info('Creating document in collection: $collectionId');
-      LogService.instance.info('Document data: $documentData');
+    LogService.instance.info('Creating document in collection: $collectionId');
+    LogService.instance.info('Document data: $documentData');
 
-      final doc = await _db.createDocument(
-        collectionId,
-        documentData,
-      );
+    final doc = await _db.createDocument(
+      collectionId,
+      documentData,
+    );
 
-      LogService.instance.info('Created lesson document: ${doc.$id}');
-      return Lesson.fromDocument(doc);
-    } catch (e) {
-      LogService.instance.error('Error creating lesson: $e');
-      rethrow;
-    }
+    LogService.instance.info('Created lesson document: ${doc.$id}');
+    return Lesson.fromDocument(doc);
+  } catch (e) {
+    LogService.instance.error('Error creating lesson: $e');
+    rethrow;
   }
+}
 
   Future<List<Lesson>> getLessonsByJourney(String journeyId) async {
     try {
@@ -150,6 +149,36 @@ class LessonRepository {
       LogService.instance.info('Updated lesson document');
     } catch (e) {
       LogService.instance.error('Error updating lesson content: $e');
+      rethrow;
+    }
+  }
+
+    Future<void> deleteLesson(String lessonId) async {
+    try {
+      LogService.instance.info('Deleting lesson: $lessonId');
+      
+      // First get the lesson to find its content file URL
+      final doc = await _db.getDocument(collectionId, lessonId);
+      final lesson = Lesson.fromDocument(doc);
+      
+      // Extract file ID from content URL
+      final fileId = lesson.content.pathSegments.last;
+      LogService.instance.info('Found associated file ID: $fileId');
+
+      // Delete the content file from storage
+      try {
+        await _storage.deleteFile(fileId);
+        LogService.instance.info('Deleted lesson file from storage: $fileId');
+      } catch (e) {
+        LogService.instance.error('Error deleting lesson file: $e');
+        // Continue with document deletion even if file deletion fails
+      }
+
+      // Delete the lesson document
+      await _db.deleteDocument(collectionId, lessonId);
+      LogService.instance.info('Successfully deleted lesson document: $lessonId');
+    } catch (e) {
+      LogService.instance.error('Error deleting lesson: $e');
       rethrow;
     }
   }

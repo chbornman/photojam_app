@@ -11,59 +11,76 @@ final submissionRepositoryProvider = Provider<SubmissionRepository>((ref) {
 });
 
 // Main state notifier provider for all submissions
-final submissionsProvider = StateNotifierProvider<SubmissionsNotifier, AsyncValue<List<Submission>>>((ref) {
+final submissionsProvider =
+    StateNotifierProvider<SubmissionsNotifier, AsyncValue<List<Submission>>>(
+        (ref) {
   final repository = ref.watch(submissionRepositoryProvider);
   return SubmissionsNotifier(repository);
 });
 
 // Provider for submissions by jam
-final jamSubmissionsProvider = Provider.family<AsyncValue<List<Submission>>, String>((ref, jamId) {
+final jamSubmissionsProvider =
+    Provider.family<AsyncValue<List<Submission>>, String>((ref, jamId) {
   return ref.watch(submissionsProvider).whenData(
-    (submissions) => submissions
-        .where((submission) => submission.jamId == jamId)
-        .toList()
-        ..sort((a, b) => b.dateCreation.compareTo(a.dateCreation)),
-  );
+        (submissions) => submissions
+            .where((submission) => submission.jamId == jamId)
+            .toList()
+          ..sort((a, b) => b.dateCreation.compareTo(a.dateCreation)),
+      );
 });
 
 // Provider for user submissions
-final userSubmissionsProvider = Provider.family<AsyncValue<List<Submission>>, String>((ref, userId) {
+final userSubmissionsProvider =
+    Provider.family<AsyncValue<List<Submission>>, String>((ref, userId) {
   return ref.watch(submissionsProvider).whenData(
-    (submissions) => submissions
-        .where((submission) => submission.userId == userId)
-        .toList()
-        ..sort((a, b) => b.dateCreation.compareTo(a.dateCreation)),
-  );
+        (submissions) => submissions
+            .where((submission) => submission.userId == userId)
+            .toList()
+          ..sort((a, b) => b.dateCreation.compareTo(a.dateCreation)),
+      );
 });
 
 // Provider for user's submission to a specific jam
-final userJamSubmissionProvider = Provider.family<AsyncValue<Submission?>, ({String userId, String jamId})>((ref, params) {
+final userJamSubmissionProvider =
+    Provider.family<AsyncValue<Submission?>, ({String userId, String jamId})>(
+        (ref, params) {
   return ref.watch(submissionsProvider).whenData(
-    (submissions) => submissions.firstWhereOrNull(
-      (submission) => submission.userId == params.userId && submission.jamId == params.jamId,
-    ),
-  );
+        (submissions) => submissions.firstWhereOrNull(
+          (submission) =>
+              submission.userId == params.userId &&
+              submission.jamId == params.jamId,
+        ),
+      );
 });
 
 // Provider for submissions within a date range
-final dateRangeSubmissionsProvider = Provider.family<AsyncValue<List<Submission>>, ({DateTime start, DateTime end, String? userId, String? jamId})>((ref, params) {
+final dateRangeSubmissionsProvider = Provider.family<
+    AsyncValue<List<Submission>>,
+    ({
+      DateTime start,
+      DateTime end,
+      String? userId,
+      String? jamId
+    })>((ref, params) {
   return ref.watch(submissionsProvider).whenData(
-    (submissions) => submissions
-        .where((submission) =>
-            submission.dateCreation.isAfter(params.start) &&
-            submission.dateCreation.isBefore(params.end) &&
-            (params.userId == null || submission.userId == params.userId) &&
-            (params.jamId == null || submission.jamId == params.jamId))
-        .toList()
-        ..sort((a, b) => b.dateCreation.compareTo(a.dateCreation)),
-  );
+        (submissions) => submissions
+            .where((submission) =>
+                submission.dateCreation.isAfter(params.start) &&
+                submission.dateCreation.isBefore(params.end) &&
+                (params.userId == null || submission.userId == params.userId) &&
+                (params.jamId == null || submission.jamId == params.jamId))
+            .toList()
+          ..sort((a, b) => b.dateCreation.compareTo(a.dateCreation)),
+      );
 });
 
 // Provider for a specific submission by ID
-final submissionByIdProvider = Provider.family<AsyncValue<Submission?>, String>((ref, submissionId) {
+final submissionByIdProvider =
+    Provider.family<AsyncValue<Submission?>, String>((ref, submissionId) {
   return ref.watch(submissionsProvider).whenData(
-    (submissions) => submissions.firstWhereOrNull((s) => s.id == submissionId),
-  );
+        (submissions) =>
+            submissions.firstWhereOrNull((s) => s.id == submissionId),
+      );
 });
 
 class SubmissionsNotifier extends StateNotifier<AsyncValue<List<Submission>>> {
@@ -76,9 +93,9 @@ class SubmissionsNotifier extends StateNotifier<AsyncValue<List<Submission>>> {
   Future<void> loadSubmissions() async {
     try {
       state = const AsyncValue.loading();
-      // Since there's no getAllSubmissions in repository, we'll manage the state
-      // through individual operations
-      state = const AsyncValue.data([]);
+      final submissions = await _repository.getAllSubmissions();
+      state = AsyncValue.data(submissions);
+      LogService.instance.info('Loaded ${submissions.length} submissions');
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       LogService.instance.error('Error loading submissions: $error');
@@ -98,12 +115,12 @@ class SubmissionsNotifier extends StateNotifier<AsyncValue<List<Submission>>> {
         photos: photos,
         comment: comment,
       );
-      
+
       state = state.whenData((submissions) => [
-        ...submissions,
-        submission,
-      ]);
-      
+            ...submissions,
+            submission,
+          ]);
+
       return submission;
     } catch (error) {
       LogService.instance.error('Error when creating submission: $error');
@@ -122,7 +139,7 @@ class SubmissionsNotifier extends StateNotifier<AsyncValue<List<Submission>>> {
         photos: photos,
         comment: comment,
       );
-      
+
       state = state.whenData((submissions) => submissions
           .map((s) => s.id == submissionId ? updatedSubmission : s)
           .toList());

@@ -3,15 +3,17 @@ import 'package:flutter/material.dart';
 class StandardCard extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String? subtitle; // Make subtitle optional
+  final String? subtitle;
   final VoidCallback onTap;
+  final Widget? action; // Optional action widget
 
   const StandardCard({
     super.key,
     required this.icon,
     required this.title,
-    this.subtitle, // Make subtitle optional
+    this.subtitle,
     required this.onTap,
+    this.action, // Accept optional action widget
   });
 
   @override
@@ -41,6 +43,7 @@ class StandardCard extends StatelessWidget {
                 ),
               )
             : null,
+        trailing: action, // Add action widget here
         onTap: onTap,
       ),
     );

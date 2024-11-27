@@ -34,7 +34,6 @@ class JamEventCard extends StatelessWidget {
   }
 
   Widget _buildAssignButton(BuildContext context) {
-    // Use RoleUtils to check permissions
     final labels = [userRole];
     final isAdmin = RoleUtils.isAdmin(labels);
     final isFacilitator = RoleUtils.isFacilitator(labels);

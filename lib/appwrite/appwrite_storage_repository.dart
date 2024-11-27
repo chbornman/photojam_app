@@ -17,7 +17,6 @@ class AppwriteStorageRepository with StorageHelper implements StorageRepository 
     required StorageBucket bucket,
     required String fileName,
     required Uint8List fileBytes,
-    List<String>? permissions,
   }) async {
     if (!isValidFileForBucket(bucket, fileName)) {
       throw Exception('Invalid file type for this bucket');
@@ -28,7 +27,6 @@ class AppwriteStorageRepository with StorageHelper implements StorageRepository 
         bucketId: bucket.id,
         fileId: ID.unique(),
         file: InputFile.fromBytes(bytes: fileBytes, filename: fileName),
-        permissions: permissions,
       );
       return StorageFile.fromFile(file);
     } catch (e) {

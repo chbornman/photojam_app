@@ -106,6 +106,30 @@ class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
     }
   }
 
+    Future<void> deleteLessonContent(String lessonId) async {
+    try {
+      LogService.instance.info('Attempting to delete lesson: $lessonId');
+      state = state.whenData((lessons) {
+        final lessonToDelete = lessons.firstWhereOrNull((l) => l.id == lessonId);
+        if (lessonToDelete == null) {
+          throw Exception('Lesson not found');
+        }
+
+        // Remove the lesson from the state
+        return lessons.where((lesson) => lesson.id != lessonId).toList();
+      });
+
+      // Delete lesson document from the database
+      await _repository.deleteLesson(lessonId);
+      LogService.instance.info('Successfully deleted lesson: $lessonId');
+    } catch (error) {
+      LogService.instance.error('Error deleting lesson: $error');
+      // Reload lessons to ensure state consistency
+      await loadLessons();
+      rethrow;
+    }
+  }
+
   // Helper method to refresh lessons for a specific journey
   Future<void> refreshJourneyLessons(String journeyId) async {
     try {
