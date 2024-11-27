@@ -12,8 +12,8 @@ import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
 import 'package:photojam_app/core/widgets/standard_button.dart';
-import 'package:photojam_app/features/jams/services/photo_upload_service.dart';
-import 'package:photojam_app/features/jams/widgets/photo_selector.dart';
+import 'package:photojam_app/features/jams/photo_upload_service.dart';
+import 'package:photojam_app/features/jams/photo_selector.dart';
 
 class JamSignupPage extends ConsumerStatefulWidget {
   const JamSignupPage({super.key});

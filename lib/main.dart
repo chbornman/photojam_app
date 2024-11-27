@@ -6,7 +6,7 @@ import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
 import 'package:photojam_app/config/app_theme.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/error_screen.dart';
-import 'package:photojam_app/features/auth/screens/login_screen.dart';
+import 'package:photojam_app/features/auth/login_screen.dart';
 import 'package:photojam_app/app.dart';
 import 'package:photojam_app/features/splashscreen.dart';
 import 'package:uni_links/uni_links.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/core/widgets/loading_overlay.dart';
-import 'package:photojam_app/features/auth/controllers/register_controller.dart';
+import 'package:photojam_app/features/auth/register_controller.dart';
 
 class RegisterForm extends StatefulWidget {
   final RegisterController controller;

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/database/models/journey_model.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/utils/markdownviewer.dart';
-import 'package:photojam_app/features/journeys/widgets/journeycontainer.dart';
+import 'package:photojam_app/features/journeys/journeycontainer.dart';
 
 class JourneyTile extends ConsumerWidget {
   final Journey journey;

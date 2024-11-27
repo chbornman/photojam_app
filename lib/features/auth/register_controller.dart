@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/core/services/log_service.dart';
-import 'package:photojam_app/features/auth/exceptions/register_exception.dart';
+import 'package:photojam_app/features/auth/register_exception.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_providers.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';

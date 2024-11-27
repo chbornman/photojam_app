@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/auth/role_utils.dart';
-import 'package:photojam_app/features/auth/screens/login_screen.dart';
-import 'package:photojam_app/features/facilitator/screens/facilitator_screen.dart';
-import 'package:photojam_app/features/jams/screens/jams_page.dart';
+import 'package:photojam_app/features/auth/login_screen.dart';
+import 'package:photojam_app/features/facilitator/facilitator_screen.dart';
+import 'package:photojam_app/features/jams/jams_page.dart';
 import 'package:photojam_app/core/widgets/standard_appbar.dart';
 import 'package:photojam_app/features/account/account_screen.dart';
-import 'package:photojam_app/features/journeys/screens/journey_page.dart';
-import 'package:photojam_app/features/admin/screens/admin_screen.dart';
-import 'package:photojam_app/features/photos/screens/photos_screen.dart';
+import 'package:photojam_app/features/journeys/journey_page.dart';
+import 'package:photojam_app/features/admin/admin_screen.dart';
+import 'package:photojam_app/features/photos/photos_screen.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 
 class App extends ConsumerStatefulWidget {

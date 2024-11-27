@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/database/models/submission_model.dart';
 import 'package:photojam_app/core/services/photo_cache_service.dart';
-import 'package:photojam_app/features/photos/screens/photos_content.dart';
-import 'package:photojam_app/features/photos/controllers/photos_controller.dart';
+import 'package:photojam_app/features/photos/photos_content.dart';
+import 'package:photojam_app/features/photos/photos_controller.dart';
 
 // Create a provider for PhotoCacheService
 final photoCacheServiceProvider = Provider<PhotoCacheService>((ref) {

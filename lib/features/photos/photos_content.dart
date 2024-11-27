@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/database/models/submission_model.dart';
-import 'package:photojam_app/features/photos/screens/photos_screen.dart';
-import 'package:photojam_app/features/photos/widgets/submission_list.dart';
+import 'package:photojam_app/features/photos/photos_screen.dart';
+import 'package:photojam_app/features/photos/submission_list.dart';
 
 class PhotosContent extends ConsumerWidget {
   final List<Submission> submissions;

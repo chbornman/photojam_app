@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:appwrite/models.dart';
 import 'package:intl/intl.dart';
 import 'package:photojam_app/appwrite/auth/role_utils.dart';
-import 'package:photojam_app/features/admin/screens/jam_event.dart';
+import 'package:photojam_app/features/admin/jam_event.dart';
 
 class JamEventCard extends StatelessWidget {
   final JamEvent event;

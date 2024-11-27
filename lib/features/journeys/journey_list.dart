@@ -1,7 +1,7 @@
 // lib/features/journeys/widgets/journey_list.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../appwrite/database/providers/journey_provider.dart';
+import '../../appwrite/database/providers/journey_provider.dart';
 import 'journey_tile.dart';
 
 class JourneyList extends ConsumerWidget {

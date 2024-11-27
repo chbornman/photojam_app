@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:photojam_app/features/auth/controllers/login_controller.dart';
-import 'package:photojam_app/features/auth/widgets/login_form.dart';
+import 'package:photojam_app/features/auth/login_controller.dart';
+import 'package:photojam_app/features/auth/login_form.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
 import 'package:photojam_app/core/services/log_service.dart';

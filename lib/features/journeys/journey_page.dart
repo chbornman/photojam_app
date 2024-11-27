@@ -5,8 +5,8 @@ import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
 import 'package:photojam_app/dialogs/signup_journey_dialog.dart';
 import 'package:photojam_app/appwrite/database/providers/journey_provider.dart';
-import 'package:photojam_app/features/admin/screens/journey_lessons_edit.dart';
-import 'package:photojam_app/features/journeys/widgets/journey_list.dart';
+import 'package:photojam_app/features/admin/journey_lessons_edit.dart';
+import 'package:photojam_app/features/journeys/journey_list.dart';
 class JourneyPage extends ConsumerWidget {
   final String? journeyId;
   final String? journeyTitle;

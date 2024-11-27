@@ -11,7 +11,7 @@ import 'package:photojam_app/dialogs/delete_journey_dialog.dart';
 import 'package:photojam_app/dialogs/update_jam_dialog.dart';
 import 'package:photojam_app/dialogs/update_journey_dialog.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
-import 'package:photojam_app/features/journeys/screens/journey_page.dart';
+import 'package:photojam_app/features/journeys/journey_page.dart';
 
 class ContentManagementPage extends ConsumerStatefulWidget {
   const ContentManagementPage({super.key});
