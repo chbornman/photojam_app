@@ -69,10 +69,10 @@ class StorageNotifier extends StateNotifier<AsyncValue<List<StorageFile>>> {
         fileBytes: bytes,
       );
       
-      state = await state.whenData((files) => [...files, file]);
+      state = state.whenData((files) => [...files, file]);
       return file;
     } catch (error) {
-      throw error;
+      rethrow;
     }
   }
 
@@ -83,11 +83,11 @@ class StorageNotifier extends StateNotifier<AsyncValue<List<StorageFile>>> {
         fileId: fileId,
       );
       
-      state = await state.whenData((files) => 
+      state = state.whenData((files) => 
         files.where((file) => file.id != fileId).toList()
       );
     } catch (error) {
-      throw error;
+      rethrow;
     }
   }
 

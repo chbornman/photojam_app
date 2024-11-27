@@ -5,7 +5,6 @@ import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/database/models/jam_model.dart';
 import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
 import 'package:photojam_app/empty_page.dart';
-import 'package:photojam_app/features/jams/screens/jamdetails_page.dart';
 import 'package:photojam_app/features/jams/screens/jamsignup_page.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
 

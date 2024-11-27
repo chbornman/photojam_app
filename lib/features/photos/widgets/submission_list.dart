@@ -1,6 +1,5 @@
 // submission_list.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/database/models/submission_model.dart';
 import 'package:photojam_app/features/photos/widgets/submission_item.dart';
 

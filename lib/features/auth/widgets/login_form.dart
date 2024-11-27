@@ -45,7 +45,7 @@ class _LoginFormState extends State<LoginForm> {
                     enabled: !widget.controller.isLoading,
                     keyboardType: TextInputType.emailAddress,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.onBackground,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 16,
                     ),
                     decoration: InputDecoration(
@@ -53,14 +53,14 @@ class _LoginFormState extends State<LoginForm> {
                       labelStyle: TextStyle(
                         color: Theme.of(context)
                             .colorScheme
-                            .onBackground
+                            .onSurface
                             .withOpacity(0.7),
                       ),
                       prefixIcon: Icon(
                         Icons.email_outlined,
                         color: Theme.of(context)
                             .colorScheme
-                            .onBackground
+                            .onSurface
                             .withOpacity(0.7),
                       ),
                       errorText: widget.controller.emailError,
@@ -112,7 +112,7 @@ class _LoginFormState extends State<LoginForm> {
                     enabled: !widget.controller.isLoading,
                     obscureText: _obscurePassword,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.onBackground,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 16,
                     ),
                     decoration: InputDecoration(
@@ -120,14 +120,14 @@ class _LoginFormState extends State<LoginForm> {
                       labelStyle: TextStyle(
                         color: Theme.of(context)
                             .colorScheme
-                            .onBackground
+                            .onSurface
                             .withOpacity(0.7),
                       ),
                       prefixIcon: Icon(
                         Icons.lock_outline,
                         color: Theme.of(context)
                             .colorScheme
-                            .onBackground
+                            .onSurface
                             .withOpacity(0.7),
                       ),
                       suffixIcon: IconButton(
@@ -137,7 +137,7 @@ class _LoginFormState extends State<LoginForm> {
                               : Icons.visibility_off_outlined,
                           color: Theme.of(context)
                               .colorScheme
-                              .onBackground
+                              .onSurface
                               .withOpacity(0.7),
                         ),
                         onPressed: () => setState(

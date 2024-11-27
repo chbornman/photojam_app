@@ -99,7 +99,7 @@ class LoginPage extends ConsumerWidget {
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
-                                  .onBackground
+                                  .onSurface
                                   .withOpacity(0.7),
                             ),
                       ),

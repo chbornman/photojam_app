@@ -110,7 +110,7 @@ class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
   Future<void> refreshJourneyLessons(String journeyId) async {
     try {
       final journeyLessons = await _repository.getLessonsByJourney(journeyId);
-      state = await state.whenData((lessons) {
+      state = state.whenData((lessons) {
         final updatedLessons = lessons
             .where((lesson) => lesson.journeyId != journeyId)
             .toList()
@@ -127,7 +127,7 @@ class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
   Future<void> refreshJamLesson(String jamId) async {
     try {
       final jamLesson = await _repository.getLessonForJam(jamId);
-      state = await state.whenData((lessons) {
+      state = state.whenData((lessons) {
         final updatedLessons = lessons
             .where((lesson) => lesson.jamId != jamId)
             .toList();

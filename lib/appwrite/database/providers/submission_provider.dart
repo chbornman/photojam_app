@@ -99,7 +99,7 @@ class SubmissionsNotifier extends StateNotifier<AsyncValue<List<Submission>>> {
         comment: comment,
       );
       
-      state = await state.whenData((submissions) => [
+      state = state.whenData((submissions) => [
         ...submissions,
         submission,
       ]);
@@ -123,7 +123,7 @@ class SubmissionsNotifier extends StateNotifier<AsyncValue<List<Submission>>> {
         comment: comment,
       );
       
-      state = await state.whenData((submissions) => submissions
+      state = state.whenData((submissions) => submissions
           .map((s) => s.id == submissionId ? updatedSubmission : s)
           .toList());
     } catch (error) {
@@ -135,7 +135,7 @@ class SubmissionsNotifier extends StateNotifier<AsyncValue<List<Submission>>> {
   Future<void> deleteSubmission(String submissionId) async {
     try {
       await _repository.deleteSubmission(submissionId);
-      state = await state.whenData((submissions) =>
+      state = state.whenData((submissions) =>
           submissions.where((s) => s.id != submissionId).toList());
     } catch (error) {
       LogService.instance.error('Error deleting submission: $error');
@@ -147,7 +147,7 @@ class SubmissionsNotifier extends StateNotifier<AsyncValue<List<Submission>>> {
   Future<void> refreshJamSubmissions(String jamId) async {
     try {
       final jamSubmissions = await _repository.getSubmissionsByJam(jamId);
-      state = await state.whenData((submissions) {
+      state = state.whenData((submissions) {
         final updatedSubmissions = submissions
             .where((submission) => submission.jamId != jamId)
             .toList()
@@ -164,7 +164,7 @@ class SubmissionsNotifier extends StateNotifier<AsyncValue<List<Submission>>> {
   Future<void> refreshUserSubmissions(String userId) async {
     try {
       final userSubmissions = await _repository.getSubmissionsByUser(userId);
-      state = await state.whenData((submissions) {
+      state = state.whenData((submissions) {
         final updatedSubmissions = submissions
             .where((submission) => submission.userId != userId)
             .toList()

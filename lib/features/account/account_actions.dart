@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/features/account/account_provider.dart';
-import 'package:photojam_app/features/account/account_provider.dart';
 
 class AccountActions extends ConsumerWidget {
   final bool isMember;

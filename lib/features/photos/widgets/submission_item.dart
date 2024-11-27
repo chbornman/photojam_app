@@ -50,22 +50,12 @@ class SubmissionItem extends ConsumerWidget {
               padding: const EdgeInsets.only(right: 8.0),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
-                child: photoData != null
-                    ? Image.memory(
-                        photoData as Uint8List,
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                      )
-                    : Container(
-                        width: 100,
-                        height: 100,
-                        color: const Color.fromARGB(255, 106, 35, 35),
-                        child: const Icon(
-                          Icons.image_not_supported,
-                          color: Colors.white,
-                        ),
-                      ),
+                child: Image.memory(
+                  photoData as Uint8List,
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           );

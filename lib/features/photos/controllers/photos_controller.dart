@@ -42,7 +42,7 @@ class PhotosController extends StateNotifier<AsyncValue<List<Submission>>> {
       final submissionsProvider = ref.watch(userSubmissionsProvider(user.id));
       
       // Handle the AsyncValue state
-      final submissions = await submissionsProvider.when(
+      final submissions = submissionsProvider.when(
         data: (submissions) => submissions,
         loading: () => <Submission>[],
         error: (error, stack) => throw error,

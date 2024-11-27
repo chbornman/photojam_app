@@ -41,11 +41,11 @@ class _RegisterFormState extends State<RegisterForm> {
     return InputDecoration(
       labelText: label,
       labelStyle: TextStyle(
-        color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
       ),
       prefixIcon: Icon(
         prefixIcon,
-        color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
       ),
       suffixIcon: suffixIcon,
       errorText: errorText,
@@ -91,7 +91,7 @@ class _RegisterFormState extends State<RegisterForm> {
     return IconButton(
       icon: Icon(
         obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-        color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
       ),
       onPressed: onPressed,
     );
@@ -103,7 +103,7 @@ class _RegisterFormState extends State<RegisterForm> {
       listenable: widget.controller,
       builder: (context, _) {
         final textStyle = TextStyle(
-          color: Theme.of(context).colorScheme.onBackground,
+          color: Theme.of(context).colorScheme.onSurface,
           fontSize: 16,
         );
 
