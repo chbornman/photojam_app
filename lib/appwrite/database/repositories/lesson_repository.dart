@@ -23,14 +23,14 @@ class LessonRepository {
     try {
       LogService.instance.info('Creating lesson with title: $title');
 
-      // First upload the content to storage
+      // First upload content to storage
       final contentFile = await _storage.uploadFile(
         '$title.md',
         Uint8List.fromList(content.codeUnits),
       );
       LogService.instance.info('Uploaded content file: ${contentFile.id}');
 
-      // Get the file URL - this needs to be a URL string, not the preview data
+      // Get the file URL
       final contentUrl = _storage.storage
           .getFileView(
             bucketId: AppConstants.bucketLessonsId,
@@ -40,25 +40,25 @@ class LessonRepository {
       LogService.instance.info('Generated content URL: $contentUrl');
 
       final now = DateTime.now().toIso8601String();
-      final permissions = [
-        Permission.read(Role.any()),
-        Permission.write(Role.team(AppConstants.appwriteTeamId, 'admin')),
-        Permission.write(Role.team(AppConstants.appwriteTeamId, 'facilitator')),
-      ];
+
+      final documentData = {
+        'title': title,
+        'content': contentUrl,
+        'version': version,
+        'is_active': true,
+        'journey': journeyId != null ? {'\$id': journeyId} : null,
+        'jam': jamId != null ? {'\$id': jamId} : null,
+        'date_creation': now,
+        'date_updated': now,
+      };
+
+      LogService.instance
+          .info('Creating document in collection: $collectionId');
+      LogService.instance.info('Document data: $documentData');
 
       final doc = await _db.createDocument(
         collectionId,
-        {
-          'title': title,
-          'content': contentUrl,
-          'version': version,
-          'is_active': true,
-          'journey': journeyId != null ? {'\$id': journeyId} : null,
-          'jam': jamId != null ? {'\$id': jamId} : null,
-          'date_creation': now,
-          'date_updated': now,
-        },
-        permissions: permissions,
+        documentData,
       );
 
       LogService.instance.info('Created lesson document: ${doc.$id}');

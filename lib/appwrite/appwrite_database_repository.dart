@@ -15,23 +15,19 @@ class AppwriteDatabaseRepository implements DatabaseRepository {
 
   @override
   Future<Document> createDocument(
-    String collectionId, 
-    Map<String, dynamic> data, {
-    List<String>? permissions,
-  }) async {
+    String collectionId,
+    Map<String, dynamic> data,
+  ) async {
     try {
-      LogService.instance.info('Creating document in collection: $collectionId');
+      LogService.instance
+          .info('Creating document in collection: $collectionId');
       LogService.instance.info('Document data: $data');
-      if (permissions != null) {
-        LogService.instance.info('With permissions: $permissions');
-      }
 
       final doc = await _databases.createDocument(
         databaseId: databaseId,
         collectionId: collectionId,
         documentId: ID.unique(),
         data: data,
-        permissions: permissions,
       );
 
       LogService.instance.info('Created document with ID: ${doc.$id}');
@@ -45,8 +41,9 @@ class AppwriteDatabaseRepository implements DatabaseRepository {
   @override
   Future<Document> getDocument(String collectionId, String documentId) async {
     try {
-      LogService.instance.info('Fetching document: $documentId from collection: $collectionId');
-      
+      LogService.instance.info(
+          'Fetching document: $documentId from collection: $collectionId');
+
       final doc = await _databases.getDocument(
         databaseId: databaseId,
         collectionId: collectionId,
@@ -68,7 +65,8 @@ class AppwriteDatabaseRepository implements DatabaseRepository {
     List<String>? orderField,
   }) async {
     try {
-      LogService.instance.info('Listing documents in collection: $collectionId');
+      LogService.instance
+          .info('Listing documents in collection: $collectionId');
       if (queries != null) {
         LogService.instance.info('With queries: $queries');
       }
@@ -91,22 +89,18 @@ class AppwriteDatabaseRepository implements DatabaseRepository {
   Future<Document> updateDocument(
     String collectionId,
     String documentId,
-    Map<String, dynamic> data, {
-    List<String>? permissions,
-  }) async {
+    Map<String, dynamic> data,
+  ) async {
     try {
-      LogService.instance.info('Updating document: $documentId in collection: $collectionId');
+      LogService.instance
+          .info('Updating document: $documentId in collection: $collectionId');
       LogService.instance.info('Update data: $data');
-      if (permissions != null) {
-        LogService.instance.info('With permissions: $permissions');
-      }
 
       final doc = await _databases.updateDocument(
         databaseId: databaseId,
         collectionId: collectionId,
         documentId: documentId,
         data: data,
-        permissions: permissions,
       );
 
       LogService.instance.info('Updated document: ${doc.$id}');
@@ -120,8 +114,9 @@ class AppwriteDatabaseRepository implements DatabaseRepository {
   @override
   Future<void> deleteDocument(String collectionId, String documentId) async {
     try {
-      LogService.instance.info('Deleting document: $documentId from collection: $collectionId');
-      
+      LogService.instance.info(
+          'Deleting document: $documentId from collection: $collectionId');
+
       await _databases.deleteDocument(
         databaseId: databaseId,
         collectionId: collectionId,
