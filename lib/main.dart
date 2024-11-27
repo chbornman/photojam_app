@@ -92,7 +92,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     return MaterialApp(
       title: 'PhotoJam',
       theme: getLightTheme(),
-      darkTheme: getDarkTheme(),
+      // darkTheme: getDarkTheme(), TODO
       themeMode: ThemeMode.system,
       home: _showSplash
           ? SplashScreen(onAnimationComplete: _onSplashComplete)

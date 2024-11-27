@@ -167,7 +167,7 @@ class _AppState extends ConsumerState<App> {
     return Scaffold(
       appBar: StandardAppBar(
         title: getTitleForIndex(_currentIndex),
-        actions: _currentIndex == 3
+        actions: _currentIndex == getAccountPageIndex(screens)
             ? [
                 IconButton(
                   icon: Icon(
@@ -221,4 +221,13 @@ String getTitleForIndex(int index) {
     default:
       return 'PhotoJam';
   }
+}
+
+int getAccountPageIndex(List<Widget> screens) {
+  for (int i = 0; i < screens.length; i++) {
+    if (screens[i] is AccountScreen) {
+      return i;
+    }
+  }
+  return 0; // Default to the first page if not found
 }
