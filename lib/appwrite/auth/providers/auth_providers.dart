@@ -6,8 +6,7 @@ import '../repositories/auth_repository.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final account = ref.watch(appwriteAccountProvider);
-  final teams = ref.watch(appwriteTeamsProvider); 
   final client = ref.watch(appwriteClientProvider);
   
-  return AppwriteAuthRepository(account, teams, client);
+  return AppwriteAuthRepository(account, client);
 });

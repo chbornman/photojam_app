@@ -28,7 +28,5 @@ abstract class AuthRepository {
   
   Future<void> updatePreferences(Map<String, dynamic> preferences);
   
-  Future<List<String>> getUserTeams(String userId);
-  
   Future<String> getUserRole();
 }

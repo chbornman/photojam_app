@@ -32,8 +32,3 @@ final appwriteRealtimeProvider = Provider<Realtime>((ref) {
   final client = ref.watch(appwriteClientProvider);
   return Realtime(client);
 });
-
-final appwriteTeamsProvider = Provider<Teams>((ref) {
-  final client = ref.watch(appwriteClientProvider);
-  return Teams(client);
-});
