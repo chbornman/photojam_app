@@ -1,10 +1,10 @@
-
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/appwrite_config.dart';
 import 'package:photojam_app/appwrite/database/repositories/base_repository.dart';
 import 'package:photojam_app/config/app_constants.dart';
+import 'package:photojam_app/core/services/log_service.dart';
 
 /// Database repository implementation
 class AppwriteDatabaseRepository implements DatabaseRepository {
@@ -15,22 +15,50 @@ class AppwriteDatabaseRepository implements DatabaseRepository {
 
   @override
   Future<Document> createDocument(
-      String collectionId, Map<String, dynamic> data) async {
-    return await _databases.createDocument(
-      databaseId: databaseId,
-      collectionId: collectionId,
-      data: data,
-      documentId: ID.unique(),
-    );
+    String collectionId, 
+    Map<String, dynamic> data, {
+    List<String>? permissions,
+  }) async {
+    try {
+      LogService.instance.info('Creating document in collection: $collectionId');
+      LogService.instance.info('Document data: $data');
+      if (permissions != null) {
+        LogService.instance.info('With permissions: $permissions');
+      }
+
+      final doc = await _databases.createDocument(
+        databaseId: databaseId,
+        collectionId: collectionId,
+        documentId: ID.unique(),
+        data: data,
+        permissions: permissions,
+      );
+
+      LogService.instance.info('Created document with ID: ${doc.$id}');
+      return doc;
+    } catch (e) {
+      LogService.instance.error('Error creating document: $e');
+      rethrow;
+    }
   }
 
   @override
   Future<Document> getDocument(String collectionId, String documentId) async {
-    return await _databases.getDocument(
-      databaseId: databaseId,
-      collectionId: collectionId,
-      documentId: documentId,
-    );
+    try {
+      LogService.instance.info('Fetching document: $documentId from collection: $collectionId');
+      
+      final doc = await _databases.getDocument(
+        databaseId: databaseId,
+        collectionId: collectionId,
+        documentId: documentId,
+      );
+
+      LogService.instance.info('Retrieved document: ${doc.$id}');
+      return doc;
+    } catch (e) {
+      LogService.instance.error('Error fetching document: $e');
+      rethrow;
+    }
   }
 
   @override
@@ -39,34 +67,72 @@ class AppwriteDatabaseRepository implements DatabaseRepository {
     List<String>? queries,
     List<String>? orderField,
   }) async {
-    return await _databases.listDocuments(
-      databaseId: databaseId,
-      collectionId: collectionId,
-      queries: queries,
-    );
+    try {
+      LogService.instance.info('Listing documents in collection: $collectionId');
+      if (queries != null) {
+        LogService.instance.info('With queries: $queries');
+      }
+
+      final docs = await _databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: collectionId,
+        queries: queries,
+      );
+
+      LogService.instance.info('Retrieved ${docs.documents.length} documents');
+      return docs;
+    } catch (e) {
+      LogService.instance.error('Error listing documents: $e');
+      rethrow;
+    }
   }
 
   @override
   Future<Document> updateDocument(
     String collectionId,
     String documentId,
-    Map<String, dynamic> data,
-  ) async {
-    return await _databases.updateDocument(
-      databaseId: databaseId,
-      collectionId: collectionId,
-      documentId: documentId,
-      data: data,
-    );
+    Map<String, dynamic> data, {
+    List<String>? permissions,
+  }) async {
+    try {
+      LogService.instance.info('Updating document: $documentId in collection: $collectionId');
+      LogService.instance.info('Update data: $data');
+      if (permissions != null) {
+        LogService.instance.info('With permissions: $permissions');
+      }
+
+      final doc = await _databases.updateDocument(
+        databaseId: databaseId,
+        collectionId: collectionId,
+        documentId: documentId,
+        data: data,
+        permissions: permissions,
+      );
+
+      LogService.instance.info('Updated document: ${doc.$id}');
+      return doc;
+    } catch (e) {
+      LogService.instance.error('Error updating document: $e');
+      rethrow;
+    }
   }
 
   @override
   Future<void> deleteDocument(String collectionId, String documentId) async {
-    await _databases.deleteDocument(
-      databaseId: databaseId,
-      collectionId: collectionId,
-      documentId: documentId,
-    );
+    try {
+      LogService.instance.info('Deleting document: $documentId from collection: $collectionId');
+      
+      await _databases.deleteDocument(
+        databaseId: databaseId,
+        collectionId: collectionId,
+        documentId: documentId,
+      );
+
+      LogService.instance.info('Deleted document: $documentId');
+    } catch (e) {
+      LogService.instance.error('Error deleting document: $e');
+      rethrow;
+    }
   }
 }
 
@@ -78,5 +144,3 @@ final databaseRepositoryProvider = Provider<DatabaseRepository>((ref) {
     databaseId: AppConstants.appwriteDatabaseId,
   );
 });
-
-

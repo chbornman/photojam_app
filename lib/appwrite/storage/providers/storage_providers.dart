@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:appwrite/appwrite.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/appwrite_config.dart';
 import 'package:photojam_app/appwrite/appwrite_storage_repository.dart';
@@ -31,6 +32,9 @@ class StorageNotifier extends StateNotifier<AsyncValue<List<StorageFile>>> {
       : super(const AsyncValue.loading()) {
     loadFiles();
   }
+
+  // Expose the underlying Storage instance
+  Storage get storage => _repository.storage;
 
   // New method to get max file size based on bucket type
   int getMaxFileSizeForBucket() {

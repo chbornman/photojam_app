@@ -2,12 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/appwrite_database_repository.dart';
 import 'package:photojam_app/appwrite/database/models/lesson_model.dart';
 import 'package:photojam_app/appwrite/database/repositories/lesson_repository.dart';
+import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 
 // Base repository provider
 final lessonRepositoryProvider = Provider<LessonRepository>((ref) {
   final dbRepository = ref.watch(databaseRepositoryProvider);
-  return LessonRepository(dbRepository);
+  final storageNotifier = ref.watch(lessonStorageProvider.notifier);
+  return LessonRepository(dbRepository, storageNotifier);
 });
 
 // Main state notifier provider for all lessons
