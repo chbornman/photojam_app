@@ -23,6 +23,8 @@ class AppConstants {
   static const String collectionLessons = "photojam-collection-lesson";
   static const String collectionJourneys = "photojam-collection-journey";
   static const String collectionSubmissions = "photojam-collection-submission";
+  static const String collectionGlobals = "photojam-collection-globals";
+
 
   // Storage
   static const String bucketPhotosId = "photojam-bucket-photos";

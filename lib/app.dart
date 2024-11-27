@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/auth/role_utils.dart';
+import 'package:photojam_app/config/app_constants.dart';
+import 'package:photojam_app/empty_page.dart';
 import 'package:photojam_app/features/auth/login_screen.dart';
 import 'package:photojam_app/features/facilitator/facilitator_screen.dart';
 import 'package:photojam_app/features/jams/jams_page.dart';
@@ -33,13 +35,10 @@ class _AppState extends ConsumerState<App> {
   }
 
   void _validateAccess() {
-    // Use RoleUtils to check permissions
-    final labels = [widget.userRole]; // Convert role to list for RoleUtils
+    final labels = [widget.userRole];
     final isAdmin = RoleUtils.isAdmin(labels);
     final isFacilitator = RoleUtils.isFacilitator(labels);
 
-    // If current index is for admin/facilitator pages but user lost permission,
-    // redirect to home
     if ((_currentIndex == 4 && !isFacilitator) ||
         (_currentIndex == 5 && !isAdmin)) {
       setState(() => _currentIndex = 0);
@@ -47,18 +46,68 @@ class _AppState extends ConsumerState<App> {
   }
 
   List<Widget> _getScreens(String userRole) {
-    // Use RoleUtils to check permissions
-    final labels = [userRole]; // Convert role to list for RoleUtils
-    final isAdmin = RoleUtils.isAdmin(labels);
+    final labels = [userRole];
+    final isMember = RoleUtils.isMember(labels);
     final isFacilitator = RoleUtils.isFacilitator(labels);
+    final isAdmin = RoleUtils.isAdmin(labels);
 
     return [
       const JamPage(),
-      const JourneyPage(),
+      const EmptyPage(),//SnippetScreen(),
+      if (isMember) const JourneyPage(),
       const PhotosPage(),
       const AccountScreen(),
       if (isFacilitator) const FacilitatorPage(),
       if (isAdmin) const AdminPage(),
+    ];
+  }
+
+  List<BottomNavigationBarItem> _getNavBarItems(String userRole) {
+    final labels = [userRole];
+    final isMember = RoleUtils.isMember(labels);
+    final isFacilitator = RoleUtils.isFacilitator(labels);
+    final isAdmin = RoleUtils.isAdmin(labels);
+    final theme = Theme.of(context);
+
+    return [
+      BottomNavigationBarItem(
+        icon: const Icon(Icons.camera_alt),
+        label: 'Jams',
+        backgroundColor: theme.colorScheme.primary,
+      ),
+      BottomNavigationBarItem(
+        icon: const Icon(Icons.play_lesson),
+        label: 'Snippet',
+        backgroundColor: theme.colorScheme.secondary,
+      ),
+      if (isMember)
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.book),
+          label: 'Journeys',
+          backgroundColor: AppConstants.photojamDarkGreen,
+        ),
+      BottomNavigationBarItem(
+        icon: const Icon(Icons.subscriptions),
+        label: 'Photos',
+        backgroundColor: AppConstants.photojamPaleBlue,
+      ),
+      BottomNavigationBarItem(
+        icon: const Icon(Icons.account_circle),
+        label: 'Account',
+        backgroundColor: AppConstants.photojamPurple,
+      ),
+      if (isFacilitator)
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.group),
+          label: 'Facilitate',
+          backgroundColor: AppConstants.photojamDarkYellow,
+        ),
+      if (isAdmin)
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.admin_panel_settings),
+          label: 'Admin',
+          backgroundColor: AppConstants.photojamDarkPink,
+        ),
     ];
   }
 
@@ -88,10 +137,6 @@ class _AppState extends ConsumerState<App> {
 
   @override
   Widget build(BuildContext context) {
-    // Use RoleUtils to check permissions
-    final labels = [widget.userRole]; // Convert role to list for RoleUtils
-    final isAdmin = RoleUtils.isAdmin(labels);
-    final isFacilitator = RoleUtils.isFacilitator(labels);
     final theme = Theme.of(context);
 
     // Watch auth state to handle sign out and session expiry
@@ -117,6 +162,7 @@ class _AppState extends ConsumerState<App> {
     });
 
     final screens = _getScreens(widget.userRole);
+    final navBarItems = _getNavBarItems(widget.userRole);
 
     return Scaffold(
       appBar: StandardAppBar(
@@ -150,40 +196,7 @@ class _AppState extends ConsumerState<App> {
             setState(() => _currentIndex = index);
           }
         },
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.camera_alt),
-            label: 'Jams',
-            backgroundColor: theme.colorScheme.primary,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.book),
-            label: 'Journeys',
-            backgroundColor: theme.colorScheme.primary,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.subscriptions),
-            label: 'Photos',
-            backgroundColor: theme.colorScheme.primary,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.account_circle),
-            label: 'Account',
-            backgroundColor: theme.colorScheme.primary,
-          ),
-          if (isFacilitator)
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.group),
-              label: 'Facilitate',
-              backgroundColor: theme.colorScheme.primary,
-            ),
-          if (isAdmin)
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.admin_panel_settings),
-              label: 'Admin',
-              backgroundColor: theme.colorScheme.primary,
-            ),
-        ],
+        items: navBarItems,
       ),
     );
   }
@@ -194,14 +207,16 @@ String getTitleForIndex(int index) {
     case 0:
       return 'Jams';
     case 1:
-      return 'Journeys';
+      return 'Weekly Lesson Snippet';
     case 2:
-      return 'Photos';
+      return 'Journeys';
     case 3:
-      return 'Account';
+      return 'Photos';
     case 4:
-      return 'Facilitator Dashboard';
+      return 'Account';
     case 5:
+      return 'Facilitator Dashboard';
+    case 6:
       return 'Admin Dashboard';
     default:
       return 'PhotoJam';

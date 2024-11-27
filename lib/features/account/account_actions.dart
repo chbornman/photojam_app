@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photojam_app/core/widgets/standard_button.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/features/account/account_provider.dart';
@@ -25,14 +26,12 @@ class AccountActions extends ConsumerWidget {
           Icons.person,
           () => _showUpdateNameDialog(context, ref),
         ),
-        const SizedBox(height: 8),
         _buildActionButton(
           context,
           'Update Email',
           Icons.email,
           () => _showUpdateEmailDialog(context, ref),
         ),
-        const SizedBox(height: 8),
         _buildActionButton(
           context,
           'Update Password',
@@ -40,7 +39,6 @@ class AccountActions extends ConsumerWidget {
           () => _showUpdatePasswordDialog(context, ref),
         ),
         if (!isMember) ...[
-          const SizedBox(height: 16),
           _buildActionButton(
             context,
             'Become a Member',
@@ -48,7 +46,6 @@ class AccountActions extends ConsumerWidget {
             () => _handleRoleRequest(context, ref, 'member'),
           ),
         ] else if (!isFacilitator) ...[
-          const SizedBox(height: 16),
           _buildActionButton(
             context,
             'Become a Facilitator',
@@ -66,13 +63,10 @@ class AccountActions extends ConsumerWidget {
     IconData icon,
     VoidCallback onPressed,
   ) {
-    return ElevatedButton.icon(
+    return StandardButton(
       onPressed: onPressed,
       icon: Icon(icon),
       label: Text(label),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-      ),
     );
   }
 
@@ -87,16 +81,16 @@ class AccountActions extends ConsumerWidget {
       builder: (context) => StandardDialog(
         title: 'Update Name',
         content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: 'New Name'),
-          autofocus: true,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) async {
-            // Handle the update
-            await _handleNameUpdate(context, ref, controller.text);
+            controller: controller,
+            decoration: const InputDecoration(labelText: 'New Name'),
+            autofocus: true,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) async {
+              // Handle the update
+              await _handleNameUpdate(context, ref, controller.text);
             // Dispose controller after handling the update
             controller.dispose();
-          },
+            },
         ),
         submitButtonLabel: 'Save',
         submitButtonOnPressed: () async {
