@@ -4,6 +4,7 @@ import 'package:photojam_app/features/auth/controllers/register_controller.dart'
 import 'package:photojam_app/features/auth/widgets/register_form.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
+import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/app.dart';
 
 class RegisterPage extends ConsumerWidget {
@@ -15,21 +16,39 @@ class RegisterPage extends ConsumerWidget {
     ref.listen(authStateProvider, (previous, next) {
       next.whenOrNull(
         authenticated: (_) async {
-          // Get user role after successful authentication
-          final roleAsync = await ref.read(userRoleProvider.future);
+          LogService.instance.info('User authenticated after registration, fetching role...');
+          
+          try {
+            // Invalidate any cached role data
+            ref.invalidate(userRoleProvider);
+            
+            // Get fresh user role
+            final roleAsync = await ref.read(userRoleProvider.future);
+            LogService.instance.info('New user role fetched: $roleAsync');
 
-          if (context.mounted) {
-            // Navigate to App with the user role, replacing the entire stack
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(
-                builder: (context) => App(userRole: roleAsync),
-              ),
-              (route) => false, // This removes all previous routes
-            );
+            if (context.mounted) {
+              // Navigate to App with the user role, replacing the entire stack
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => App(userRole: roleAsync),
+                ),
+                (route) => false,
+              );
+            }
+          } catch (e) {
+            LogService.instance.error('Error fetching user role after registration: $e');
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Error loading user role'),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+              );
+            }
           }
         },
         error: (message) {
-          // Show error message
+          LogService.instance.error('Registration error: $message');
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -41,8 +60,6 @@ class RegisterPage extends ConsumerWidget {
         },
       );
     });
-
-    final registerController = RegisterController(ref);
 
     return Scaffold(
       body: SafeArea(
@@ -67,10 +84,7 @@ class RegisterPage extends ConsumerWidget {
                     // Header section
                     Text(
                       'Create Account',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineMedium
-                          ?.copyWith(
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.onBackground,
                           ),
@@ -79,15 +93,17 @@ class RegisterPage extends ConsumerWidget {
                     Text(
                       'Join our community and start sharing your moments',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onBackground
-                                .withOpacity(0.7),
+                            color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
                           ),
                     ),
                     const SizedBox(height: 48),
-                    // Registration form
-                    RegisterForm(controller: registerController),
+                    // Registration form with controller from provider
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final controller = ref.watch(registerControllerProvider);
+                        return RegisterForm(controller: controller);
+                      },
+                    ),
                   ],
                 ),
               ),

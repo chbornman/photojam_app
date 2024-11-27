@@ -4,6 +4,7 @@ import 'package:photojam_app/features/auth/controllers/login_controller.dart';
 import 'package:photojam_app/features/auth/widgets/login_form.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
+import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/app.dart';
 
 class LoginPage extends ConsumerWidget {
@@ -15,19 +16,35 @@ class LoginPage extends ConsumerWidget {
     ref.listen(authStateProvider, (previous, next) {
       next.whenOrNull(
         authenticated: (_) async {
-          // Get user role after successful authentication
-          final roleAsync = await ref.read(userRoleProvider.future);
+          LogService.instance.info('User authenticated, fetching role...');
           
-          if (context.mounted) {
-            // Navigate to App with the user role
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => App(userRole: roleAsync),
-              ),
-            );
+          try {
+            // Get user role after successful authentication
+            final roleAsync = await ref.read(userRoleProvider.future);
+            LogService.instance.info('User role fetched: $roleAsync');
+            
+            if (context.mounted) {
+              // Navigate to App with the user role
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => App(userRole: roleAsync),
+                ),
+              );
+            }
+          } catch (e) {
+            LogService.instance.error('Error fetching user role: $e');
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Error loading user role'),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+              );
+            }
           }
         },
         error: (message) {
+          LogService.instance.error('Auth error: $message');
           // Show error message
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -40,9 +57,6 @@ class LoginPage extends ConsumerWidget {
         },
       );
     });
-
-    // Create the controller
-    final loginController = LoginController(ref);
 
     return Scaffold(
       body: SafeArea(
@@ -57,21 +71,21 @@ class LoginPage extends ConsumerWidget {
                   children: [
                     const SizedBox(height: 60),
                     // App logo and welcome section
-                    Center(
-                      child: Image.asset(
-                        'assets/icon/app_icon_transparent.png',
-                        width: 100,
-                        height: 100,
+                    Hero(
+                      tag: 'app_logo',
+                      child: Center(
+                        child: Image.asset(
+                          'assets/icon/app_icon_transparent.png',
+                          width: 100,
+                          height: 100,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
                     Center(
                       child: Text(
                         'Photo Jam',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineLarge
-                            ?.copyWith(
+                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
@@ -90,8 +104,13 @@ class LoginPage extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 60),
-                    // Pass the controller to the LoginForm
-                    LoginForm(controller: loginController),
+                    // Use the LoginForm with the controller from the provider
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final controller = ref.watch(loginControllerProvider);
+                        return LoginForm(controller: controller);
+                      },
+                    ),
                     const Spacer(),
                   ],
                 ),

@@ -5,54 +5,99 @@ import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/features/auth/exceptions/login_exception.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 
+// State class to encapsulate login form state
+class LoginState {
+  final bool isLoading;
+  final String? emailError;
+  final String? passwordError;
+
+  const LoginState({
+    this.isLoading = false,
+    this.emailError,
+    this.passwordError,
+  });
+
+  LoginState copyWith({
+    bool? isLoading,
+    String? emailError,
+    String? passwordError,
+  }) {
+    return LoginState(
+      isLoading: isLoading ?? this.isLoading,
+      emailError: emailError,  // Pass null to clear error
+      passwordError: passwordError,  // Pass null to clear error
+    );
+  }
+}
+
+// Provider for the login controller
+final loginControllerProvider = ChangeNotifierProvider.autoDispose((ref) {
+  return LoginController(ref);
+});
+
 class LoginController extends ChangeNotifier {
-  final WidgetRef _ref;
-  bool _isLoading = false;
-  String? _emailError;
-  String? _passwordError;
-  bool _mounted = true;
+  final AutoDisposeRef _ref;
+  LoginState _state = const LoginState();
+  bool _disposed = false;
 
-  LoginController(this._ref);
+  LoginController(this._ref) {
+    _ref.onDispose(() {
+      _disposed = true;
+    });
+  }
 
-  bool get isLoading => _isLoading;
-  String? get emailError => _emailError;
-  String? get passwordError => _passwordError;
+  // Getters
+  bool get isLoading => _state.isLoading;
+  String? get emailError => _state.emailError;
+  String? get passwordError => _state.passwordError;
 
-  @override
-  void dispose() {
-    _mounted = false;
-    super.dispose();
+  void _updateState(LoginState newState) {
+    if (!_disposed) {
+      _state = newState;
+      notifyListeners();
+    }
   }
 
   void _clearErrors() {
-    if (!_mounted) return;
-    _emailError = null;
-    _passwordError = null;
-    notifyListeners();
+    if (!_disposed) {
+      _updateState(_state.copyWith(
+        emailError: null,
+        passwordError: null,
+      ));
+    }
   }
 
   bool _validateInputs({
     required String email,
     required String password,
   }) {
-    if (!_mounted) return false;
+    if (_disposed) return false;
+    
     bool isValid = true;
-    _clearErrors();
+    String? emailError;
+    String? passwordError;
 
+    // Validate email
     if (email.trim().isEmpty) {
-      _emailError = 'Please enter your email';
+      emailError = 'Please enter your email';
       isValid = false;
     } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-      _emailError = 'Please enter a valid email';
+      emailError = 'Please enter a valid email';
       isValid = false;
     }
 
+    // Validate password
     if (password.isEmpty) {
-      _passwordError = 'Please enter your password';
+      passwordError = 'Please enter your password';
       isValid = false;
     }
 
-    notifyListeners();
+    // Update state with any validation errors
+    _updateState(_state.copyWith(
+      emailError: emailError,
+      passwordError: passwordError,
+    ));
+
     return isValid;
   }
 
@@ -60,52 +105,53 @@ class LoginController extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    if (_isLoading || !_mounted) return;
+    if (_state.isLoading || _disposed) return;
 
-    if (!_validateInputs(
-      email: email,
-      password: password,
-    )) {
+    if (!_validateInputs(email: email, password: password)) {
       return;
     }
 
-    _isLoading = true;
-    if (_mounted) notifyListeners();
-
     try {
+      _updateState(_state.copyWith(isLoading: true));
       LogService.instance.info("Attempting to sign in with email: $email");
 
-      // Get the auth state notifier
-      final authStateNotifier = _ref.read(authStateProvider.notifier);
+      if (_disposed) return;
 
-      // Use the state notifier to handle sign in
+      // Get auth state notifier and attempt sign in
+      final authStateNotifier = _ref.read(authStateProvider.notifier);
       await authStateNotifier.signIn(email, password);
 
-      // Only check the current state if still mounted
-      if (_mounted) {
-        final currentState = _ref.read(authStateProvider);
-        
-        currentState.maybeWhen(
+      // Check for errors in the current state
+      if (!_disposed) {
+        _ref.read(authStateProvider).whenOrNull(
           error: (message) {
             throw LoginException(message);
           },
-          orElse: () {}, // Do nothing for other states
         );
       }
     } on AppwriteException catch (e) {
       LogService.instance.error("Appwrite login failed: ${e.message}");
-      throw LoginException(e.message.toString());
+      if (!_disposed) {
+        throw LoginException(e.message.toString());
+      }
     } catch (e) {
       LogService.instance.error("Unexpected error during login: $e");
-      if (e is LoginException) {
-        rethrow;
+      if (!_disposed) {
+        if (e is LoginException) {
+          rethrow;
+        }
+        throw const LoginException('An unexpected error occurred');
       }
-      throw const LoginException('An unexpected error occurred');
     } finally {
-      if (_mounted) {
-        _isLoading = false;
-        notifyListeners();
+      if (!_disposed) {
+        _updateState(_state.copyWith(isLoading: false));
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }
