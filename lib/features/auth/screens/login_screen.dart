@@ -19,16 +19,18 @@ class LoginPage extends ConsumerWidget {
           LogService.instance.info('User authenticated, fetching role...');
           
           try {
-            // Get user role after successful authentication
+            // Wait for the role provider to refresh and get the new role
+            await Future.delayed(const Duration(milliseconds: 100));
             final roleAsync = await ref.read(userRoleProvider.future);
             LogService.instance.info('User role fetched: $roleAsync');
             
             if (context.mounted) {
               // Navigate to App with the user role
-              Navigator.of(context).pushReplacement(
+              Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
                   builder: (context) => App(userRole: roleAsync),
                 ),
+                (route) => false,
               );
             }
           } catch (e) {
@@ -45,7 +47,6 @@ class LoginPage extends ConsumerWidget {
         },
         error: (message) {
           LogService.instance.error('Auth error: $message');
-          // Show error message
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

@@ -4,6 +4,7 @@ import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/features/auth/exceptions/login_exception.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
+import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
 
 // State class to encapsulate login form state
 class LoginState {
@@ -121,10 +122,18 @@ class LoginController extends ChangeNotifier {
       final authStateNotifier = _ref.read(authStateProvider.notifier);
       await authStateNotifier.signIn(email, password);
 
-      // Check for errors in the current state
+      // Check the auth state after sign in
       if (!_disposed) {
-        _ref.read(authStateProvider).whenOrNull(
+        final authState = _ref.read(authStateProvider);
+        
+        await authState.whenOrNull(
+          authenticated: (_) async {
+            LogService.instance.info("Sign in successful, refreshing role...");
+            // Only invalidate after successful authentication
+            _ref.invalidate(userRoleProvider);
+          },
           error: (message) {
+            LogService.instance.error("Sign in error: $message");
             throw LoginException(message);
           },
         );
