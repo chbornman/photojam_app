@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/database/models/jam_model.dart';
@@ -6,7 +9,9 @@ import 'package:photojam_app/appwrite/database/providers/journey_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/lesson_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/submission_provider.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
+import 'package:photojam_app/config/app_constants.dart';
 import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/core/utils/markdown_utilities.dart';
 import 'package:photojam_app/dialogs/create_jam_dialog.dart';
 import 'package:photojam_app/dialogs/create_journey_dialog.dart';
 import 'package:photojam_app/dialogs/delete_jam_dialog.dart';
@@ -14,74 +19,9 @@ import 'package:photojam_app/dialogs/delete_journey_dialog.dart';
 import 'package:photojam_app/dialogs/update_jam_dialog.dart';
 import 'package:photojam_app/dialogs/update_journey_dialog.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
+import 'package:photojam_app/features/admin/collapsable_section.dart';
+import 'package:photojam_app/features/admin/danger_action_card.dart';
 import 'package:photojam_app/features/journeys/journey_page.dart';
-
-// Add this new widget above the ContentManagementPage class:
-
-class DangerActionCard extends StatefulWidget {
-  final String title;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const DangerActionCard({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  State<DangerActionCard> createState() => _DangerActionCardState();
-}
-
-class _DangerActionCardState extends State<DangerActionCard> {
-  bool isUnlocked = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return StandardCard(
-      icon: isUnlocked ? widget.icon : Icons.lock,
-      title: widget.title,
-      action: IconButton(
-        icon: Icon(
-          isUnlocked ? Icons.lock_open : Icons.lock_outline,
-          color: isUnlocked ? Colors.red : null,
-        ),
-        onPressed: () {
-          setState(() {
-            isUnlocked = !isUnlocked;
-          });
-          if (!isUnlocked) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Action locked'),
-                duration: Duration(seconds: 1),
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Warning: Dangerous action unlocked'),
-                backgroundColor: Colors.red,
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
-        },
-      ),
-      onTap: isUnlocked
-          ? widget.onTap
-          : () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Unlock this action first'),
-                  duration: Duration(seconds: 1),
-                ),
-              );
-            },
-    );
-  }
-}
 
 class ContentManagementPage extends ConsumerStatefulWidget {
   const ContentManagementPage({super.key});
@@ -789,77 +729,467 @@ class _ContentManagementPageState extends ConsumerState<ContentManagementPage> {
     }
   }
 
+  void _openAddLessonDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Add New Lesson"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Select a Markdown (.md) file to upload"),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  LogService.instance.info("Starting lesson file selection");
+
+                  FilePickerResult? result =
+                      await FilePicker.platform.pickFiles(
+                    type: FileType.custom,
+                    allowedExtensions: ['md'],
+                    withData: true,
+                  );
+
+                  if (result != null && result.files.single.bytes != null) {
+                    Navigator.of(context)
+                        .pop(); // Close dialog before starting upload
+
+                    setState(() => _isLoading = true);
+
+                    String fileName = result.files.single.name;
+                    Uint8List fileBytes = result.files.single.bytes!;
+
+                    LogService.instance.info("Selected file details:");
+                    LogService.instance.info("- Original filename: $fileName");
+                    LogService.instance
+                        .info("- File size: ${fileBytes.length} bytes");
+
+                    // Upload to storage
+                    final storageNotifier =
+                        ref.read(lessonStorageProvider.notifier);
+
+                    LogService.instance
+                        .info("Attempting to upload file to storage:");
+                    LogService.instance
+                        .info("- Destination filename: $fileName");
+                    LogService.instance.info(
+                        "- Content type: ${result.files.single.extension}");
+
+                    final file =
+                        await storageNotifier.uploadFile(fileName, fileBytes);
+
+                    LogService.instance.info("File upload successful:");
+                    LogService.instance.info("- Storage file ID: ${file.id}");
+                    LogService.instance
+                        .info("- Storage file name: ${file.name}");
+                    LogService.instance
+                        .info("- Storage file size: ${file.sizeBytes}");
+                    LogService.instance
+                        .info("- Storage MIME type: ${file.mimeType}");
+
+                    // Create lesson
+                    final lessonsNotifier = ref.read(lessonsProvider.notifier);
+                    final content = String.fromCharCodes(fileBytes);
+                    final title = extractTitleFromMarkdown(fileBytes);
+
+                    LogService.instance.info("Creating lesson record:");
+                    LogService.instance.info("- Lesson title: $title");
+                    LogService.instance
+                        .info("- Content length: ${content.length} characters");
+
+                    await lessonsNotifier.createLesson(
+                      title: title,
+                      content: content,
+                    );
+
+                    if (mounted) {
+                      setState(() => _isLoading = false);
+                      _showMessage("Lesson added successfully");
+                    }
+                  }
+                } catch (e, stackTrace) {
+                  LogService.instance.error("Error adding lesson: $e");
+                  LogService.instance.error("Stack trace: $stackTrace");
+                  if (mounted) {
+                    setState(() => _isLoading = false);
+                    _showMessage("Error adding lesson: $e", isError: true);
+                  }
+                }
+              },
+              child: const Text("Select File"),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Cancel"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openUpdateLessonDialog() {
+    final lessonsAsync = ref.read(lessonsProvider);
+
+    lessonsAsync.when(
+      data: (lessons) {
+        if (!mounted) return;
+
+        if (lessons.isEmpty) {
+          _showMessage("No lessons available", isError: true);
+          return;
+        }
+
+        String? selectedLessonId;
+        final titleController = TextEditingController();
+
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Update Lesson"),
+            content: StatefulBuilder(
+              builder: (context, setState) {
+                return SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        value: selectedLessonId,
+                        hint: const Text("Select Lesson"),
+                        items: lessons.map((lesson) {
+                          return DropdownMenuItem(
+                            value: lesson.id,
+                            child: Text(lesson.title),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedLessonId = value;
+                            if (value != null) {
+                              final lesson =
+                                  lessons.firstWhere((l) => l.id == value);
+                              titleController.text = lesson.title;
+                            }
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: titleController,
+                        decoration: const InputDecoration(
+                          labelText: "New Title",
+                          hintText: "Enter new title",
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () async {
+                          try {
+                            LogService.instance.info(
+                                "Starting lesson file selection for update");
+
+                            FilePickerResult? result =
+                                await FilePicker.platform.pickFiles(
+                              type: FileType.custom,
+                              allowedExtensions: ['md'],
+                              withData: true,
+                            );
+
+                            if (result != null &&
+                                result.files.single.bytes != null) {
+                              final fileBytes = result.files.single.bytes!;
+                              final fileName = result.files.single.name;
+
+                              LogService.instance
+                                  .info("Selected update file: $fileName");
+
+                              if (selectedLessonId != null) {
+                                final lesson = lessons.firstWhere(
+                                    (l) => l.id == selectedLessonId);
+
+                                // Upload new file
+                                final storageNotifier =
+                                    ref.read(lessonStorageProvider.notifier);
+                                final file = await storageNotifier.uploadFile(
+                                    fileName, fileBytes);
+
+                                LogService.instance
+                                    .info("Uploaded new file: ${file.id}");
+
+                                // Delete old file
+                                final oldFileId =
+                                    lesson.content.pathSegments.last;
+                                await storageNotifier.deleteFile(oldFileId);
+
+                                LogService.instance
+                                    .info("Deleted old file: $oldFileId");
+
+                                // Update lesson document
+                                final content = String.fromCharCodes(fileBytes);
+                                await ref
+                                    .read(lessonsProvider.notifier)
+                                    .updateLesson(
+                                      selectedLessonId!,
+                                      title: titleController.text,
+                                      content: content,
+                                    );
+
+                                if (mounted) {
+                                  Navigator.of(context).pop();
+                                  _showMessage("Lesson updated successfully");
+                                }
+                              }
+                            }
+                          } catch (e) {
+                            LogService.instance
+                                .error("Error updating lesson: $e");
+                            _showMessage("Error updating lesson: $e",
+                                isError: true);
+                          }
+                        },
+                        child: const Text("Select New File"),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  if (selectedLessonId != null) {
+                    try {
+                      // Update just the title if no new file was selected
+                      await ref.read(lessonsProvider.notifier).updateLesson(
+                            selectedLessonId!,
+                            title: titleController.text,
+                          );
+
+                      if (mounted) {
+                        Navigator.of(context).pop();
+                        _showMessage("Lesson title updated successfully");
+                      }
+                    } catch (e) {
+                      LogService.instance
+                          .error("Error updating lesson title: $e");
+                      _showMessage("Error updating lesson title: $e",
+                          isError: true);
+                    }
+                  }
+                },
+                child: const Text("Update Title Only"),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => setState(() => _isLoading = true),
+      error: (error, stack) {
+        LogService.instance.error("Error fetching lessons: $error");
+        _showMessage("Error fetching lessons: $error", isError: true);
+      },
+    );
+  }
+
+  void _openDeleteLessonDialog() {
+    final lessonsAsync = ref.read(lessonsProvider);
+
+    lessonsAsync.when(
+      data: (lessons) {
+        if (!mounted) return;
+
+        if (lessons.isEmpty) {
+          _showMessage("No lessons available", isError: true);
+          return;
+        }
+
+        String? selectedLessonId;
+
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Delete Lesson"),
+            content: StatefulBuilder(
+              builder: (context, setState) {
+                return DropdownButtonFormField<String>(
+                  value: selectedLessonId,
+                  hint: const Text("Select Lesson"),
+                  items: lessons.map((lesson) {
+                    return DropdownMenuItem(
+                      value: lesson.id,
+                      child: Text(lesson.title),
+                    );
+                  }).toList(),
+                  onChanged: (value) =>
+                      setState(() => selectedLessonId = value),
+                );
+              },
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  if (selectedLessonId != null) {
+                    try {
+                      // Get the lesson to access its file ID
+                      final lesson =
+                          lessons.firstWhere((l) => l.id == selectedLessonId);
+                      final fileId = lesson.content.pathSegments.last;
+
+                      // Delete the file from storage
+                      await ref
+                          .read(lessonStorageProvider.notifier)
+                          .deleteFile(fileId);
+
+                      // Delete the lesson document
+                      await ref
+                          .read(lessonsProvider.notifier)
+                          .deleteLessonContent(selectedLessonId!);
+
+                      if (mounted) {
+                        Navigator.of(context).pop();
+                        _showMessage("Lesson deleted successfully");
+                      }
+                    } catch (e) {
+                      LogService.instance.error("Error deleting lesson: $e");
+                      _showMessage("Error deleting lesson: $e", isError: true);
+                    }
+                  }
+                },
+                child: const Text("Delete"),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => setState(() => _isLoading = true),
+      error: (error, stack) {
+        LogService.instance.error("Error fetching lessons: $error");
+        _showMessage("Error fetching lessons: $error", isError: true);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Content Management"),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
+          : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
-              child: GridView.count(
-                crossAxisCount: 1,
-                crossAxisSpacing: 8.0,
-                mainAxisSpacing: 8.0,
-                childAspectRatio: 6,
-                shrinkWrap: true,
+              child: Column(
                 children: [
-                  StandardCard(
-                    icon: Icons.add,
-                    title: "Create Journey",
-                    onTap: _openCreateJourneyDialog,
+                  CollapsibleSection(
+                    title: "Jams",
+                    color: AppConstants.photojamPink,
+                    children: [
+                      StandardCard(
+                        icon: Icons.add,
+                        title: "Create Jam",
+                        onTap: _openCreateJamDialog,
+                      ),
+                      StandardCard(
+                        icon: Icons.edit,
+                        title: "Update Jam",
+                        onTap: _fetchAndOpenUpdateJamDialog,
+                      ),
+                      StandardCard(
+                        icon: Icons.delete,
+                        title: "Delete Jam",
+                        onTap: _fetchAndOpenDeleteJamDialog,
+                      ),
+                    ],
                   ),
-                  StandardCard(
-                    icon: Icons.edit,
-                    title: "Update Journey",
-                    onTap: _fetchAndOpenUpdateJourneyDialog,
+                  CollapsibleSection(
+                    title: "Journeys",
+                    color: AppConstants.photojamDarkPink,
+                    children: [
+                      StandardCard(
+                        icon: Icons.add,
+                        title: "Create Journey",
+                        onTap: _openCreateJourneyDialog,
+                      ),
+                      StandardCard(
+                        icon: Icons.edit,
+                        title: "Update Journey",
+                        onTap: _fetchAndOpenUpdateJourneyDialog,
+                      ),
+                      StandardCard(
+                        icon: Icons.delete,
+                        title: "Delete Journey",
+                        onTap: _fetchAndOpenDeleteJourneyDialog,
+                      ),
+                    ],
                   ),
-                  StandardCard(
-                    icon: Icons.list,
-                    title: "Update Journey Lessons",
-                    onTap: _fetchAndOpenUpdateJourneyPage,
+                  CollapsibleSection(
+                    title: "Lessons",
+                    color: AppConstants.photojamDarkGreen,
+                    children: [
+                      StandardCard(
+                        icon: Icons.add,
+                        title: "Add Lesson",
+                        onTap:
+                            _openAddLessonDialog, // You'll need to implement this
+                      ),
+                      StandardCard(
+                        icon: Icons.edit,
+                        title: "Update Lesson",
+                        onTap: _openUpdateLessonDialog,
+                      ),
+                      StandardCard(
+                        icon: Icons.delete,
+                        title: "Delete Lesson",
+                        onTap:
+                            _openDeleteLessonDialog, // You'll need to implement this
+                      ),
+                      StandardCard(
+                        icon: Icons.list,
+                        title: "Update Journey Lessons",
+                        onTap: _fetchAndOpenUpdateJourneyPage,
+                      ),
+                    ],
                   ),
-                  StandardCard(
-                    icon: Icons.delete,
-                    title: "Delete Journey",
-                    onTap: _fetchAndOpenDeleteJourneyDialog,
-                  ),
-                  StandardCard(
-                    icon: Icons.add,
-                    title: "Create Jam",
-                    onTap: _openCreateJamDialog,
-                  ),
-                  StandardCard(
-                    icon: Icons.edit,
-                    title: "Update Jam",
-                    onTap: _fetchAndOpenUpdateJamDialog,
-                  ),
-                  StandardCard(
-                    icon: Icons.delete,
-                    title: "Delete Jam",
-                    onTap: _fetchAndOpenDeleteJamDialog,
-                  ),
-                  DangerActionCard(
-                    icon: Icons.delete_forever,
-                    title: "Delete All Lessons and Files",
-                    onTap: _deleteLessonsAndFiles,
-                  ),
-                  DangerActionCard(
-                    icon: Icons.delete_sweep,
-                    title: "Delete All Submissions and Photos",
-                    onTap: _deleteSubmissionsAndPhotos,
-                  ),
-                  DangerActionCard(
-                    icon: Icons.photo_library_outlined,
-                    title: "Delete All Photos from Storage",
-                    onTap: _deleteAllPhotosFromStorage,
-                  ),
-                  DangerActionCard(
-                    icon: Icons.folder_delete_outlined,
-                    title: "Delete All Lesson Files from Storage",
-                    onTap: _deleteAllLessonsFromStorage,
+                  CollapsibleSection(
+                    title: "Danger Zone",
+                    color: AppConstants.photojamPurple,
+                    children: [
+                      DangerActionCard(
+                        icon: Icons.delete_forever,
+                        title: "Delete All Lessons and Files",
+                        onTap: _deleteLessonsAndFiles,
+                      ),
+                      DangerActionCard(
+                        icon: Icons.folder_delete_outlined,
+                        title: "Delete All Lesson Files from Storage",
+                        onTap: _deleteAllLessonsFromStorage,
+                      ),
+                      DangerActionCard(
+                        icon: Icons.delete_sweep,
+                        title: "Delete All Submissions and Photos",
+                        onTap: _deleteSubmissionsAndPhotos,
+                      ),
+                      DangerActionCard(
+                        icon: Icons.photo_library_outlined,
+                        title: "Delete All Photos from Storage",
+                        onTap: _deleteAllPhotosFromStorage,
+                      ),
+                    ],
                   ),
                 ],
               ),

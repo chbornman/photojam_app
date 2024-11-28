@@ -51,27 +51,36 @@ final latestLessonVersionProvider = Provider.family<AsyncValue<int>, String>((re
   );
 });
 
+
 class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
   final LessonRepository _repository;
   
   LessonsNotifier(this._repository) : super(const AsyncValue.loading()) {
-    // Load initial lessons
     loadLessons();
   }
 
   Future<void> loadLessons() async {
     try {
+      LogService.instance.info('Loading all lessons');
       state = const AsyncValue.loading();
-      // Since there's no getAllLessons in repository, we'll load them by querying
-      // both journey and jam lessons - you might want to add getAllLessons to repository
-      final List<Lesson> lessons = [];
       
-      // For now, we'll update state with an empty list
-      // TODO: Implement proper lesson loading strategy based on your needs
-      state = AsyncValue.data(lessons);
+      // Load journey lessons
+      final journeyLessons = await _repository.getLessonsByJourney('');
+      
+      // Load jam lessons
+      final jamLessons = await _repository.getLessonForJam('');
+      
+      final allLessons = <Lesson>[...journeyLessons];
+      if (jamLessons != null) {
+        allLessons.add(jamLessons);
+      }
+      
+      LogService.instance.info('Loaded ${allLessons.length} lessons');
+      state = AsyncValue.data(allLessons);
     } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
       LogService.instance.error('Error loading lessons: $error');
+      LogService.instance.error('Stack trace: $stackTrace');
+      state = AsyncValue.error(error, stackTrace);
     }
   }
 
@@ -82,58 +91,88 @@ class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
     String? jamId,
   }) async {
     try {
-      await _repository.createLesson(
+      LogService.instance.info('Creating new lesson: $title');
+      
+      final newLesson = await _repository.createLesson(
         title: title,
         content: content,
         version: 1,
         journeyId: journeyId,
         jamId: jamId,
       );
-      await loadLessons();
+
+      LogService.instance.info('Created lesson with ID: ${newLesson.id}');
+      
+      state = state.whenData((lessons) => [...lessons, newLesson]);
     } catch (error) {
       LogService.instance.error('Error creating lesson: $error');
       rethrow;
     }
   }
 
+  Future<void> updateLesson(
+    String lessonId, {
+    String? title,
+    String? content,
+  }) async {
+    try {
+      LogService.instance.info('Updating lesson: $lessonId');
+      LogService.instance.info('Update params - Title: $title, Has content: ${content != null}');
+
+      final updatedLesson = await _repository.updateLesson(
+        lessonId: lessonId,
+        title: title,
+        content: content,
+      );
+
+      LogService.instance.info('Successfully updated lesson: ${updatedLesson.id}');
+
+      state = state.whenData((lessons) => lessons.map((lesson) =>
+          lesson.id == lessonId ? updatedLesson : lesson).toList());
+    } catch (error) {
+      LogService.instance.error('Error updating lesson: $error');
+      rethrow;
+    }
+  }
+
   Future<void> updateLessonContent(String lessonId, String content) async {
     try {
+      LogService.instance.info('Updating lesson content: $lessonId');
+      
       await _repository.updateLessonContent(lessonId, content);
-      await loadLessons();
+      await loadLessons(); // Reload to get updated version
+      
+      LogService.instance.info('Successfully updated lesson content');
     } catch (error) {
       LogService.instance.error('Error updating lesson content: $error');
       rethrow;
     }
   }
 
-    Future<void> deleteLessonContent(String lessonId) async {
+  Future<void> deleteLessonContent(String lessonId) async {
     try {
       LogService.instance.info('Attempting to delete lesson: $lessonId');
-      state = state.whenData((lessons) {
-        final lessonToDelete = lessons.firstWhereOrNull((l) => l.id == lessonId);
-        if (lessonToDelete == null) {
-          throw Exception('Lesson not found');
-        }
-
-        // Remove the lesson from the state
-        return lessons.where((lesson) => lesson.id != lessonId).toList();
-      });
-
-      // Delete lesson document from the database
+      
       await _repository.deleteLesson(lessonId);
+      
+      state = state.whenData((lessons) => 
+        lessons.where((lesson) => lesson.id != lessonId).toList()
+      );
+      
       LogService.instance.info('Successfully deleted lesson: $lessonId');
     } catch (error) {
       LogService.instance.error('Error deleting lesson: $error');
-      // Reload lessons to ensure state consistency
-      await loadLessons();
+      await loadLessons(); // Reload on error to ensure consistency
       rethrow;
     }
   }
 
-  // Helper method to refresh lessons for a specific journey
   Future<void> refreshJourneyLessons(String journeyId) async {
     try {
+      LogService.instance.info('Refreshing lessons for journey: $journeyId');
+      
       final journeyLessons = await _repository.getLessonsByJourney(journeyId);
+      
       state = state.whenData((lessons) {
         final updatedLessons = lessons
             .where((lesson) => lesson.journeyId != journeyId)
@@ -141,16 +180,20 @@ class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
           ..addAll(journeyLessons);
         return updatedLessons;
       });
+      
+      LogService.instance.info('Successfully refreshed journey lessons');
     } catch (error) {
       LogService.instance.error('Error refreshing journey lessons: $error');
       rethrow;
     }
   }
 
-  // Helper method to refresh lesson for a specific jam
   Future<void> refreshJamLesson(String jamId) async {
     try {
+      LogService.instance.info('Refreshing lesson for jam: $jamId');
+      
       final jamLesson = await _repository.getLessonForJam(jamId);
+      
       state = state.whenData((lessons) {
         final updatedLessons = lessons
             .where((lesson) => lesson.jamId != jamId)
@@ -160,15 +203,14 @@ class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
         }
         return updatedLessons;
       });
+      
+      LogService.instance.info('Successfully refreshed jam lesson');
     } catch (error) {
       LogService.instance.error('Error refreshing jam lesson: $error');
       rethrow;
     }
   }
-}
-
-// Extension method for list to support firstWhereOrNull
-extension FirstWhereOrNullExtension<T> on List<T> {
+}extension FirstWhereOrNullExtension<T> on List<T> {
   T? firstWhereOrNull(bool Function(T element) test) {
     for (var element in this) {
       if (test(element)) return element;
