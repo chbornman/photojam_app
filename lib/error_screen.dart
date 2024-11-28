@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:photojam_app/empty_page.dart';
+import 'package:photojam_app/features/auth/login_screen.dart';
 
 class ErrorScreen extends StatelessWidget {
   final String message;
@@ -26,7 +26,7 @@ class ErrorScreen extends StatelessWidget {
                 onPressed: () {
                   // Provide a way to retry or go back
                   Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const EmptyPage()),//LoginPage()),
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
                   );
                 },
                 child: const Text('Back to Login'),

@@ -1066,8 +1066,8 @@ class _ContentManagementPageState extends ConsumerState<ContentManagementPage> {
                     }
                   }
                 },
-                child: const Text("Delete"),
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text("Delete"),
               ),
             ],
           ),
@@ -1083,8 +1083,6 @@ class _ContentManagementPageState extends ConsumerState<ContentManagementPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("Content Management"),

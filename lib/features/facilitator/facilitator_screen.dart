@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/empty_page.dart';
-// import 'package:photojam_app/features/admin/screens/jam_calendar_page.dart';
-// import 'package:photojam_app/features/facilitator/screens/jam_selection_dialog.dart';
+import 'package:photojam_app/features/admin/jam_calendar_page.dart';
+import 'package:photojam_app/features/facilitator/jam_selection_dialog.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
 
 class FacilitatorPage extends StatelessWidget {
@@ -10,7 +9,7 @@ class FacilitatorPage extends StatelessWidget {
   void _showJamSelectionDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) => const EmptyPage(),//JamSelectionDialog(),
+      builder: (BuildContext context) => const JamSelectionDialog(),
     );
   }
 
@@ -30,7 +29,7 @@ class FacilitatorPage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => EmptyPage()), //JamCalendarPage()),
+                  MaterialPageRoute(builder: (context) => JamCalendarPage()),
                 );
               },
             ),

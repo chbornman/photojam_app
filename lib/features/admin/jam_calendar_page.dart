@@ -1,357 +1,199 @@
-// import 'package:flutter/material.dart';
-// import 'package:appwrite/appwrite.dart';
-// import 'package:appwrite/models.dart';
-// import 'package:photojam_app/core/services/log_service.dart';
-// import 'package:photojam_app/features/admin/screens/jam_event.dart';
-// import 'package:photojam_app/features/admin/screens/jam_event_card.dart';
-// import 'package:table_calendar/table_calendar.dart';
-// import 'package:intl/intl.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
+import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
+import 'package:photojam_app/appwrite/database/providers/submission_provider.dart';
+import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/features/admin/jam_event.dart';
+import 'package:photojam_app/features/admin/jam_event_card.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/intl.dart';
 
-// class JamCalendarPage extends StatefulWidget {
-//   const JamCalendarPage({super.key});
+// Create a provider for events map
+final jamEventsMapProvider =
+    FutureProvider<Map<DateTime, List<JamEvent>>>((ref) async {
+  // Watch the AsyncValue<List<Jam>> and handle it
+  final jamsAsync = ref.watch(jamsProvider);
 
-//   @override
-//   State<JamCalendarPage> createState() => _JamCalendarPageState();
-// }
+  return jamsAsync.when(
+    data: (jams) async {
+      final events = <DateTime, List<JamEvent>>{};
 
-// class _JamCalendarPageState extends State<JamCalendarPage> {
-//   late DateTime _focusedDay;
-//   late DateTime _selectedDay;
-//   Map<DateTime, List<JamEvent>> _jamEvents = {};
-//   bool _isLoading = true;
-//   final _dateFormatter = DateFormat('yyyy-MM-dd');
-//   List<Membership> _availableFacilitators = [];
+      for (final jam in jams) {
+        final date = jam.eventDatetime.toLocal();
+        final normalizedDate = DateTime(date.year, date.month, date.day);
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     _focusedDay = DateTime.now();
-//     _selectedDay = DateTime.now();
-//     LogService.instance.info('JamCalendarPage initialized.');
-//     _initialize();
-//   }
+        // Handle submissions AsyncValue
+        final submissionsAsync = ref.watch(jamSubmissionsProvider(jam.id));
+        final submissionCount = submissionsAsync.whenOrNull(
+              data: (submissions) => submissions.length,
+            ) ??
+            0;
 
-//   Future<void> _initialize() async {
-//     await _fetchJams();
-//     final authAPI = context.read<AuthAPI>();
-//     if (await authAPI.roleService.hasPermission('admin')) {
-//       await _fetchAvailableFacilitators();
-//     }
-//   }
+        final jamEvent = JamEvent(
+          id: jam.id,
+          title: jam.title,
+          dateTime: date,
+          facilitatorId: jam.facilitatorId,
+          submissionCount: submissionCount,
+          zoomLink: jam.zoomLink,
+          selectedPhotos: jam.selectedPhotos,
+        );
 
-//   Future<void> _fetchAvailableFacilitators() async {
-//     try {
-//       final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
-//       final teams = Teams(databaseApi.client);
+        events.putIfAbsent(normalizedDate, () => []).add(jamEvent);
+      }
 
-//       final facilitators = await databaseApi.getAvailableFacilitators(teams);
-//       setState(() {
-//         _availableFacilitators = facilitators;
-//       });
+      return events;
+    },
+    loading: () => <DateTime, List<JamEvent>>{},
+    error: (error, stack) {
+      LogService.instance.error('Error loading jams: $error');
+      throw error;
+    },
+  );
+});
 
-//       LogService.instance.info(
-//         'Fetched ${facilitators.length} available facilitators',
-//       );
-//     } catch (e) {
-//       LogService.instance.error('Error fetching facilitators: $e');
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           const SnackBar(
-//             content: Text('Failed to load facilitators'),
-//             backgroundColor: Colors.red,
-//           ),
-//         );
-//       }
-//     }
-//   }
+class JamCalendarPage extends ConsumerStatefulWidget {
+  const JamCalendarPage({super.key});
 
-//   Future<int> _getSubmissionCount(String jamId, DatabaseAPI databaseApi) async {
-//     try {
-//       final submissions = await databaseApi.getSubmissionsByJam(jamId);
-//       final count = submissions.documents.length;
-//       LogService.instance.info('Found $count submissions for jam $jamId');
-//       return count;
-//     } catch (e) {
-//       LogService.instance
-//           .error('Error fetching submission count for jam $jamId: $e');
-//       return 0;
-//     }
-//   }
+  @override
+  ConsumerState<JamCalendarPage> createState() => _JamCalendarPageState();
+}
 
-//   Future<void> _assignFacilitator(String jamId, String facilitatorId) async {
-//     try {
-//       final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
-//       await databaseApi.updateJamFacilitator(jamId, facilitatorId);
+class _JamCalendarPageState extends ConsumerState<JamCalendarPage> {
+  late DateTime _focusedDay;
+  late DateTime _selectedDay;
+  final _dateFormatter = DateFormat('yyyy-MM-dd');
 
-//       LogService.instance
-//           .info('Assigned facilitator $facilitatorId to jam $jamId');
-//       await _fetchJams(); // Refresh the jams list
+  @override
+  void initState() {
+    super.initState();
+    _focusedDay = DateTime.now();
+    _selectedDay = DateTime.now();
+    LogService.instance.info('JamCalendarPage initialized.');
+  }
 
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           const SnackBar(
-//             content: Text('Successfully assigned facilitator'),
-//             backgroundColor: Colors.green,
-//           ),
-//         );
-//       }
-//     } catch (e) {
-//       LogService.instance.error('Error assigning facilitator: $e');
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           const SnackBar(
-//             content: Text('Failed to assign facilitator. Please try again.'),
-//             backgroundColor: Colors.red,
-//           ),
-//         );
-//       }
-//     }
-//   }
+  List<JamEvent> _getEventsForDay(
+      DateTime day, Map<DateTime, List<JamEvent>> events) {
+    final normalizedDay = DateTime(day.year, day.month, day.day);
+    return events[normalizedDay] ?? [];
+  }
 
-//   Future<void> _removeFacilitator(String jamId) async {
-//     try {
-//       final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
-//       await databaseApi.updateJamFacilitator(jamId, null);
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final userRole = ref.watch(userRoleProvider).valueOrNull ?? 'nonmember';
+    final eventsAsync = ref.watch(jamEventsMapProvider);
 
-//       LogService.instance.info('Removed facilitator from jam $jamId');
-//       await _fetchJams(); // Refresh the jams list
-
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           const SnackBar(
-//             content: Text('Successfully removed facilitator'),
-//             backgroundColor: Colors.green,
-//           ),
-//         );
-//       }
-//     } catch (e) {
-//       LogService.instance.error('Error removing facilitator: $e');
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           const SnackBar(
-//             content: Text('Failed to remove facilitator. Please try again.'),
-//             backgroundColor: Colors.red,
-//           ),
-//         );
-//       }
-//     }
-//   }
-
-//   Future<void> _fetchJams() async {
-//     try {
-//       LogService.instance.info('Fetching jams from the database...');
-//       final databaseApi = Provider.of<DatabaseAPI>(context, listen: false);
-//       final response = await databaseApi.getJams();
-
-//       final events = <DateTime, List<JamEvent>>{};
-
-//       for (var doc in response.documents) {
-//         if (!doc.data.containsKey('date') || !doc.data.containsKey('title')) {
-//           LogService.instance.error(
-//             'Invalid jam document found: Missing required fields. ID: ${doc.$id}',
-//           );
-//           continue;
-//         }
-
-//         final submissionCount = await _getSubmissionCount(doc.$id, databaseApi);
-
-//         final date = DateTime.parse(doc.data['date']).toLocal();
-//         final normalizedDate = DateTime(date.year, date.month, date.day);
-
-//         final jamEvent = JamEvent(
-//           id: doc.$id,
-//           title: doc.data['title'] as String,
-//           dateTime: date,
-//           facilitatorId: doc.data['facilitator_id'] as String?,
-//           submissionCount: submissionCount,
-//           zoomLink: doc.data['zoom_link'] as String?,
-//           selectedPhotos:
-//               (doc.data['selected_photos'] as List?)?.cast<String>() ?? [],
-//         );
-
-//         events.putIfAbsent(normalizedDate, () => []).add(jamEvent);
-
-//         LogService.instance.info(
-//           'Jam fetched: ${jamEvent.title} on ${_dateFormatter.format(normalizedDate)} with $submissionCount submissions',
-//         );
-//       }
-
-//       setState(() {
-//         _jamEvents = events;
-//         _isLoading = false;
-//       });
-
-//       LogService.instance
-//           .info('Total unique jam dates fetched: ${events.length}');
-//     } catch (e) {
-//       LogService.instance.error('Error fetching jams: $e');
-//       setState(() => _isLoading = false);
-
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           const SnackBar(
-//             content: Text('Failed to load jams. Please try again later.'),
-//             backgroundColor: Colors.red,
-//           ),
-//         );
-//       }
-//     }
-//   }
-
-//   List<JamEvent> _getEventsForDay(DateTime day) {
-//     final normalizedDay = DateTime(day.year, day.month, day.day);
-//     return _jamEvents[normalizedDay] ?? [];
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final theme = Theme.of(context);
-//     final authAPI = context.watch<AuthAPI>();
-//     final roleService = authAPI.roleService;
-
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('Jam Calendar'),
-//         actions: [
-//           IconButton(
-//             icon: const Icon(Icons.refresh),
-//             onPressed: _fetchJams,
-//             tooltip: 'Refresh Calendar',
-//           ),
-//         ],
-//       ),
-//       // In the build method, update the CustomScrollView:
-
-//       body: _isLoading
-//           ? const Center(child: CircularProgressIndicator())
-//           : CustomScrollView(
-//               slivers: [
-//                 SliverToBoxAdapter(
-//                   child: Card(
-//                     margin: const EdgeInsets.all(8.0),
-//                     child: Padding(
-//                       padding: const EdgeInsets.all(8.0),
-//                       child: TableCalendar<JamEvent>(
-//                         firstDay:
-//                             DateTime.now().subtract(const Duration(days: 365)),
-//                         lastDay: DateTime.now().add(const Duration(days: 365)),
-//                         focusedDay: _focusedDay,
-//                         selectedDayPredicate: (day) =>
-//                             isSameDay(_selectedDay, day),
-//                         calendarFormat: CalendarFormat.month,
-//                         eventLoader: _getEventsForDay,
-//                         startingDayOfWeek: StartingDayOfWeek.sunday,
-//                         calendarStyle: CalendarStyle(
-//                           // Use theme colors for markers
-//                           markersMaxCount: 3,
-//                           markerDecoration: BoxDecoration(
-//                             color: theme.colorScheme
-//                                 .secondary, // Using secondary (pink) for markers
-//                             shape: BoxShape.circle,
-//                           ),
-//                           // Selected day styling
-//                           selectedDecoration: BoxDecoration(
-//                             color: theme.colorScheme
-//                                 .primary, // Using primary (yellow) for selected
-//                             shape: BoxShape.circle,
-//                           ),
-//                           selectedTextStyle: TextStyle(
-//                             color: theme.colorScheme
-//                                 .onPrimary, // Text color on selected day
-//                             fontWeight: FontWeight.bold,
-//                           ),
-//                           // Today styling
-//                           todayDecoration: BoxDecoration(
-//                             color: theme.colorScheme.primary.withOpacity(0.3),
-//                             shape: BoxShape.circle,
-//                           ),
-//                           todayTextStyle: TextStyle(
-//                             color: theme.colorScheme.onSurface,
-//                             fontWeight: FontWeight.bold,
-//                           ),
-//                           // Default day text style
-//                           defaultTextStyle: theme.textTheme.bodyMedium!,
-//                           // Weekend text style
-//                           weekendTextStyle:
-//                               theme.textTheme.bodyMedium!.copyWith(
-//                             color: theme.colorScheme.secondary,
-//                           ),
-//                           // Outside days text style
-//                           outsideTextStyle:
-//                               theme.textTheme.bodyMedium!.copyWith(
-//                             color: theme.colorScheme.onSurface.withOpacity(0.5),
-//                           ),
-//                         ),
-//                         headerStyle: HeaderStyle(
-//                           formatButtonVisible: false,
-//                           titleCentered: true,
-//                           titleTextStyle: theme.textTheme.headlineSmall!,
-//                           leftChevronIcon: Icon(
-//                             Icons.chevron_left,
-//                             color: theme.colorScheme.onSurface,
-//                           ),
-//                           rightChevronIcon: Icon(
-//                             Icons.chevron_right,
-//                             color: theme.colorScheme.onSurface,
-//                           ),
-//                         ),
-//                         daysOfWeekStyle: DaysOfWeekStyle(
-//                           weekdayStyle: theme.textTheme.bodyMedium!,
-//                           weekendStyle: theme.textTheme.bodyMedium!.copyWith(
-//                             color: theme.colorScheme.secondary,
-//                           ),
-//                         ),
-//                         onDaySelected: (selectedDay, focusedDay) {
-//                           LogService.instance.info(
-//                             'User selected day: ${_dateFormatter.format(selectedDay)}',
-//                           );
-//                           setState(() {
-//                             _selectedDay = selectedDay;
-//                             _focusedDay = focusedDay;
-//                           });
-//                         },
-//                       ),
-//                     ),
-//                   ),
-//                 ),
-//                 SliverToBoxAdapter(
-//                   child: Padding(
-//                     padding: const EdgeInsets.all(16.0),
-//                     child: Text(
-//                       'Events for ${_dateFormatter.format(_selectedDay)}',
-//                       style: theme.textTheme.titleLarge,
-//                     ),
-//                   ),
-//                 ),
-//                 SliverList(
-//                   delegate: SliverChildBuilderDelegate(
-//                     (context, index) {
-//                       final events = _getEventsForDay(_selectedDay);
-//                       if (events.isEmpty) {
-//                         return const Center(
-//                           child: Padding(
-//                             padding: EdgeInsets.all(16.0),
-//                             child: Text('No events scheduled for this day'),
-//                           ),
-//                         );
-//                       }
-//                       final event = events[index];
-//                       return JamEventCard(
-//                         event: event,
-//                         isUserFacilitator: roleService.isFacilitator,
-//                         isUserAdmin: roleService.isAdmin,
-//                         currentUserId: authAPI.userId ?? '',
-//                         availableFacilitators: _availableFacilitators,
-//                         onAssignFacilitator: _assignFacilitator,
-//                       );
-//                     },
-//                     childCount: _getEventsForDay(_selectedDay).isEmpty
-//                         ? 1
-//                         : _getEventsForDay(_selectedDay).length,
-//                   ),
-//                 ),
-//               ],
-//             ),
-//     );
-//   }
-// }
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Jam Calendar'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => ref.refresh(jamEventsMapProvider),
+            tooltip: 'Refresh Calendar',
+          ),
+        ],
+      ),
+      body: eventsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Text('Error loading events: $error'),
+        ),
+        data: (events) => CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Card(
+                margin: const EdgeInsets.all(8.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TableCalendar<JamEvent>(
+                    firstDay: DateTime.now().subtract(const Duration(days: 365)),
+                    lastDay: DateTime.now().add(const Duration(days: 365)),
+                    focusedDay: _focusedDay,
+                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                    calendarFormat: CalendarFormat.month,
+                    eventLoader: (day) => _getEventsForDay(day, events),
+                    startingDayOfWeek: StartingDayOfWeek.sunday,
+                    calendarStyle: CalendarStyle(
+                      markersMaxCount: 3,
+                      markerDecoration: BoxDecoration(
+                        color: theme.colorScheme.secondary,
+                        shape: BoxShape.circle,
+                      ),
+                      selectedDecoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      selectedTextStyle: TextStyle(
+                        color: theme.colorScheme.onPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      todayDecoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withOpacity(0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      todayTextStyle: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      defaultTextStyle: theme.textTheme.bodyMedium!,
+                      weekendTextStyle: theme.textTheme.bodyMedium!.copyWith(
+                        color: theme.colorScheme.secondary,
+                      ),
+                      outsideTextStyle: theme.textTheme.bodyMedium!.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      ),
+                    ),
+                    headerStyle: const HeaderStyle(
+                      formatButtonVisible: false,
+                      titleCentered: true,
+                    ),
+                    onDaySelected: (selectedDay, focusedDay) {
+                      setState(() {
+                        _selectedDay = selectedDay;
+                        _focusedDay = focusedDay;
+                      });
+                    },
+                  ),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Events for ${_dateFormatter.format(_selectedDay)}',
+                  style: theme.textTheme.titleLarge,
+                ),
+              ),
+            ),
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final dayEvents = _getEventsForDay(_selectedDay, events);
+                  if (dayEvents.isEmpty) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text('No events scheduled for this day'),
+                      ),
+                    );
+                  }
+                  return JamEventCard(
+                    event: dayEvents[index],
+                    userRole: userRole,
+                  );
+                },
+                childCount: _getEventsForDay(_selectedDay, events).isEmpty
+                    ? 1
+                    : _getEventsForDay(_selectedDay, events).length,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
