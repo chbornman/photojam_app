@@ -2,6 +2,7 @@
     "version": "0.2.0",
     "configurations": [
 
+
         {
             "name": "CalebiPhone",
             "request": "launch",
@@ -23,20 +24,20 @@
             "deviceId": "emulator-5554",
             "flutterMode": "debug"
         },
-        {
-            "name": "macOS Desktop",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "macos",
-            "flutterMode": "debug"
-        },
-        {
-            "name": "Windows Desktop",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "windows",
-            "flutterMode": "debug"
-        },
+        // {
+        //     "name": "macOS Desktop",
+        //     "request": "launch",
+        //     "type": "dart",
+        //     "deviceId": "macos",
+        //     "flutterMode": "debug"
+        // },
+        // {
+        //     "name": "Windows Desktop",
+        //     "request": "launch",
+        //     "type": "dart",
+        //     "deviceId": "windows",
+        //     "flutterMode": "debug"
+        // },
         {
             "name": "Chrome",
             "request": "launch",
