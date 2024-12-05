@@ -444,7 +444,7 @@ class _ContentManagementPageState extends ConsumerState<ContentManagementPage> {
     try {
       final submissionsAsync = ref.read(submissionsProvider);
 
-      await submissionsAsync.whenData((submissions) async {
+      submissionsAsync.whenData((submissions) async {
         if (submissions.isEmpty) {
           _showMessage("No submissions found", isError: true);
           return;
@@ -464,8 +464,8 @@ class _ContentManagementPageState extends ConsumerState<ContentManagementPage> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text("Delete All"),
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text("Delete All"),
               ),
             ],
           ),
@@ -518,7 +518,7 @@ class _ContentManagementPageState extends ConsumerState<ContentManagementPage> {
     try {
       final lessonsAsync = ref.read(lessonsProvider);
 
-      await lessonsAsync.whenData((lessons) async {
+      lessonsAsync.whenData((lessons) async {
         if (lessons.isEmpty) {
           _showMessage("No lessons found", isError: true);
           return;
@@ -538,8 +538,8 @@ class _ContentManagementPageState extends ConsumerState<ContentManagementPage> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text("Delete All"),
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text("Delete All"),
               ),
             ],
           ),
@@ -617,8 +617,8 @@ class _ContentManagementPageState extends ConsumerState<ContentManagementPage> {
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text("Delete All"),
                   style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: const Text("Delete All"),
                 ),
               ],
             ),
@@ -686,8 +686,8 @@ class _ContentManagementPageState extends ConsumerState<ContentManagementPage> {
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text("Delete All"),
                   style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: const Text("Delete All"),
                 ),
               ],
             ),

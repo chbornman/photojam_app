@@ -9,7 +9,7 @@ import 'package:photojam_app/core/utils/markdownviewer.dart';
 import 'package:photojam_app/core/widgets/standard_button.dart';
 
 class SnippetScreen extends ConsumerStatefulWidget {
-  const SnippetScreen({Key? key}) : super(key: key);
+  const SnippetScreen({super.key});
 
   @override
   ConsumerState<SnippetScreen> createState() => _SnippetScreenState();
