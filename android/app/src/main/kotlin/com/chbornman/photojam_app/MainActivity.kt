@@ -1,4 +1,4 @@
-package com.example.photojam_app
+package com.chbornman.photojam_app
 
 import io.flutter.embedding.android.FlutterActivity
 
