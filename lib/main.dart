@@ -1,3 +1,4 @@
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +10,6 @@ import 'package:photojam_app/error_screen.dart';
 import 'package:photojam_app/features/auth/login_screen.dart';
 import 'package:photojam_app/app.dart';
 import 'package:photojam_app/features/splashscreen.dart';
-import 'package:uni_links/uni_links.dart';
 
 void main() async {
   LogService.instance.info("App started");
@@ -33,41 +33,49 @@ class MyApp extends ConsumerStatefulWidget {
 
 class _MyAppState extends ConsumerState<MyApp> {
   bool _showSplash = true;
+  late AppLinks _appLinks;
 
   @override
   void initState() {
     super.initState();
-    _initializeDeepLinks();
+    _initializeAppLinks();
     LogService.instance.info("=== Starting Authentication Flow ===");
-    // Initialize auth state
     ref.read(authStateProvider.notifier).checkAuthStatus();
   }
 
-  Future<void> _initializeDeepLinks() async {
+  Future<void> _initializeAppLinks() async {
+    _appLinks = AppLinks();
+
+    // Handle initial URI if the app was launched from a link
     try {
-      final initialUri = await getInitialUri();
+      final initialUri = await _appLinks.getInitialAppLink();
       if (initialUri != null && mounted) {
         LogService.instance.info("Processing initial deep link: $initialUri");
         await _handleDeepLink(initialUri);
       }
-
-      uriLinkStream.listen(
-        (Uri? uri) async {
-          if (uri != null && mounted) {
-            await _handleDeepLink(uri);
-          }
-        },
-        onError: (err) => LogService.instance.error("Deep link error: $err"),
-      );
     } catch (e) {
-      LogService.instance.error("Deep link initialization error: $e");
+      LogService.instance.error("Error getting initial app link: $e");
     }
+
+    // Listen for incoming links while the app is running
+    _appLinks.uriLinkStream.listen(
+      (Uri? uri) async {
+        if (uri != null && mounted) {
+          LogService.instance.info("Received app link while running: $uri");
+          await _handleDeepLink(uri);
+        }
+      },
+      onError: (err) => LogService.instance.error("App link stream error: $err"),
+    );
   }
 
   Future<void> _handleDeepLink(Uri uri) async {
     if (uri.path.contains('/verify-membership')) {
       final params = uri.queryParameters;
       final requiredParams = ['teamId', 'membershipId', 'userId', 'secret'];
+
+      LogService.instance.info("Processing membership verification link");
+      LogService.instance.info("Parameters received: ${params.keys.join(', ')}");
 
       if (requiredParams.every(params.containsKey)) {
         try {
@@ -78,8 +86,22 @@ class _MyAppState extends ConsumerState<MyApp> {
           LogService.instance.info("Membership verification successful");
         } catch (e) {
           LogService.instance.error("Membership verification failed: $e");
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Verification failed: ${e.toString()}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
+      } else {
+        LogService.instance.info(
+          "Missing required parameters. Required: $requiredParams, Received: ${params.keys.toList()}",
+        );
       }
+    } else {
+      LogService.instance.info("Received unknown deep link path: ${uri.path}");
     }
   }
 

@@ -12,3 +12,5 @@ PRODUCT_BUNDLE_IDENTIFIER = com.chbornman.photojamApp
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2024 com.chbornman. All rights reserved.
+
+MACOSX_DEPLOYMENT_TARGET = 10.15

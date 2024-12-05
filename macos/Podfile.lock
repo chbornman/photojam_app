@@ -54,9 +54,9 @@ SPEC CHECKSUMS:
   file_selector_macos: cc3858c981fe6889f364731200d6232dac1d812d
   flutter_web_auth_2: 2e1dc2d2139973e4723c5286ce247dd590390d70
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
-  package_info_plus: f5790acc797bf17c3e959e9d6cf162cc68ff7523
+  package_info_plus: 12f1c5c2cfe8727ca46cbd0b26677728972d9a5b
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
-  share_plus: fd717ef89a2801d3491e737630112b80c310640e
+  share_plus: 1fa619de8392a4398bfaf176d441853922614e89
   url_launcher_macos: c82c93949963e55b228a30115bd219499a6fe404
   window_to_front: 4cdc24ddd8461ad1a55fa06286d6a79d8b29e8d8
 

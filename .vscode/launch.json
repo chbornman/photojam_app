@@ -1,23 +1,7 @@
 {
     "version": "0.2.0",
     "configurations": [
-        {
-            "name": "photojam_app",
-            "request": "launch",
-            "type": "dart"
-        },
-        {
-            "name": "photojam_app (profile mode)",
-            "request": "launch",
-            "type": "dart",
-            "flutterMode": "profile"
-        },
-        {
-            "name": "photojam_app (release mode)",
-            "request": "launch",
-            "type": "dart",
-            "flutterMode": "release"
-        },
+
         {
             "name": "CalebiPhone",
             "request": "launch",
@@ -26,81 +10,18 @@
             "flutterMode": "debug"
         },
         {
-            "name": "CalebiPhone (profile mode)",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "CalebiPhone",
-            "flutterMode": "profile"
-        },
-        {
-            "name": "CalebiPhone (release mode)",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "CalebiPhone",
-            "flutterMode": "release"
-        },
-        {
             "name": "iOS Simulator",
             "request": "launch",
             "type": "dart",
-            "deviceId": "ios-simulator",
+            "deviceId": "5E49E71E-46D1-448B-ABA6-2C8A668FAFE8",
             "flutterMode": "debug"
         },
         {
-            "name": "iOS Simulator (profile mode)",
+            "name": "Android Emulator", 
             "request": "launch",
             "type": "dart",
-            "deviceId": "ios-simulator",
-            "flutterMode": "profile"
-        },
-        {
-            "name": "iOS Simulator (release mode)",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "ios-simulator",
-            "flutterMode": "release"
-        },
-        {
-            "name": "Android Device",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "android-device",
+            "deviceId": "emulator-5554",
             "flutterMode": "debug"
-        },
-        {
-            "name": "Android Device (profile mode)",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "android-device",
-            "flutterMode": "profile"
-        },
-        {
-            "name": "Android Device (release mode)",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "android-device",
-            "flutterMode": "release"
-        },
-        {
-            "name": "Android Emulator",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "android-emulator",
-            "flutterMode": "debug"
-        },
-        {
-            "name": "Android Emulator (profile mode)",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "android-emulator",
-            "flutterMode": "profile"
-        },
-        {
-            "name": "Android Emulator (release mode)",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "android-emulator",
-            "flutterMode": "release"
         },
         {
             "name": "macOS Desktop",
@@ -110,39 +31,18 @@
             "flutterMode": "debug"
         },
         {
-            "name": "macOS Desktop (profile mode)",
+            "name": "Windows Desktop",
             "request": "launch",
             "type": "dart",
-            "deviceId": "macos",
-            "flutterMode": "profile"
-        },
-        {
-            "name": "macOS Desktop (release mode)",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "macos",
-            "flutterMode": "release"
+            "deviceId": "windows",
+            "flutterMode": "debug"
         },
         {
             "name": "Chrome",
             "request": "launch",
             "type": "dart",
-            "deviceId": "chrome",
+            "deviceId": "chrome", 
             "flutterMode": "debug"
-        },
-        {
-            "name": "Chrome (profile mode)",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "chrome",
-            "flutterMode": "profile"
-        },
-        {
-            "name": "Chrome (release mode)",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "chrome",
-            "flutterMode": "release"
         }
     ]
 }
