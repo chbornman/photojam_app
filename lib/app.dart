@@ -13,6 +13,30 @@ import 'package:photojam_app/features/photos/photos_screen.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/features/snippet/snippet_screen.dart';
 
+class NavigationItem {
+  final Widget screen;
+  final String label;
+  final IconData icon;
+  final Color backgroundColor;
+  final bool Function(List<String> labels)? roleCheck;
+
+  const NavigationItem({
+    required this.screen,
+    required this.label,
+    required this.icon,
+    required this.backgroundColor,
+    this.roleCheck,
+  });
+
+  BottomNavigationBarItem toBottomNavItem() {
+    return BottomNavigationBarItem(
+      icon: Icon(icon),
+      label: label,
+      backgroundColor: backgroundColor,
+    );
+  }
+}
+
 class App extends ConsumerStatefulWidget {
   final String userRole;
 
@@ -31,84 +55,72 @@ class _AppState extends ConsumerState<App> {
   @override
   void initState() {
     super.initState();
+    // We'll call _validateAccess in didChangeDependencies instead
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _validateAccess();
   }
 
-  void _validateAccess() {
-    final labels = [widget.userRole];
-    final isAdmin = RoleUtils.isAdmin(labels);
-    final isFacilitator = RoleUtils.isFacilitator(labels);
-
-    if ((_currentIndex == 4 && !isFacilitator) ||
-        (_currentIndex == 5 && !isAdmin)) {
-      setState(() => _currentIndex = 0);
-    }
-  }
-
-  List<Widget> _getScreens(String userRole) {
-    final labels = [userRole];
-    final isMember = RoleUtils.isMember(labels);
-    final isFacilitator = RoleUtils.isFacilitator(labels);
-    final isAdmin = RoleUtils.isAdmin(labels);
-
-    return [
-      const JamPage(),
-      const SnippetScreen(),
-      if (isMember) const JourneyPage(),
-      const PhotosPage(),
-      const AccountScreen(),
-      if (isFacilitator) const FacilitatorPage(),
-      if (isAdmin) const AdminPage(),
-    ];
-  }
-
-  List<BottomNavigationBarItem> _getNavBarItems(String userRole) {
-    final labels = [userRole];
-    final isMember = RoleUtils.isMember(labels);
-    final isFacilitator = RoleUtils.isFacilitator(labels);
-    final isAdmin = RoleUtils.isAdmin(labels);
+  List<NavigationItem> _getNavigationItems() {
     final theme = Theme.of(context);
-
+    
     return [
-      BottomNavigationBarItem(
-        icon: const Icon(Icons.camera_alt),
-        label: 'Jams',
+      NavigationItem(
+        screen: const SnippetScreen(),
+        label: 'Lesson',
+        icon: Icons.book,
         backgroundColor: theme.colorScheme.primary,
       ),
-      BottomNavigationBarItem(
-        icon: const Icon(Icons.play_lesson),
-        label: 'Snippet',
+      NavigationItem(
+        screen: const JamPage(),
+        label: 'Jams',
+        icon: Icons.camera_alt,
         backgroundColor: theme.colorScheme.secondary,
       ),
-      if (isMember)
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.book),
-          label: 'Journeys',
-          backgroundColor: AppConstants.photojamDarkGreen,
-        ),
-      BottomNavigationBarItem(
-        icon: const Icon(Icons.subscriptions),
+      NavigationItem(
+        screen: const PhotosPage(),
         label: 'Photos',
+        icon: Icons.subscriptions,
         backgroundColor: AppConstants.photojamPaleBlue,
       ),
-      BottomNavigationBarItem(
-        icon: const Icon(Icons.account_circle),
+      NavigationItem(
+        screen: const AccountScreen(),
         label: 'Account',
+        icon: Icons.account_circle,
         backgroundColor: AppConstants.photojamPurple,
       ),
-      if (isFacilitator)
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.group),
-          label: 'Facilitate',
-          backgroundColor: AppConstants.photojamDarkYellow,
-        ),
-      if (isAdmin)
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.admin_panel_settings),
-          label: 'Admin',
-          backgroundColor: AppConstants.photojamDarkPink,
-        ),
+      NavigationItem(
+        screen: const FacilitatorPage(),
+        label: 'Facilitate',
+        icon: Icons.group,
+        backgroundColor: AppConstants.photojamDarkYellow,
+        roleCheck: RoleUtils.isFacilitator,
+      ),
+      NavigationItem(
+        screen: const AdminPage(),
+        label: 'Admin',
+        icon: Icons.admin_panel_settings,
+        backgroundColor: AppConstants.photojamDarkPink,
+        roleCheck: RoleUtils.isAdmin,
+      ),
     ];
+  }
+
+  List<NavigationItem> _getVisibleNavigationItems() {
+    final labels = [widget.userRole];
+    return _getNavigationItems().where((item) {
+      return item.roleCheck?.call(labels) ?? true;
+    }).toList();
+  }
+
+  void _validateAccess() {
+    final visibleItems = _getVisibleNavigationItems();
+    if (_currentIndex >= visibleItems.length) {
+      setState(() => _currentIndex = 0);
+    }
   }
 
   Future<void> _signOut() async {
@@ -138,6 +150,7 @@ class _AppState extends ConsumerState<App> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final visibleItems = _getVisibleNavigationItems();
 
     // Watch auth state to handle sign out and session expiry
     ref.listen(authStateProvider, (previous, current) {
@@ -161,13 +174,13 @@ class _AppState extends ConsumerState<App> {
       );
     });
 
-    final screens = _getScreens(widget.userRole);
-    final navBarItems = _getNavBarItems(widget.userRole);
+    final currentItem = visibleItems[_currentIndex];
+    final isAccountScreen = currentItem.screen is AccountScreen;
 
     return Scaffold(
       appBar: StandardAppBar(
-        title: getTitleForIndex(_currentIndex),
-        actions: _currentIndex == getAccountPageIndex(screens)
+        title: currentItem.label,
+        actions: isAccountScreen
             ? [
                 IconButton(
                   icon: Icon(
@@ -183,7 +196,7 @@ class _AppState extends ConsumerState<App> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: screens,
+        children: visibleItems.map((item) => item.screen).toList(),
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.shifting,
@@ -196,38 +209,8 @@ class _AppState extends ConsumerState<App> {
             setState(() => _currentIndex = index);
           }
         },
-        items: navBarItems,
+        items: visibleItems.map((item) => item.toBottomNavItem()).toList(),
       ),
     );
   }
-}
-
-String getTitleForIndex(int index) {
-  switch (index) {
-    case 0:
-      return 'Jams';
-    case 1:
-      return 'Weekly Lesson Snippet';
-    case 2:
-      return 'Journeys';
-    case 3:
-      return 'Photos';
-    case 4:
-      return 'Account';
-    case 5:
-      return 'Facilitator Dashboard';
-    case 6:
-      return 'Admin Dashboard';
-    default:
-      return 'PhotoJam';
-  }
-}
-
-int getAccountPageIndex(List<Widget> screens) {
-  for (int i = 0; i < screens.length; i++) {
-    if (screens[i] is AccountScreen) {
-      return i;
-    }
-  }
-  return 0; // Default to the first page if not found
 }
