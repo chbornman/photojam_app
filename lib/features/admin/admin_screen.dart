@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/features/admin/content_management_screen.dart';
+import 'package:photojam_app/features/admin/content_management/content_management_screen.dart';
 import 'package:photojam_app/features/admin/jam_calendar_page.dart';
 import 'package:photojam_app/features/admin/system_logs.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
@@ -52,7 +52,7 @@ class AdminPage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => ContentManagementPage()),
+                      builder: (context) => ContentManagementScreen()),
                 );
               },
             ),
