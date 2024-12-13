@@ -7,7 +7,6 @@ import 'package:photojam_app/features/facilitator/facilitator_screen.dart';
 import 'package:photojam_app/features/jams/jams_page.dart';
 import 'package:photojam_app/core/widgets/standard_appbar.dart';
 import 'package:photojam_app/features/account/account_screen.dart';
-import 'package:photojam_app/features/journeys/journey_page.dart';
 import 'package:photojam_app/features/admin/admin_screen.dart';
 import 'package:photojam_app/features/photos/photos_screen.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';

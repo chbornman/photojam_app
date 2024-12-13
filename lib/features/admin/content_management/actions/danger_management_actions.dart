@@ -148,7 +148,7 @@ class DangerManagementActions {
       LogService.instance.info('Initializing submissions and photos deletion');
       final submissionsAsync = ref.read(submissionsProvider);
 
-      await submissionsAsync.whenData((submissions) async {
+      submissionsAsync.whenData((submissions) async {
         if (!context.mounted) return;
 
         if (submissions.isEmpty) {
