@@ -56,7 +56,8 @@ class JamSelectionDialog extends ConsumerWidget {
                 child: Center(child: CircularProgressIndicator()),
               ),
               error: (error, stackTrace) {
-                LogService.instance.error('Error loading jams: $error\n$stackTrace');
+                LogService.instance
+                    .error('Error loading jams: $error\n$stackTrace');
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 32),
                   child: Center(
@@ -93,21 +94,55 @@ class JamSelectionDialog extends ConsumerWidget {
                     itemCount: jams.length,
                     itemBuilder: (context, index) {
                       final jam = jams[index];
-                      final hasSelectedPhotos = jam.selectedPhotos.isNotEmpty;
+                      final hasSelectedPhotos =
+                          jam.selectedPhotosIds.isNotEmpty;
 
                       return ListTile(
                         title: Text(jam.title),
                         subtitle: Text(
                           jam.eventDatetime.toString().split(' ')[0],
                         ),
-                        trailing: hasSelectedPhotos ? Tooltip(
-                          message: 'Photos already selected, you can edit them',
-                          child: const Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                          ),
-                        ) : null,
-                        onTap: () => _selectJam(context, jam),
+                        trailing: hasSelectedPhotos
+                            ? Tooltip(
+                                message:
+                                    'Photos already selected, you can edit them',
+                                child: const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                ),
+                              )
+                            : null,
+                        onTap: () async {
+                          if (hasSelectedPhotos) {
+                            final proceed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Photos Already Selected'),
+                                content: const Text(
+                                    'This Jam already has selected photos. Proceeding will allow you to edit the selections. Do you want to continue?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    child: const Text('Proceed'),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (proceed != true) {
+                              return; // Exit if the user cancels
+                            }
+                          }
+
+                          // Navigate to the photo selection screen
+                          _selectJam(context, jam);
+                        },
                       );
                     },
                   ),

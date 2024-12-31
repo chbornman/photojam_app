@@ -45,14 +45,14 @@ class DangerManagementActions {
 
           for (final lesson in lessons) {
             try {
-              // Delete lesson file from storage
-              final fileId = lesson.content.pathSegments.last;
-              await storageNotifier.deleteFile(fileId);
-              LogService.instance.info("Deleted lesson file: $fileId");
+              // // Delete lesson file from storage
+              // final fileId = lesson.content.pathSegments.last;
+              // await storageNotifier.deleteFile(fileId);
+              // LogService.instance.info("Deleted lesson file: $fileId");
 
-              // Delete lesson document
-              await ref.read(lessonsProvider.notifier).deleteLessonContent(lesson.id);
-              LogService.instance.info("Deleted lesson: ${lesson.id}");
+              // // Delete lesson document
+              // await ref.read(lessonsProvider.notifier).deleteLessonContent(lesson.id);
+              // LogService.instance.info("Deleted lesson: ${lesson.id}");
               
               successCount++;
             } catch (e) {

@@ -1,15 +1,15 @@
-// lib/features/content_management/presentation/widgets/lessons/update_lesson_card.dart
+// lib/features/admin/content_management/widgets/submission/update_submission_card.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
-import 'package:photojam_app/features/admin/content_management/actions/lesson_management_actions.dart';
+import 'package:photojam_app/features/admin/content_management/actions/submission_management_actions.dart';
 
-class UpdateLessonCard extends ConsumerWidget {
+class UpdateSubmissionCard extends ConsumerWidget {
   final void Function(bool) onLoading;
   final void Function(String, {bool isError}) onMessage;
 
-  const UpdateLessonCard({
+  const UpdateSubmissionCard({
     super.key,
     required this.onLoading,
     required this.onMessage,
@@ -17,11 +17,10 @@ class UpdateLessonCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    
     return StandardCard(
       icon: Icons.edit,
-      title: "Update Lesson",
-      onTap: () => LessonManagementActions.openUpdateLessonDialog(
+      title: "Update Submission",
+      onTap: () => SubmissionManagementActions.fetchAndOpenUpdateSubmissionDialog(
         context: context,
         ref: ref,
         onLoading: onLoading,

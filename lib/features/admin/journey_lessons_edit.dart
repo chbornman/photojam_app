@@ -5,7 +5,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:photojam_app/appwrite/database/providers/journey_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/lesson_provider.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
-import 'package:photojam_app/core/utils/markdown_utilities.dart';
 import 'package:photojam_app/core/widgets/standard_button.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 
@@ -42,81 +41,81 @@ class _JourneyLessonsEditPageState
   Future<void> _loadLessons() async {
     if (!mounted) return;
 
-    setState(() {
-      isLoading = true;
-      hasError = false;
-      errorMessage = null;
-    });
+    // setState(() {
+    //   isLoading = true;
+    //   hasError = false;
+    //   errorMessage = null;
+    // });
 
-    try {
-      LogService.instance
-          .info("Loading lessons for journey: ${widget.journeyId}");
+    // try {
+    //   LogService.instance
+    //       .info("Loading lessons for journey: ${widget.journeyId}");
 
-      final journeyAsyncValue =
-          ref.watch(journeyByIdProvider(widget.journeyId));
+    //   final journeyAsyncValue =
+    //       ref.watch(journeyByIdProvider(widget.journeyId));
 
-      journeyAsyncValue.when(
-        data: (journey) async {
-          if (journey == null) {
-            throw Exception("Journey not found");
-          }
+    //   journeyAsyncValue.when(
+    //     data: (journey) async {
+    //       if (journey == null) {
+    //         throw Exception("Journey not found");
+    //       }
 
-          List<String> titles = [];
-          List<String> urls = [];
+    //       List<String> titles = [];
+    //       List<String> urls = [];
 
-          // Create a list of Future<void> for each lesson load operation
-          final lessonFutures = journey.lessonIds.map((lessonId) async {
-            final lessonAsyncValue = ref.watch(lessonByIdProvider(lessonId));
+    //       // Create a list of Future<void> for each lesson load operation
+    //       final lessonFutures = journey.lessonIds.map((lessonId) async {
+    //         //final lessonAsyncValue = ref.watch(lessonByIdProvider(lessonId));
 
-            lessonAsyncValue.when(
-              data: (lesson) {
-                if (lesson != null) {
-                  titles.add(lesson.title);
-                  urls.add(lessonId);
-                } else {
-                  LogService.instance.error("Lesson not found: $lessonId");
-                }
-              },
-              loading: () {}, // Handle loading state if needed
-              error: (error, stack) {
-                LogService.instance
-                    .error("Error loading lesson $lessonId: $error");
-              },
-            );
-          }).toList();
+    //       //   lessonAsyncValue.when(
+    //       //     data: (lesson) {
+    //       //       if (lesson != null) {
+    //       //         titles.add(lesson.title);
+    //       //         urls.add(lessonId);
+    //       //       } else {
+    //       //         LogService.instance.error("Lesson not found: $lessonId");
+    //       //       }
+    //       //     },
+    //       //     loading: () {}, // Handle loading state if needed
+    //       //     error: (error, stack) {
+    //       //       LogService.instance
+    //       //           .error("Error loading lesson $lessonId: $error");
+    //       //     },
+    //       //   );
+    //       // }).toList();
 
-          // Wait for all lessons to load
-          await Future.wait(lessonFutures);
+    //       // // Wait for all lessons to load
+    //       // await Future.wait(lessonFutures);
 
-          if (mounted) {
-            setState(() {
-              lessonTitles = titles;
-              lessonUrls = urls;
-              isLoading = false;
-            });
-          }
-        },
-        loading: () => setState(() => isLoading = true),
-        error: (error, stack) {
-          LogService.instance.error("Error loading journey: $error");
-          setState(() {
-            hasError = true;
-            errorMessage = error.toString();
-            isLoading = false;
-          });
-        },
-      );
-    } catch (e) {
-      LogService.instance.error("Error loading lessons: $e");
-      if (mounted) {
-        setState(() {
-          hasError = true;
-          errorMessage = e.toString();
-          isLoading = false;
-        });
-        _showErrorSnackBar("Error loading lessons: $e");
-      }
-    }
+    //       if (mounted) {
+    //         setState(() {
+    //           lessonTitles = titles;
+    //           lessonUrls = urls;
+    //           isLoading = false;
+    //         });
+    //       }
+    //     },
+    //     loading: () => setState(() => isLoading = true),
+    //     error: (error, stack) {
+    //       LogService.instance.error("Error loading journey: $error");
+    //       setState(() {
+    //         hasError = true;
+    //         errorMessage = error.toString();
+    //         isLoading = false;
+    //       });
+    //     },
+    //   );
+    // } catch (e) {
+    //   LogService.instance.error("Error loading lessons: $e");
+    //   if (mounted) {
+    //     setState(() {
+    //       hasError = true;
+    //       errorMessage = e.toString();
+    //       isLoading = false;
+    //     });
+    //     _showErrorSnackBar("Error loading lessons: $e");
+    //   }
+    // }
   }
 
 Future<void> _addLesson() async {
@@ -163,19 +162,18 @@ Future<void> _addLesson() async {
 
       // Create lesson
       final lessonsNotifier = ref.read(lessonsProvider.notifier);
-      final content = String.fromCharCodes(fileBytes);
-      final title = extractTitleFromMarkdown(fileBytes);
+      final contentFileId = file.id;
+      final title = file.name;
 
       LogService.instance.info("Creating lesson record:");
       LogService.instance.info("- Lesson title: $title");
       LogService.instance.info("- Journey ID: ${widget.journeyId}");
-      LogService.instance.info("- Content length: ${content.length} characters");
 
-      await lessonsNotifier.createLesson(
-        title: title,
-        content: content,
-        journeyId: widget.journeyId,
-      );
+      // await lessonsNotifier.createLesson(
+      //   fileName: title,
+      //   fileBytes: contentFileId,
+      //   journeyId: widget.journeyId,
+      // );
 
       if (mounted) {
         setState(() {

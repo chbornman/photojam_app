@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/database/models/jam_model.dart';
 import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
-import 'package:photojam_app/empty_page.dart';
+import 'package:photojam_app/features/jams/jamdetails_page.dart';
 import 'package:photojam_app/features/jams/jamsignup_page.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
 
@@ -21,10 +21,18 @@ class _JamPageState extends ConsumerState<JamPage> {
     super.initState();
   }
 
-  Future<void> _refreshJams() async {
-    // Manual refresh function
-    ref.read(jamsProvider.notifier).loadJams();
-  }
+Future<void> _refreshJams() async {
+  await AsyncValue.guard(() async {
+    ref.invalidate(jamsProvider);
+    final authState = ref.read(authStateProvider);
+    authState.maybeWhen(
+      authenticated: (user) => ref.invalidate(userUpcomingJamsProvider(user.id)),
+      orElse: () {},
+    );
+  });
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +79,7 @@ class _JamPageState extends ConsumerState<JamPage> {
 
   Widget _buildHeader() {
     return Text(
-      "Upcoming Jams",
+      "Your Upcoming Jams",
       style: Theme.of(context).textTheme.headlineLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -156,7 +164,7 @@ class _JamPageState extends ConsumerState<JamPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EmptyPage(),//JamDetailsPage(jam: jam),
+        builder: (context) => JamDetailsPage(jam: jam),
       ),
     );
   }

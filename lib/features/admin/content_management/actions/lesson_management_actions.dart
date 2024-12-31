@@ -1,5 +1,3 @@
-// lib/features/content_management/domain/lesson_management_actions.dart
-
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/database/providers/globals_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/lesson_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/journey_provider.dart';
-import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/services/log_service.dart';
-import 'package:photojam_app/core/utils/markdown_utilities.dart';
 import 'package:photojam_app/features/journeys/journey_page.dart';
 
 class LessonManagementActions {
@@ -21,7 +17,7 @@ class LessonManagementActions {
   }) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text("Add New Lesson"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -41,26 +37,29 @@ class LessonManagementActions {
                   );
 
                   if (result != null && result.files.single.bytes != null) {
-                    Navigator.of(context).pop();
-                    onLoading(true);
+                    LogService.instance
+                        .info("Selected file: ${result.files.single.name}");
 
-                    final fileName = result.files.single.name;
-                    final fileBytes = result.files.single.bytes!;
+                    // Pop the dialog before starting upload
+                    Navigator.of(dialogContext).pop();
 
-                    LogService.instance.info("Selected file: $fileName");
+                    if (!context.mounted) return;
 
-                    await _handleLessonFileUpload(
+                    // Start upload process with context check
+                    await _handleCreateLesson(
+                      context: context,
                       ref: ref,
-                      fileName: fileName,
-                      fileBytes: fileBytes,
+                      fileName: result.files.single.name,
+                      fileBytes: result.files.single.bytes!,
+                      onLoading: onLoading,
                       onMessage: onMessage,
                     );
                   }
                 } catch (e) {
-                  LogService.instance.error("Error adding lesson: $e");
-                  onMessage("Error adding lesson: $e", isError: true);
-                } finally {
-                  onLoading(false);
+                  LogService.instance.error("Error during file selection: $e");
+                  if (context.mounted) {
+                    onMessage("Error selecting file: $e", isError: true);
+                  }
                 }
               },
               child: const Text("Select File"),
@@ -69,7 +68,7 @@ class LessonManagementActions {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text("Cancel"),
           ),
         ],
@@ -77,29 +76,34 @@ class LessonManagementActions {
     );
   }
 
-  static Future<void> _handleLessonFileUpload({
+  static Future<void> _handleCreateLesson({
+    required BuildContext context,
     required WidgetRef ref,
     required String fileName,
     required Uint8List fileBytes,
+    required Function(bool) onLoading,
     required Function(String, {bool isError}) onMessage,
   }) async {
+    // Get providers early, before any async operations
+    final lessonsNotifier = ref.read(lessonsProvider.notifier);
+
     try {
-      final storageNotifier = ref.read(lessonStorageProvider.notifier);
-      final file = await storageNotifier.uploadFile(fileName, fileBytes);
-      LogService.instance.info("File uploaded successfully: ${file.id}");
+      // Create lesson
+      await lessonsNotifier.createLesson(
+        fileName: fileName,
+        fileBytes: fileBytes,
+      );
 
-      final content = String.fromCharCodes(fileBytes);
-      final title = extractTitleFromMarkdown(fileBytes);
-
-      await ref.read(lessonsProvider.notifier).createLesson(
-            title: title,
-            content: content,
-          );
-
+      if (!context.mounted) return;
       onMessage("Lesson added successfully");
     } catch (e) {
       LogService.instance.error("Error handling lesson file upload: $e");
-      rethrow;
+      if (!context.mounted) return;
+      onMessage("Error handling lesson upload: $e", isError: true);
+    } finally {
+      if (context.mounted) {
+        onLoading(false);
+      }
     }
   }
 
@@ -109,7 +113,7 @@ class LessonManagementActions {
     required Function(bool) onLoading,
     required Function(String, {bool isError}) onMessage,
   }) {
-    final lessonsAsync = ref.read(lessonsProvider);
+    final lessonsAsync = ref.watch(lessonsProvider);
 
     lessonsAsync.when(
       data: (lessons) {
@@ -128,7 +132,9 @@ class LessonManagementActions {
           onMessage: onMessage,
         );
       },
-      loading: () => onLoading(true),
+      loading: () {
+        onLoading(true);
+      },
       error: (error, stack) {
         LogService.instance.error("Error fetching lessons: $error");
         onMessage("Error fetching lessons: $error", isError: true);
@@ -160,7 +166,6 @@ class LessonManagementActions {
                     value: selectedLessonId,
                     hint: const Text("Select Lesson"),
                     items: lessons.map<DropdownMenuItem<String>>((lesson) {
-                      // Add explicit type
                       return DropdownMenuItem<String>(
                         value: lesson.id as String,
                         child: Text(lesson.title as String),
@@ -170,20 +175,11 @@ class LessonManagementActions {
                       setState(() {
                         selectedLessonId = value;
                         if (value != null) {
-                          final lesson =
-                              lessons.firstWhere((l) => l.id == value);
+                          final lesson = lessons.firstWhere((l) => l.id == value);
                           titleController.text = lesson.title;
                         }
                       });
                     },
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: titleController,
-                    decoration: const InputDecoration(
-                      labelText: "New Title",
-                      hintText: "Enter new title",
-                    ),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
@@ -207,16 +203,6 @@ class LessonManagementActions {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () => _updateLessonTitleOnly(
-              context: context,
-              ref: ref,
-              selectedLessonId: selectedLessonId,
-              titleController: titleController,
-              onMessage: onMessage,
-            ),
-            child: const Text("Update Title Only"),
           ),
         ],
       ),
@@ -254,28 +240,11 @@ class LessonManagementActions {
 
         LogService.instance.info("Updating lesson file: ${lesson.id}");
 
-        final storageNotifier = ref.read(lessonStorageProvider.notifier);
-
-        // Upload new file
-        final file = await storageNotifier.uploadFile(fileName, fileBytes);
-        LogService.instance.info("New file uploaded: ${file.id}");
-
-        // Delete old file if exists
-        try {
-          final oldFileId = lesson.content.pathSegments.last;
-          await storageNotifier.deleteFile(oldFileId);
-          LogService.instance.info("Old file deleted: $oldFileId");
-        } catch (e) {
-          LogService.instance.error("Error deleting old file: $e");
-        }
-
-        // Update lesson document
-        final content = String.fromCharCodes(fileBytes);
         await ref.read(lessonsProvider.notifier).updateLesson(
-              selectedLessonId,
-              title: titleController.text,
-              content: content,
-            );
+          lessonId: selectedLessonId,
+          fileName: fileName,
+          fileBytes: fileBytes,
+        );
 
         onMessage("Lesson updated successfully");
       }
@@ -287,29 +256,9 @@ class LessonManagementActions {
     }
   }
 
-  static Future<void> _updateLessonTitleOnly({
-    required BuildContext context,
-    required WidgetRef ref,
-    required String? selectedLessonId,
-    required TextEditingController titleController,
-    required Function(String, {bool isError}) onMessage,
-  }) async {
-    if (selectedLessonId != null) {
-      try {
-        LogService.instance.info("Updating lesson title: $selectedLessonId");
-        await ref.read(lessonsProvider.notifier).updateLesson(
-              selectedLessonId,
-              title: titleController.text,
-            );
 
-        Navigator.of(context).pop();
-        onMessage("Lesson title updated successfully");
-      } catch (e) {
-        LogService.instance.error("Error updating lesson title: $e");
-        onMessage("Error updating lesson title: $e", isError: true);
-      }
-    }
-  }
+
+
 
   static void openDeleteLessonDialog({
     required BuildContext context,
@@ -317,10 +266,12 @@ class LessonManagementActions {
     required Function(bool) onLoading,
     required Function(String, {bool isError}) onMessage,
   }) {
-    final lessonsAsync = ref.read(lessonsProvider);
+    final lessonsAsync = ref.watch(lessonsProvider);
 
     lessonsAsync.when(
       data: (lessons) {
+        onLoading(false);
+
         if (!context.mounted) return;
 
         if (lessons.isEmpty) {
@@ -337,6 +288,7 @@ class LessonManagementActions {
       },
       loading: () => onLoading(true),
       error: (error, stack) {
+        onLoading(false);
         LogService.instance.error("Error fetching lessons: $error");
         onMessage("Error fetching lessons: $error", isError: true);
       },
@@ -381,7 +333,6 @@ class LessonManagementActions {
               context: context,
               ref: ref,
               selectedLessonId: selectedLessonId,
-              lessons: lessons,
               onMessage: onMessage,
             ),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -396,25 +347,15 @@ class LessonManagementActions {
     required BuildContext context,
     required WidgetRef ref,
     required String? selectedLessonId,
-    required List<dynamic> lessons,
     required Function(String, {bool isError}) onMessage,
   }) async {
     if (selectedLessonId != null) {
       try {
-        final lesson = lessons.firstWhere((l) => l.id == selectedLessonId);
-        final fileId = lesson.content.pathSegments.last;
-
-        LogService.instance.info("Deleting lesson and file: $selectedLessonId");
-
-        // Delete the file from storage
-        await ref.read(lessonStorageProvider.notifier).deleteFile(fileId);
-        LogService.instance.info("Deleted file: $fileId");
-
         // Delete the lesson document
-        await ref
-            .read(lessonsProvider.notifier)
-            .deleteLessonContent(selectedLessonId);
-        LogService.instance.info("Deleted lesson document: $selectedLessonId");
+        await ref.read(lessonsProvider.notifier).deleteLesson(
+              lessonId: selectedLessonId,
+            );
+        LogService.instance.info("Deleted lesson: $selectedLessonId");
 
         Navigator.of(context).pop();
         onMessage("Lesson deleted successfully");

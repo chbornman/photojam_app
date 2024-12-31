@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:photojam_app/appwrite/auth/models/user_model.dart';
@@ -7,8 +9,52 @@ import 'package:photojam_app/core/services/log_service.dart';
 class AppwriteAuthRepository implements AuthRepository {
   final Account _account;
   final Client _client;
+  final Functions _functions;
 
-  AppwriteAuthRepository(this._account, this._client);
+  AppwriteAuthRepository(this._account, this._client)
+      : _functions = Functions(_client); // Initialize Functions
+
+  @override
+  Future<List<AppUser>> getAllUsers() async {
+    try {
+      LogService.instance.info('Fetching all users via Appwrite function');
+
+      final execution = await _functions.createExecution(
+        functionId: 'getAllUsers', // Your function ID from Appwrite Console
+      );
+
+      if (execution.status != 'completed') {
+        throw Exception('Function execution failed: ${execution.status}');
+      }
+
+      final responseData =
+          json.decode(execution.responseBody) as Map<String, dynamic>;
+
+      if (responseData.containsKey('error')) {
+        throw Exception(responseData['message'] ?? 'Unknown error');
+      }
+
+      final usersList = (responseData['users'] as List)
+          .map((userData) => AppUser(
+                id: userData['id'],
+                email: userData['email'],
+                name: userData['name'],
+                labels: List<String>.from(userData['labels'] ?? []),
+                emailVerification: false,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                prefs: Preferences(data: const {}),
+              ))
+          .toList();
+
+      LogService.instance
+          .info('Successfully fetched ${usersList.length} users');
+      return usersList;
+    } catch (e) {
+      LogService.instance.error('Failed to fetch users: $e');
+      throw _handleAuthError(e);
+    }
+  }
 
   @override
   Future<AppUser> createAccount({

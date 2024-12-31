@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/appwrite_database_repository.dart';
 import 'package:photojam_app/appwrite/database/models/jam_model.dart';
+import 'package:photojam_app/appwrite/database/providers/submission_provider.dart';
 import 'package:photojam_app/appwrite/database/repositories/jam_repository.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 
@@ -14,16 +15,6 @@ final jamRepositoryProvider = Provider<JamRepository>((ref) {
 final jamsProvider = StateNotifierProvider<JamsNotifier, AsyncValue<List<Jam>>>((ref) {
   final repository = ref.watch(jamRepositoryProvider);
   return JamsNotifier(repository);
-});
-
-// Provider for upcoming jams (after current datetime)
-final upcomingJamsProvider = Provider<AsyncValue<List<Jam>>>((ref) {
-  return ref.watch(jamsProvider).whenData(
-    (jams) => jams
-        .where((jam) => jam.eventDatetime.isAfter(DateTime.now()))
-        .toList()
-        ..sort((a, b) => a.eventDatetime.compareTo(b.eventDatetime)),
-  );
 });
 
 // Provider for jams by facilitator
@@ -53,17 +44,44 @@ final jamByIdProvider = Provider.family<AsyncValue<Jam?>, String>((ref, jamId) {
   );
 });
 
+
+
 // Provider for upcoming jams by user
 final userUpcomingJamsProvider = Provider.family<AsyncValue<List<Jam>>, String>((ref, userId) {
   return ref.watch(jamsProvider).whenData((jams) {
-    final userJams = jams.where((jam) => 
-      jam.submissionIds.any((submissionId) => submissionId.contains(userId)) &&
-      jam.eventDatetime.isAfter(DateTime.now())
-    ).toList();
+    // Get all submissions
+    final submissions = ref.watch(submissionsProvider).maybeWhen(
+      data: (data) => data,
+      orElse: () => [],
+    );
+
+    // Filter jams where at least one submission belongs to the user
+    final userJams = jams.where((jam) {
+      return jam.submissionIds.any((submissionId) {
+        // Match submission's user_id to the provided userId
+        final submission = submissions.firstWhereOrNull((s) => s.id == submissionId);
+        return submission?.userId == userId;
+      }) && jam.eventDatetime.isAfter(DateTime.now());
+    }).toList();
+
+    // Sort jams by eventDatetime in ascending order
     userJams.sort((a, b) => a.eventDatetime.compareTo(b.eventDatetime));
     return userJams;
   });
 });
+
+
+// Provider for all upcoming jams
+final upcomingJamsProvider = Provider<AsyncValue<List<Jam>>>((ref) {
+  return ref.watch(jamsProvider).whenData((jams) {
+    final upcomingJams = jams
+        .where((jam) => jam.eventDatetime.isAfter(DateTime.now()))
+        .toList();
+    upcomingJams.sort((a, b) => a.eventDatetime.compareTo(b.eventDatetime));
+    return upcomingJams;
+  });
+});
+
 
 class JamsNotifier extends StateNotifier<AsyncValue<List<Jam>>> {
   final JamRepository _repository;
@@ -86,6 +104,7 @@ class JamsNotifier extends StateNotifier<AsyncValue<List<Jam>>> {
   Future<void> createJam(Jam jam) async {
     try {
       await _repository.createJam(jam);
+          state = state.whenData((jams) => [...jams, jam]);
       await loadJams();
     } catch (error) {
       LogService.instance.error('Error creating jam: $error');
@@ -98,7 +117,7 @@ class JamsNotifier extends StateNotifier<AsyncValue<List<Jam>>> {
     String? title,
     DateTime? eventDatetime,
     String? zoomLink,
-    List<String>? selectedPhotos,
+    List<String>? selectedPhotosIds,
   }) async {
     try {
       await _repository.updateJam(
@@ -106,7 +125,7 @@ class JamsNotifier extends StateNotifier<AsyncValue<List<Jam>>> {
         title: title,
         eventDatetime: eventDatetime,
         zoomLink: zoomLink,
-        selectedPhotos: selectedPhotos,
+        selectedPhotosIds: selectedPhotosIds,
       );
       await loadJams();
     } catch (error) {

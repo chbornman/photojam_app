@@ -2,6 +2,7 @@ import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/database/models/jam_model.dart';
 import 'package:photojam_app/appwrite/database/models/submission_model.dart';
@@ -14,6 +15,7 @@ import 'package:photojam_app/core/widgets/standard_dialog.dart';
 import 'package:photojam_app/core/widgets/standard_button.dart';
 import 'package:photojam_app/features/jams/photo_upload_service.dart';
 import 'package:photojam_app/features/jams/photo_selector.dart';
+import 'package:photojam_app/features/photos/photos_screen.dart';
 
 class JamSignupPage extends ConsumerStatefulWidget {
   const JamSignupPage({super.key});
@@ -56,14 +58,18 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
 
   Future<void> _fetchJams() async {
     try {
-      final jamRepository = ref.read(jamRepositoryProvider);
-      final jams = await jamRepository.getAllJams(activeOnly: true);
+      final asyncJams = ref.read(upcomingJamsProvider);
 
-      if (!mounted) return;
-      setState(() => _jams = jams);
+      asyncJams.maybeWhen(
+        data: (jams) {
+          if (!mounted) return;
+          setState(() => _jams = jams);
+        },
+        orElse: () => _showErrorSnackBar('Failed to load jams'),
+      );
     } catch (e) {
-      LogService.instance.error('Error fetching jams: $e');
-      _showErrorSnackBar('Failed to load jams');
+      LogService.instance.error('Unexpected error fetching jams: $e');
+      _showErrorSnackBar('Unexpected error occurred');
     }
   }
 
@@ -300,6 +306,8 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
   }
 
   Future<void> _showSuccessAndNavigate() async {
+    _onSubmissionSuccess(context, ref);
+
     await showDialog(
       context: context,
       builder: (context) => StandardDialog(
@@ -308,12 +316,30 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
         submitButtonLabel: "OK",
         submitButtonOnPressed: () {
           Navigator.pop(context);
-          Navigator.pop(context);
         },
         showCancelButton: false,
       ),
     );
   }
+
+void _onSubmissionSuccess(BuildContext context, WidgetRef ref) {
+  // Invalidate photo-related providers
+  ref.invalidate(photoCacheServiceProvider);
+  ref.invalidate(photosControllerProvider);
+
+  // Optionally invalidate user-related submissions
+  final authState = ref.read(authStateProvider);
+  authState.maybeWhen(
+    authenticated: (user) => ref.invalidate(userSubmissionsProvider(user.id)),
+    orElse: () {},
+  );
+
+  // Navigate back or show a confirmation
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Jam updated successfully!')),
+  );
+}
+
 
   Widget _buildJamDropdown() {
     return DropdownButtonFormField<String>(
@@ -322,7 +348,19 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
       items: _jams.map((jam) {
         return DropdownMenuItem(
           value: jam.id,
-          child: Text(jam.title),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                jam.title,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                DateFormat('MMMM dd, yyyy – h:mm a').format(jam.eventDatetime),
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
         );
       }).toList(),
       onChanged: (value) => setState(() => _selectedJamId = value),

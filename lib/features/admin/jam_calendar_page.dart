@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/submission_provider.dart';
@@ -37,7 +38,7 @@ final jamEventsMapProvider =
           facilitatorId: jam.facilitatorId,
           submissionCount: submissionCount,
           zoomLink: jam.zoomLink,
-          selectedPhotos: jam.selectedPhotos,
+          selectedPhotosIds: jam.selectedPhotosIds,
         );
 
         events.putIfAbsent(normalizedDate, () => []).add(jamEvent);
@@ -109,7 +110,8 @@ class _JamCalendarPageState extends ConsumerState<JamCalendarPage> {
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TableCalendar<JamEvent>(
-                    firstDay: DateTime.now().subtract(const Duration(days: 365)),
+                    firstDay:
+                        DateTime.now().subtract(const Duration(days: 365)),
                     lastDay: DateTime.now().add(const Duration(days: 365)),
                     focusedDay: _focusedDay,
                     selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
@@ -184,6 +186,53 @@ class _JamCalendarPageState extends ConsumerState<JamCalendarPage> {
                   return JamEventCard(
                     event: dayEvents[index],
                     userRole: userRole,
+                    onTap: () async {
+                      final container = ProviderScope.containerOf(context,
+                          listen:
+                              false); // Get a non-widget-tied ProviderContainer
+                      final currentUser = container
+                          .read(authStateProvider)
+                          .user; // Fetch user directly
+                      final currentUserId = currentUser?.id;
+
+                      if (currentUserId != null) {
+                        try {
+                          final newFacilitatorId =
+                              dayEvents[index].facilitatorId == currentUserId
+                                  ? null
+                                  : currentUserId;
+
+                          await container
+                              .read(jamsProvider.notifier)
+                              .updateFacilitator(
+                                dayEvents[index].id,
+                                newFacilitatorId,
+                              );
+
+                          container.refresh(jamEventsMapProvider);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(newFacilitatorId == null
+                                  ? 'Facilitator role removed successfully!'
+                                  : 'You are now the facilitator!'),
+                            ),
+                          );
+                        } catch (error) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content:
+                                    Text('Error updating facilitator: $error')),
+                          );
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text(
+                                  'You must be logged in to toggle facilitator role.')),
+                        );
+                      }
+                    },
                   );
                 },
                 childCount: _getEventsForDay(_selectedDay, events).isEmpty

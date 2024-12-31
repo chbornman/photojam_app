@@ -85,7 +85,7 @@ class JamRepository {
     String? title,
     DateTime? eventDatetime,
     String? zoomLink,
-    List<String>? selectedPhotos,
+    List<String>? selectedPhotosIds,
   }) async {
     try {
       final existingJam = await getJamById(jamId);
@@ -96,7 +96,7 @@ class JamRepository {
         if (eventDatetime != null)
           'event_datetime': eventDatetime.toIso8601String(),
         if (zoomLink != null) 'zoom_link': zoomLink,
-        if (selectedPhotos != null) 'selected_photos': selectedPhotos,
+        if (selectedPhotosIds != null) 'selected_photos_ids': selectedPhotosIds,
         'date_updated': DateTime.now().toIso8601String(),
       };
 

@@ -1,4 +1,3 @@
-// Placeholder for SystemLogsPage
 import 'package:flutter/material.dart';
 
 class SystemLogsPage extends StatelessWidget {
@@ -7,8 +6,19 @@ class SystemLogsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("System Logs")),
-      body: Center(child: Text("System Logs Page")),
+      appBar: AppBar(
+        title: Text('System Logs'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'Upcoming! See what users are doing in the app',
+            style: TextStyle(fontSize: 18),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
     );
   }
 }

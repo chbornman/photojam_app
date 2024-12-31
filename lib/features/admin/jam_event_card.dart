@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
+import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
+import 'package:photojam_app/features/admin/jam_calendar_page.dart';
 import 'package:photojam_app/features/admin/jam_event.dart';
+
 class JamEventCard extends StatelessWidget {
   final JamEvent event;
   final String userRole;
+  final VoidCallback? onTap;
 
   const JamEventCard({
     super.key,
     required this.event,
     required this.userRole,
+    this.onTap,
   });
 
   Widget _buildStatusIcon(BuildContext context) {
@@ -31,20 +38,103 @@ class JamEventCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: ListTile(
+        onTap: onTap, // Dynamic tap handler
+        contentPadding: const EdgeInsets.all(16.0),
         title: Text(
           event.title,
-          style: theme.textTheme.titleMedium,
+          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Time: ${timeFormat.format(event.dateTime)}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                Text(
+                  'Submissions: ${event.submissionCount}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ],
+            ),
             const SizedBox(height: 4),
-            Text('Time: ${timeFormat.format(event.dateTime)}'),
-            Text('Submissions: ${event.submissionCount}'),
+            Text(
+              event.hasFacilitator ? 'Facilitator Assigned' : 'No Facilitator Assigned',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: event.hasFacilitator
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.error,
+              ),
+            ),
           ],
         ),
         trailing: _buildStatusIcon(context),
       ),
+    );
+  }
+}
+
+
+class JamEventCardParent extends StatefulWidget {
+  final JamEvent event;
+  final String userRole;
+
+  const JamEventCardParent({
+    Key? key,
+    required this.event,
+    required this.userRole,
+  }) : super(key: key);
+
+  @override
+  _JamEventCardParentState createState() => _JamEventCardParentState();
+}
+
+class _JamEventCardParentState extends State<JamEventCardParent> {
+  @override
+  Widget build(BuildContext context) {
+    final container = ProviderScope.containerOf(context, listen: false);
+    final currentUser = container.read(authStateProvider).user;
+
+    return JamEventCard(
+      event: widget.event,
+      userRole: widget.userRole,
+      onTap: () async {
+        final currentUserId = currentUser?.id;
+        if (currentUserId != null) {
+          try {
+            final newFacilitatorId = widget.event.facilitatorId == currentUserId
+                ? null
+                : currentUserId;
+
+            await container.read(jamsProvider.notifier).updateFacilitator(
+              widget.event.id,
+              newFacilitatorId,
+            );
+
+            container.refresh(jamEventsMapProvider);
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(newFacilitatorId == null
+                      ? 'Facilitator role removed successfully!'
+                      : 'You are now the facilitator!'),
+                ),
+              );
+            }
+          } catch (error) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error updating facilitator: $error')),
+              );
+            }
+          }
+        }
+      },
     );
   }
 }
