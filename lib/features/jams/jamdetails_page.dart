@@ -1,310 +1,286 @@
-// import 'dart:convert';
-// import 'dart:typed_data';
-// import 'dart:io';
-// import 'package:crypto/crypto.dart';
-// import 'package:flutter/material.dart';
-// import 'package:path_provider/path_provider.dart';
-// import 'package:photojam_app/appwrite/auth/providers/auth_providers.dart';
-// import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
-// import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
-// import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
-// import 'package:photojam_app/core/services/log_service.dart';
-// import 'package:photojam_app/core/widgets/standard_submissioncard.dart';
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:url_launcher/url_launcher.dart';
-// import 'package:intl/intl.dart';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:photojam_app/appwrite/auth/providers/auth_providers.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
+import 'package:photojam_app/appwrite/database/models/jam_model.dart';
+import 'package:photojam_app/appwrite/database/providers/submission_provider.dart';
+import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
+import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/core/services/photo_cache_service.dart';
+import 'package:photojam_app/core/widgets/standard_submissioncard.dart';
 
-// class JamDetailsPage extends ConsumerStatefulWidget {
-//   final dynamic jam;
-//   const JamDetailsPage({super.key, required this.jam});
+// Provider for photo cache service
+final photoCacheServiceProvider = Provider<PhotoCacheService>((ref) {
+  return PhotoCacheService();
+});
 
-//   @override
-//   ConsumerState<JamDetailsPage> createState() => _JamDetailsPageState();
-// }
+class JamDetailsPage extends ConsumerStatefulWidget {
+  final Jam jam;
+  
+  const JamDetailsPage({
+    super.key,
+    required this.jam,
+  });
 
-// class _JamDetailsPageState extends ConsumerState<JamDetailsPage> with WidgetsBindingObserver {
-//   bool isLoading = true;
-//   bool _isDisposed = false;
-//   List<Uint8List?> photos = [];
-//   final Map<String, Uint8List?> _imageCache = {};
+  @override
+  ConsumerState<JamDetailsPage> createState() => _JamDetailsPageState();
+}
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     WidgetsBinding.instance.addObserver(this);
-//     _fetchSubmission();
-//   }
+class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
+  bool _isLoading = true;
+  List<Uint8List?> _photos = [];
 
-//   @override
-//   void dispose() {
-//     WidgetsBinding.instance.removeObserver(this);
-//     _isDisposed = true;
-//     _imageCache.clear();
-//     super.dispose();
-//   }
+  @override
+  void initState() {
+    super.initState();
+    _loadSubmissionPhotos();
+  }
 
-//   Future<void> _fetchSubmission() async {
-//     if (_isDisposed) return;
+  Future<void> _loadSubmissionPhotos() async {
+    if (!mounted) return;
 
-//     try {
-//       final authState = ref.read(authRepositoryProvider);
-//       final userId = authState.user?.id;
-//       final sessionId = authState.session?.id;
+    try {
+      setState(() => _isLoading = true);
 
-//       if (userId == null || sessionId == null || !authState.isAuthenticated) {
-//         throw Exception("User is not authenticated.");
-//       }
+      // Get current user from auth state
+      final authState = ref.read(authStateProvider);
+      final userId = authState.user?.id;
 
-//       LogService.instance.info('Fetching submission for user: $userId');
-      
-//       final submission = await ref.read(jamRepositoryProvider).getSubmissionByJamAndUser(
-//         widget.jam.$id,
-//         userId,
-//       );
+      if (userId == null) {
+        throw Exception("User not authenticated");
+      }
 
-//       if (_isDisposed) return;
+      LogService.instance.info('Fetching submission for user: $userId and jam: ${widget.jam.id}');
 
-//       await _processSubmission(submission, sessionId);
+      // Get user's submission for this jam
+      final submissionAsync = ref.read(userJamSubmissionProvider(
+        (userId: userId, jamId: widget.jam.id)
+      ));
 
-//     } catch (e) {
-//       LogService.instance.error('Error fetching submission: $e');
-//       if (!_isDisposed) {
-//         setState(() {
-//           isLoading = false;
-//         });
-//         _showErrorSnackBar('Failed to load submission');
-//       }
-//     }
-//   }
+      // Handle the AsyncValue state
+      final submission = submissionAsync.when(
+        data: (submission) => submission,
+        loading: () => null,
+        error: (error, stack) {
+          LogService.instance.error('Error fetching submission: $error');
+          throw error;
+        },
+      );
 
-//   Future<void> _processSubmission(
-//     dynamic submission,
-//     String sessionId,
-//   ) async {
-//     final photoUrls = List<String>.from(submission.data['photos'] ?? [])
-//         .take(3)
-//         .toList();
+      if (!mounted) return;
 
-//     List<Uint8List?> newPhotos = [];
-//     for (var photoUrl in photoUrls) {
-//       if (_isDisposed) return;
-      
-//       final imageData = await _fetchAndCacheImage(
-//         photoUrl,
-//         sessionId,
-//       );
-      
-//       if (imageData != null) {
-//         newPhotos.add(imageData);
-//       } else {
-//         LogService.instance.info('Image data could not be fetched for URL: $photoUrl');
-//       }
-//     }
+      if (submission == null) {
+        LogService.instance.info('No submission found');
+        return;
+      }
 
-//     if (!_isDisposed) {
-//       setState(() {
-//         isLoading = false;
-//         photos = newPhotos;
-//       });
-//     }
-//   }
+      // Get the photo cache service
+      final photoCache = ref.read(photoCacheServiceProvider);
+      final storageNotifier = ref.read(photoStorageProvider.notifier);
+      // Get auth repository to access session
+      final authRepository = ref.read(authRepositoryProvider);
+      final session = await authRepository.getCurrentSession();
 
-//   Future<Uint8List?> _fetchAndCacheImage(
-//     String photoUrl,
-//     String sessionId,
-//   ) async {
-//     // Check memory cache first
-//     if (_imageCache.containsKey(photoUrl)) {
-//       return _imageCache[photoUrl];
-//     }
+      // Load photos from storage using their IDs
+      List<Uint8List?> loadedPhotos = [];
+      for (final photoId in submission.photos) {
+        if (!mounted) return;
 
-//     // Check disk cache
-//     final cacheFile = await _getImageCacheFile(photoUrl);
-//     if (await cacheFile.exists()) {
-//       final imageData = await cacheFile.readAsBytes();
-//       _imageCache[photoUrl] = imageData;
-//       return imageData;
-//     }
+        try {
+          LogService.instance.info('Fetching photo with ID: $photoId');
+          
+          // Get photo data from storage
+          final photoData = await storageNotifier.downloadFile(photoId);
+          
+          // Cache the photo data
+          if (photoData != null) {
+            await photoCache.getImage(
+              photoId,
+              session.$id,
+              () => Future.value(photoData),
+            );
+          }
+          
+          loadedPhotos.add(photoData);
+        } catch (e) {
+          LogService.instance.error('Error loading photo $photoId: $e');
+          loadedPhotos.add(null); // Add null for failed photos
+        }
+      }
 
-//     try {
-//       final imageData = await ref.read(storageRepositoryProvider).fetchAuthenticatedImage(
-//         photoUrl,
-//         sessionId,
-//       );
-      
-//       if (imageData != null) {
-//         await cacheFile.writeAsBytes(imageData);
-//         _imageCache[photoUrl] = imageData;
-//       }
-//       return imageData;
-//     } catch (e) {
-//       LogService.instance.error('Error fetching image from network: $e');
-//       return null;
-//     }
-//   }
+      if (mounted) {
+        setState(() {
+          _photos = loadedPhotos;
+          _isLoading = false;
+        });
+      }
 
-//   Future<File> _getImageCacheFile(String photoUrl) async {
-//     final cacheDir = await getTemporaryDirectory();
-//     final sanitizedFileName = sha256.convert(utf8.encode(photoUrl)).toString();
-//     return File('${cacheDir.path}/$sanitizedFileName.jpg');
-//   }
+    } catch (e) {
+      LogService.instance.error('Error loading submission photos: $e');
+      if (mounted) {
+        _showErrorSnackBar('Failed to load photos');
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
-//   void _showErrorSnackBar(String message) {
-//     if (!mounted) return;
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       SnackBar(
-//         content: Text(message),
-//         backgroundColor: Colors.red,
-//       ),
-//     );
-//   }
+  Future<void> _openZoomLink() async {
+    final uri = Uri.parse(widget.jam.zoomLink);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        _showErrorSnackBar('Could not open the Zoom link');
+      }
+    } catch (e) {
+      LogService.instance.error('Error launching Zoom link: $e');
+      _showErrorSnackBar('Failed to open Zoom link');
+    }
+  }
 
-//   Future<void> _openZoomLink(String zoomLink) async {
-//     final uri = Uri.parse(zoomLink);
-//     try {
-//       if (await canLaunchUrl(uri)) {
-//         await launchUrl(uri);
-//       } else {
-//         _showErrorSnackBar('Could not open the Zoom link');
-//       }
-//     } catch (e) {
-//       LogService.instance.error('Error launching Zoom link: $e');
-//       _showErrorSnackBar('Failed to open Zoom link');
-//     }
-//   }
-
-//   Future<void> _addToGoogleCalendar(
-//     DateTime date,
-//     String title,
-//     String description,
-//   ) async {
-//     final startDate = date.toUtc().toIso8601String()
-//         .replaceAll('-', '')
-//         .replaceAll(':', '')
-//         .split('.')[0];
+  Future<void> _addToGoogleCalendar() async {
+    final startDate = widget.jam.eventDatetime.toUtc().toIso8601String()
+        .replaceAll('-', '')
+        .replaceAll(':', '')
+        .split('.')[0];
     
-//     final endDate = date.add(const Duration(hours: 1)).toUtc()
-//         .toIso8601String()
-//         .replaceAll('-', '')
-//         .replaceAll(':', '')
-//         .split('.')[0];
+    final endDate = widget.jam.eventDatetime.add(const Duration(hours: 1)).toUtc()
+        .toIso8601String()
+        .replaceAll('-', '')
+        .replaceAll(':', '')
+        .split('.')[0];
 
-//     final uri = Uri.parse(
-//       'https://www.google.com/calendar/render'
-//       '?action=TEMPLATE'
-//       '&text=${Uri.encodeComponent(title)}'
-//       '&details=${Uri.encodeComponent(description)}'
-//       '&dates=$startDate/$endDate',
-//     );
+    final uri = Uri.parse(
+      'https://www.google.com/calendar/render'
+      '?action=TEMPLATE'
+      '&text=${Uri.encodeComponent(widget.jam.title)}'
+      '&details=${Uri.encodeComponent("PhotoJam Session")}'
+      '&dates=$startDate/$endDate',
+    );
 
-//     try {
-//       if (await canLaunchUrl(uri)) {
-//         await launchUrl(uri);
-//       } else {
-//         _showErrorSnackBar('Could not open Google Calendar');
-//       }
-//     } catch (e) {
-//       LogService.instance.error('Error launching calendar: $e');
-//       _showErrorSnackBar('Failed to open calendar');
-//     }
-//   }
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        _showErrorSnackBar('Could not open Google Calendar');
+      }
+    } catch (e) {
+      LogService.instance.error('Error launching calendar: $e');
+      _showErrorSnackBar('Failed to open calendar');
+    }
+  }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     final jamDate = DateTime.parse(widget.jam.data['date']);
-//     final title = widget.jam.data['title'];
-//     final zoomLink = widget.jam.data['zoom_link'];
-//     final formattedDate = DateFormat('MMM dd, yyyy - hh:mm a').format(jamDate);
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
+  }
 
-//     return Scaffold(
-//       appBar: AppBar(title: Text(title)),
-//       backgroundColor: Theme.of(context).colorScheme.surface,
-//       body: Padding(
-//         padding: const EdgeInsets.all(16.0),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             Text(
-//               title,
-//               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                 fontWeight: FontWeight.bold,
-//               ),
-//             ),
-//             const SizedBox(height: 10),
-//             Row(
-//               children: [
-//                 Icon(Icons.calendar_today, color: Colors.grey[600]),
-//                 const SizedBox(width: 8),
-//                 Text(
-//                   'Date: $formattedDate',
-//                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-//                     color: Colors.grey[600],
-//                   ),
-//                 ),
-//               ],
-//             ),
-//             const SizedBox(height: 20),
-//             if (isLoading)
-//               const Center(child: CircularProgressIndicator())
-//             else
-//               SubmissionCard(
-//                 title: "Your submitted photos",
-//                 photoWidgets: [
-//                   Row(
-//                     children: photos.map((photoData) {
-//                       return Padding(
-//                         padding: const EdgeInsets.only(right: 8.0),
-//                         child: ClipRRect(
-//                           borderRadius: BorderRadius.circular(8.0),
-//                           child: photoData != null
-//                               ? Image.memory(
-//                                   photoData,
-//                                   width: 100,
-//                                   height: 100,
-//                                   fit: BoxFit.cover,
-//                                 )
-//                               : Container(
-//                                   width: 100,
-//                                   height: 100,
-//                                   color: const Color.fromARGB(255, 106, 35, 35),
-//                                   child: Icon(
-//                                     Icons.image_not_supported,
-//                                     color: Theme.of(context).colorScheme.onSurface,
-//                                   ),
-//                                 ),
-//                         ),
-//                       );
-//                     }).toList(),
-//                   ),
-//                 ],
-//               ),
-//           ],
-//         ),
-//       ),
-//       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-//       floatingActionButton: Column(
-//         mainAxisAlignment: MainAxisAlignment.end,
-//         crossAxisAlignment: CrossAxisAlignment.end,
-//         children: [
-//           FloatingActionButton.extended(
-//             heroTag: 'joinZoom',
-//             icon: const Icon(Icons.link),
-//             label: const Text("Join Zoom"),
-//             onPressed: () => _openZoomLink(zoomLink),
-//           ),
-//           const SizedBox(height: 16),
-//           FloatingActionButton.extended(
-//             heroTag: 'addToCalendar',
-//             icon: const Icon(Icons.calendar_today),
-//             label: const Text("Add to Calendar"),
-//             onPressed: () => _addToGoogleCalendar(
-//               jamDate,
-//               title,
-//               'PhotoJam Session',
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final formattedDate = DateFormat('MMM dd, yyyy - hh:mm a')
+        .format(widget.jam.eventDatetime);
+
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.jam.title)),
+      backgroundColor: theme.colorScheme.surface,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.jam.title,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(Icons.calendar_today, color: Colors.grey[600]),
+                const SizedBox(width: 8),
+                Text(
+                  'Date: $formattedDate',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_photos.isNotEmpty)
+              SubmissionCard(
+                title: "Your submitted photos",
+                photoWidgets: [
+                  Row(
+                    children: _photos.map((photoData) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: photoData != null
+                              ? Image.memory(
+                                  photoData,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                )
+                              : Container(
+                                  width: 100,
+                                  height: 100,
+                                  color: theme.colorScheme.error,
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: theme.colorScheme.onError,
+                                  ),
+                                ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              )
+            else
+              Center(
+                child: Text(
+                  'No photos submitted yet',
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+          ],
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'joinZoom',
+            icon: const Icon(Icons.link),
+            label: const Text("Join Zoom"),
+            onPressed: _openZoomLink,
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton.extended(
+            heroTag: 'addToCalendar',
+            icon: const Icon(Icons.calendar_today),
+            label: const Text("Add to Calendar"),
+            onPressed: _addToGoogleCalendar,
+          ),
+        ],
+      ),
+    );
+  }
+}

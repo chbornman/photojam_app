@@ -65,19 +65,19 @@ class _AppState extends ConsumerState<App> {
 
   List<NavigationItem> _getNavigationItems() {
     final theme = Theme.of(context);
-    
+
     return [
-      NavigationItem(
-        screen: const SnippetScreen(),
-        label: 'Lesson',
-        icon: Icons.book,
-        backgroundColor: theme.colorScheme.primary,
-      ),
       NavigationItem(
         screen: const JamPage(),
         label: 'Jams',
         icon: Icons.camera_alt,
         backgroundColor: theme.colorScheme.secondary,
+      ),
+      NavigationItem(
+        screen: const SnippetScreen(),
+        label: 'Lesson',
+        icon: Icons.book,
+        backgroundColor: theme.colorScheme.primary,
       ),
       NavigationItem(
         screen: const PhotosPage(),
