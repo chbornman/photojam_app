@@ -32,7 +32,7 @@ class SubmissionRepository {
     final now = DateTime.now().toIso8601String();
     return {
       'user_id': userId,
-      'jam': {'\$id': jamId},
+      'jam': jamId,
       'photos': photos,
       'comment': comment ?? '',
       'date_creation': now,
