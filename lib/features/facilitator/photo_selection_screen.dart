@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/services/log_service.dart';
@@ -27,93 +28,104 @@ class _PhotoSelectionScreenState extends ConsumerState<PhotoSelectionScreen> {
   int currentIndex = 0;
   bool isSaving = false;
 
-  Future<void> _saveSelections() async {
-    final selectedPhotos = ref.read(selectedPhotosProvider(widget.jamId));
-    final submissionsAsync =
-        ref.read(jamSubmissionsWithImagesProvider(widget.jamId));
+Future<void> _saveSelections() async {
+  final selectedPhotos = ref.read(selectedPhotosProvider(widget.jamId));
+  final submissionsAsync =
+      ref.read(jamSubmissionsWithImagesProvider(widget.jamId));
 
-    final submissions = submissionsAsync.value;
-    if (submissions == null) return;
+  final submissions = submissionsAsync.value;
+  if (submissions == null) return;
 
-    if (selectedPhotos.length != submissions.length) {
+  if (selectedPhotos.length != submissions.length) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please select one photo from each submission'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+    return;
+  }
+
+  setState(() => isSaving = true);
+
+  try {
+    // Get selected photo IDs
+    List<String> selectedPhotoIds = [];
+    for (var submissionWithImages in submissions) {
+      final selectedIndex =
+          selectedPhotos[submissionWithImages.submission.id];
+      if (selectedIndex != null) {
+        selectedPhotoIds
+            .add(submissionWithImages.submission.photos[selectedIndex]);
+      }
+    }
+
+    // Update jam document with selected photo IDs
+    await ref.read(jamsProvider.notifier).updateJam(
+          widget.jamId,
+          selectedPhotosIds: selectedPhotoIds,
+        );
+
+    // Update facilitator to the current user
+    final currentUser = ref.read(authStateProvider).user; // Get current user
+    final currentUserId = currentUser?.id;
+
+    if (currentUserId != null) {
+      await ref.read(jamsProvider.notifier).updateFacilitator(
+            widget.jamId,
+            currentUserId,
+          );
+    }
+
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select one photo from each submission'),
-          backgroundColor: Colors.orange,
+          content: Text('Successfully saved photo selections'),
+          backgroundColor: Colors.green,
         ),
       );
-      return;
+
+      final saveToDevice = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Save to Device'),
+          content: const Text(
+              'Do you want to save the selected photos to your device?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Yes'),
+            ),
+          ],
+        ),
+      );
+
+      if (saveToDevice == true) {
+        await _sharePhotos(selectedPhotoIds);
+      }
+
+      Navigator.of(context).pop();
     }
-
-    setState(() => isSaving = true);
-
-    try {
-      // Get selected photo IDs
-      List<String> selectedPhotoIds = [];
-      for (var submissionWithImages in submissions) {
-        final selectedIndex =
-            selectedPhotos[submissionWithImages.submission.id];
-        if (selectedIndex != null) {
-          selectedPhotoIds
-              .add(submissionWithImages.submission.photos[selectedIndex]);
-        }
-      }
-
-      // Update jam document with selected photo IDs
-      await ref.read(jamsProvider.notifier).updateJam(
-            widget.jamId,
-            selectedPhotosIds: selectedPhotoIds,
-          );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully saved photo selections'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        final saveToDevice = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Save to Device'),
-            content: const Text(
-                'Do you want to save the selected photos to your device?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('No'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Yes'),
-              ),
-            ],
-          ),
-        );
-
-        if (saveToDevice == true) {
-          await _sharePhotos(selectedPhotoIds);
-        }
-
-        Navigator.of(context).pop();
-      }
-    } catch (e) {
-      LogService.instance.error('Error saving selections: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save selections: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => isSaving = false);
-      }
+  } catch (e) {
+    LogService.instance.error('Error saving selections: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save selections: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() => isSaving = false);
     }
   }
+}
 
   Future<void> _sharePhotos(List<String> photoIds) async {
     try {

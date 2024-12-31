@@ -13,7 +13,7 @@ class UserManagementPage extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
-            'Please implement the function in the Appwrite console.',
+            'Upcoming! Manage Users and their accounts via the app',
             style: TextStyle(fontSize: 18),
             textAlign: TextAlign.center,
           ),
