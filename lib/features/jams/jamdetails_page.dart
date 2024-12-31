@@ -92,17 +92,12 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
         try {
           LogService.instance.info('Fetching photo with ID: $photoId');
           
-          // Get photo data from storage
-          final photoData = await storageNotifier.downloadFile(photoId);
-          
-          // Cache the photo data
-          if (photoData != null) {
-            await photoCache.getImage(
-              photoId,
-              session.$id,
-              () => Future.value(photoData),
-            );
-          }
+          // Use PhotoCacheService to handle caching based on platform
+          final photoData = await photoCache.getImage(
+            photoId,
+            session.$id,
+            () => storageNotifier.downloadFile(photoId),
+          );
           
           loadedPhotos.add(photoData);
         } catch (e) {
