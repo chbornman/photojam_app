@@ -15,11 +15,11 @@ class SnippetScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<SnippetScreen> createState() => _SnippetScreenState();
 }
-
 class _SnippetScreenState extends ConsumerState<SnippetScreen> {
   final PageController _pageController = PageController();
   Uint8List? _lessonData;
   String? _error;
+  bool _isLoading = true; // Added loading state
 
   @override
   void initState() {
@@ -27,67 +27,98 @@ class _SnippetScreenState extends ConsumerState<SnippetScreen> {
     _loadInitialLesson();
   }
 
-Future<void> _loadInitialLesson() async {
-  try {
-    LogService.instance.info('Loading initial lesson');
-    final snippetValueAsync = ref.read(globalValueByKeyProvider('current_lesson_snippet'));
-    
-    final lessonId = snippetValueAsync.value;
-    if (lessonId == null) {
-      throw Exception('No lesson ID available');
-    }
+  Future<void> _loadInitialLesson() async {
+    try {
+      LogService.instance.info('Loading initial lesson');
 
-    await _loadLessonContent(lessonId);
-  } catch (e) {
-    LogService.instance.error('Failed to load initial lesson: $e');
-    if (mounted) {
+      // Show loading indicator
       setState(() {
-        _error = e.toString();
-      });
-    }
-  }
-}
-
-Future<void> _loadLessonContent(String lessonId) async {
-  final lessonNotifier = ref.read(lessonsProvider.notifier);
-  final storageNotifier = ref.read(lessonStorageProvider.notifier);
-
-  try {
-    LogService.instance.info('Fetching lesson content for ID: $lessonId');
-    final lesson = await lessonNotifier.getLessonByID(lessonId);
-    if (lesson == null) {
-      throw Exception('Lesson data not found for ID: $lessonId');
-    }
-
-    final contentFileId = lesson.contentFileId; // Retrieve the contentFileId from the lesson
-    if (contentFileId == null || contentFileId.isEmpty) {
-      throw Exception('Content file ID is missing for lesson ID: $lessonId');
-    }
-
-    // Fetch the file content from storage
-    final fileContent = await storageNotifier.downloadFile(contentFileId);
-
-    if (mounted) {
-      setState(() {
-        _lessonData = fileContent;
+        _isLoading = true;
         _error = null;
       });
-    }
-  } catch (error) {
-    LogService.instance.error('Error loading lesson content: $error');
-    if (mounted) {
-      setState(() {
-        _error = error.toString();
-      });
+
+      // Get the current AsyncValue of 'current_lesson_snippet'
+      final snippetValueAsync = ref.read(globalValueByKeyProvider('current_lesson_snippet'));
+
+      // Resolve the value from AsyncValue<String?>
+      final lessonId = snippetValueAsync.when(
+        data: (value) => value,
+        loading: () {
+          throw Exception('Lesson snippet is still loading');
+        },
+        error: (error, stack) {
+          throw Exception('Error fetching lesson snippet: $error');
+        },
+      );
+
+      // Validate the resolved lesson ID
+      if (lessonId == null || lessonId.isEmpty) {
+        throw Exception('No lesson ID available');
+      }
+
+      // Load the lesson content
+      await _loadLessonContent(lessonId);
+    } catch (e) {
+      LogService.instance.error('Failed to load initial lesson: $e');
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false; // Hide loading indicator
+        });
+      }
     }
   }
-}
 
+  Future<void> _loadLessonContent(String lessonId) async {
+    final lessonNotifier = ref.read(lessonsProvider.notifier);
+    final storageNotifier = ref.read(lessonStorageProvider.notifier);
 
+    try {
+      LogService.instance.info('Fetching lesson content for ID: $lessonId');
+      final lesson = await lessonNotifier.getLessonByID(lessonId);
+      if (lesson == null) {
+        throw Exception('Lesson data not found for ID: $lessonId');
+      }
 
+      final contentFileId = lesson.contentFileId; // Retrieve the contentFileId from the lesson
+      if (contentFileId == null || contentFileId.isEmpty) {
+        throw Exception('Content file ID is missing for lesson ID: $lessonId');
+      }
+
+      // Fetch the file content from storage
+      final fileContent = await storageNotifier.downloadFile(contentFileId);
+
+      if (mounted) {
+        setState(() {
+          _lessonData = fileContent;
+          _error = null;
+        });
+      }
+    } catch (error) {
+      LogService.instance.error('Error loading lesson content: $error');
+      if (mounted) {
+        setState(() {
+          _error = error.toString();
+        });
+      }
+    }
+  }
 
   Widget _buildLessonView() {
+    if (_isLoading) {
+      // Show loading spinner while loading
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
     if (_error != null) {
+      // Show error if loading failed
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -107,58 +138,33 @@ Future<void> _loadLessonContent(String lessonId) async {
       );
     }
 
-    return ref.watch(globalValueByKeyProvider('current_lesson_snippet')).when(
-      data: (value) {
-        if (value == null || value.isEmpty) {
-          return const Center(
+    return _lessonData != null
+        ? Column(
+            children: [
+              Expanded(
+                child: MarkdownViewer(content: _lessonData!),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: StandardButton(
+                  onPressed: () => _pageController.nextPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  ),
+                  label: const Text('Submit to Community Board'),
+                ),
+              ),
+            ],
+          )
+        : const Center(
             child: Text(
               'No snippet available',
               style: TextStyle(fontSize: 18, fontStyle: FontStyle.italic),
               textAlign: TextAlign.center,
             ),
           );
-        }
-
-        return Column(
-          children: [
-            Expanded(
-              child: _lessonData != null
-                  ? MarkdownViewer(content: _lessonData!)
-                  : const Center(child: CircularProgressIndicator()),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: StandardButton(
-                onPressed: () => _pageController.nextPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                ),
-                label: const Text('Submit to Community Board'),
-              ),
-            ),
-          ],
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Error: $error',
-              style: const TextStyle(color: Colors.red),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            StandardButton(
-              onPressed: _loadInitialLesson,
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
+
   Widget _buildSubmissionView() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
