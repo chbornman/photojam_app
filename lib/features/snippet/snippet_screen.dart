@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/database/providers/globals_provider.dart';
+import 'package:photojam_app/appwrite/database/providers/lesson_provider.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/core/utils/markdownviewer.dart';
@@ -26,48 +27,64 @@ class _SnippetScreenState extends ConsumerState<SnippetScreen> {
     _loadInitialLesson();
   }
 
-  Future<void> _loadInitialLesson() async {
-    try {
-      LogService.instance.info('Loading initial lesson');
-      final snippetValueAsync = ref.read(globalValueByKeyProvider('weekly_lesson_snippet'));
-      
-      final lessonUrl = snippetValueAsync.value;
-      if (lessonUrl == null) {
-        throw Exception('No lesson URL available');
-      }
+Future<void> _loadInitialLesson() async {
+  try {
+    LogService.instance.info('Loading initial lesson');
+    final snippetValueAsync = ref.read(globalValueByKeyProvider('current_lesson_snippet'));
+    
+    final lessonId = snippetValueAsync.value;
+    if (lessonId == null) {
+      throw Exception('No lesson ID available');
+    }
 
-      await _loadLessonContent(lessonUrl);
-    } catch (e) {
-      LogService.instance.error('Failed to load initial lesson: $e');
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-        });
-      }
+    await _loadLessonContent(lessonId);
+  } catch (e) {
+    LogService.instance.error('Failed to load initial lesson: $e');
+    if (mounted) {
+      setState(() {
+        _error = e.toString();
+      });
     }
   }
+}
 
-  Future<void> _loadLessonContent(String lessonUrl) async {
-    final storageNotifier = ref.read(lessonStorageProvider.notifier);
+Future<void> _loadLessonContent(String lessonId) async {
+  final lessonNotifier = ref.read(lessonsProvider.notifier);
+  final storageNotifier = ref.read(lessonStorageProvider.notifier);
 
-    try {
-      LogService.instance.info('Loading lesson content from URL: $lessonUrl');
-      final lessonData = await storageNotifier.downloadFile(lessonUrl);
-      if (mounted) {
-        setState(() {
-          _lessonData = lessonData;
-          _error = null;
-        });
-      }
-    } catch (error) {
-      LogService.instance.error('Error loading lesson content: $error');
-      if (mounted) {
-        setState(() {
-          _error = error.toString();
-        });
-      }
+  try {
+    LogService.instance.info('Fetching lesson content for ID: $lessonId');
+    final lesson = await lessonNotifier.getLessonByID(lessonId);
+    if (lesson == null) {
+      throw Exception('Lesson data not found for ID: $lessonId');
+    }
+
+    final contentFileId = lesson.contentFileId; // Retrieve the contentFileId from the lesson
+    if (contentFileId == null || contentFileId.isEmpty) {
+      throw Exception('Content file ID is missing for lesson ID: $lessonId');
+    }
+
+    // Fetch the file content from storage
+    final fileContent = await storageNotifier.downloadFile(contentFileId);
+
+    if (mounted) {
+      setState(() {
+        _lessonData = fileContent;
+        _error = null;
+      });
+    }
+  } catch (error) {
+    LogService.instance.error('Error loading lesson content: $error');
+    if (mounted) {
+      setState(() {
+        _error = error.toString();
+      });
     }
   }
+}
+
+
+
 
   Widget _buildLessonView() {
     if (_error != null) {
@@ -90,7 +107,7 @@ class _SnippetScreenState extends ConsumerState<SnippetScreen> {
       );
     }
 
-    return ref.watch(globalValueByKeyProvider('weekly_lesson_snippet')).when(
+    return ref.watch(globalValueByKeyProvider('current_lesson_snippet')).when(
       data: (value) {
         if (value == null || value.isEmpty) {
           return const Center(

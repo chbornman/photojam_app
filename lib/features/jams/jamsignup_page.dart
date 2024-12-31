@@ -2,6 +2,7 @@ import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/database/models/jam_model.dart';
 import 'package:photojam_app/appwrite/database/models/submission_model.dart';
@@ -56,14 +57,18 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
 
   Future<void> _fetchJams() async {
     try {
-      final jamRepository = ref.read(jamRepositoryProvider);
-      final jams = await jamRepository.getAllJams(activeOnly: true);
+      final asyncJams = ref.read(upcomingJamsProvider);
 
-      if (!mounted) return;
-      setState(() => _jams = jams);
+      asyncJams.maybeWhen(
+        data: (jams) {
+          if (!mounted) return;
+          setState(() => _jams = jams);
+        },
+        orElse: () => _showErrorSnackBar('Failed to load jams'),
+      );
     } catch (e) {
-      LogService.instance.error('Error fetching jams: $e');
-      _showErrorSnackBar('Failed to load jams');
+      LogService.instance.error('Unexpected error fetching jams: $e');
+      _showErrorSnackBar('Unexpected error occurred');
     }
   }
 
@@ -322,7 +327,19 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
       items: _jams.map((jam) {
         return DropdownMenuItem(
           value: jam.id,
-          child: Text(jam.title),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                jam.title,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                DateFormat('MMMM dd, yyyy – h:mm a').format(jam.eventDatetime),
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
         );
       }).toList(),
       onChanged: (value) => setState(() => _selectedJamId = value),

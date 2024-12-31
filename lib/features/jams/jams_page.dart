@@ -21,10 +21,18 @@ class _JamPageState extends ConsumerState<JamPage> {
     super.initState();
   }
 
-  Future<void> _refreshJams() async {
-    // Manual refresh function
-    ref.read(jamsProvider.notifier).loadJams();
-  }
+Future<void> _refreshJams() async {
+  await AsyncValue.guard(() async {
+    ref.invalidate(jamsProvider);
+    final authState = ref.read(authStateProvider);
+    authState.maybeWhen(
+      authenticated: (user) => ref.invalidate(userUpcomingJamsProvider(user.id)),
+      orElse: () {},
+    );
+  });
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +79,7 @@ class _JamPageState extends ConsumerState<JamPage> {
 
   Widget _buildHeader() {
     return Text(
-      "Upcoming Jams",
+      "Your Upcoming Jams",
       style: Theme.of(context).textTheme.headlineLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),

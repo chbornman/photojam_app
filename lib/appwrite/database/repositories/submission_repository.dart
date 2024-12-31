@@ -1,5 +1,4 @@
 import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/models.dart';
 import 'package:photojam_app/appwrite/database/models/submission_model.dart';
 import 'package:photojam_app/appwrite/database/repositories/base_repository.dart';
 import 'package:photojam_app/config/app_constants.dart';

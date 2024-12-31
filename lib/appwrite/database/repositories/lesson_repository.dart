@@ -1,6 +1,4 @@
 import 'dart:typed_data';
-
-import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/appwrite/database/models/lesson_model.dart';
 import 'package:photojam_app/appwrite/database/repositories/base_repository.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
@@ -131,24 +129,37 @@ class LessonRepository {
     }
   }
 
+  Future<List<Lesson>> getAllLessons() async {
+    try {
+      // Log the action
+      LogService.instance
+          .info('Retrieving all Lessons for collection: $collectionId');
 
-Future<List<Lesson>> getAllLessons() async {
-  try {
-    // Log the action
-    LogService.instance.info('Retrieving all Lessons for collection: $collectionId');
+      // Fetch the documents (assuming listDocuments returns something like a DocumentList or similar)
+      final docList = await _db.listDocuments(collectionId);
 
-    // Fetch the documents (assuming listDocuments returns something like a DocumentList or similar)
-    final docList = await _db.listDocuments(collectionId);
+      // Convert each document to a Lesson
+      final lessons =
+          docList.documents.map((doc) => Lesson.fromDocument(doc)).toList();
 
-    // Convert each document to a Lesson
-    final lessons = docList.documents.map((doc) => Lesson.fromDocument(doc)).toList();
-
-    return lessons;
-  } catch (e) {
-    LogService.instance.error('Error retrieving all lessons: $e');
-    rethrow;
+      return lessons;
+    } catch (e) {
+      LogService.instance.error('Error retrieving all lessons: $e');
+      rethrow;
+    }
   }
-}
 
+  Future<Lesson?> getLessonByID(String lessonId) async {
+    try {
+      LogService.instance.info('Fetching lesson with ID: $lessonId');
 
+      final doc = await _db.getDocument(collectionId, lessonId);
+      LogService.instance.info('Fetched lesson document: ${doc.$id}');
+
+      return Lesson.fromDocument(doc);
+    } catch (e) {
+      LogService.instance.error('Error fetching lesson by ID: $e');
+      rethrow;
+    }
+  }
 }

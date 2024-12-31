@@ -108,7 +108,17 @@ Future<void> deleteLesson({required String lessonId}) async {
   }
 }
 
+Future<Lesson?> getLessonByID(String lessonId) async {
+  try {
+    LogService.instance.info('Fetching lesson with ID: $lessonId');
 
+    final lessons = await _repository.getAllLessons(); // Fetch lessons from repository
+    return lessons.firstWhereOrNull((lesson) => lesson.id == lessonId);
+  } catch (error) {
+    LogService.instance.error('Error fetching lesson by ID: $error');
+    rethrow;
+  }
+}
 
 
 
