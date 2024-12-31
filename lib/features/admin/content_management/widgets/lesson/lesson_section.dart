@@ -39,10 +39,10 @@ class LessonSection extends ConsumerWidget {
           onLoading: onLoading,
           onMessage: onMessage,
         ),
-        UpdateJourneyLessonsCard(
-          onLoading: onLoading,
-          onMessage: onMessage,
-        ),
+        // UpdateJourneyLessonsCard(
+        //   onLoading: onLoading,
+        //   onMessage: onMessage,
+        // ),
         SetCurrentLessonSnippetCard(
           onLoading: onLoading,
           onMessage: onMessage,

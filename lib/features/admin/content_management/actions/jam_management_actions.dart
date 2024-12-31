@@ -50,69 +50,154 @@ class JamManagementActions {
     );
   }
 
-  static Future<void> fetchAndOpenUpdateJamDialog({
-    required BuildContext context,
-    required WidgetRef ref,
-    required Function(bool) onLoading,
-    required Function(String, {bool isError}) onMessage,
-  }) async {
-    onLoading(true);
-    try {
-      LogService.instance.info('Fetching jams for update dialog');
-      final jamsAsync = ref.read(jamsProvider);
+static Future<void> fetchAndOpenUpdateJamDialog({
+  required BuildContext context,
+  required WidgetRef ref,
+  required Function(bool) onLoading,
+  required Function(String, {bool isError}) onMessage,
+}) async {
+  onLoading(true);
+  try {
+    LogService.instance.info('Fetching jams for update dialog');
+    final jamsAsync = ref.read(jamsProvider);
 
-      jamsAsync.when(
-        data: (jams) async {
-          if (!context.mounted) return;
+    jamsAsync.when(
+      data: (jams) {
+        if (!context.mounted) return;
 
-          if (jams.isEmpty) {
-            onMessage("No jams available", isError: true);
-            return;
-          }
+        if (jams.isEmpty) {
+          onMessage("No jams available", isError: true);
+          return;
+        }
 
-          final jamMap = {for (var jam in jams) jam.title: jam.id};
-          LogService.instance.info('Found ${jams.length} jams');
+        final jamMap = {for (var jam in jams) jam.title: jam.id};
+        LogService.instance.info('Found ${jams.length} jams');
 
-          await showDialog(
-            context: context,
-            builder: (context) => UpdateJamDialog(
-              jamId: jamMap.values.first,
-              initialData: {
-                'title': jams.first.title,
-                'date': jams.first.eventDatetime.toIso8601String(),
-                'zoom_link': jams.first.zoomLink,
-              },
-              onJamUpdated: (updatedData) async {
-                try {
-                  LogService.instance.info('Updating jam with data: $updatedData');
-                  await ref.read(jamsProvider.notifier).updateJam(
-                    jamMap.values.first,
-                    title: updatedData['title'],
-                    eventDatetime: DateTime.parse(updatedData['date']),
-                    zoomLink: updatedData['zoom_link'],
-                  );
-                  onMessage("Jam updated successfully");
-                } catch (e) {
-                  LogService.instance.error('Error updating jam: $e');
-                  onMessage("Error updating jam: $e", isError: true);
-                }
-              },
-            ),
+        _openJamSelectionDialog(
+          context: context,
+          ref: ref,
+          jamMap: jamMap,
+          onLoading: onLoading,
+          onMessage: onMessage,
+        );
+      },
+      loading: () => onLoading(true),
+      error: (error, stack) {
+        LogService.instance.error('Error fetching jams: $error');
+        onMessage("Error fetching jams: $error", isError: true);
+      },
+    );
+  } catch (e) {
+    LogService.instance.error('Error in fetchAndOpenUpdateJamDialog: $e');
+    onMessage("Error fetching jams", isError: true);
+  } finally {
+    onLoading(false);
+  }
+}
+
+static void _openJamSelectionDialog({
+  required BuildContext context,
+  required WidgetRef ref,
+  required Map<String, String> jamMap,
+  required Function(bool) onLoading,
+  required Function(String, {bool isError}) onMessage,
+}) {
+  String? selectedTitle;
+  
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Select Jam to Update"),
+      content: StatefulBuilder(
+        builder: (context, setState) {
+          return DropdownButtonFormField<String>(
+            value: selectedTitle,
+            hint: const Text("Select Jam"),
+            items: jamMap.keys.map((title) {
+              return DropdownMenuItem(
+                value: title,
+                child: Text(title),
+              );
+            }).toList(),
+            onChanged: (value) => setState(() => selectedTitle = value),
           );
         },
-        loading: () => onLoading(true),
-        error: (error, stack) {
-          LogService.instance.error('Error fetching jams: $error');
-          onMessage("Error fetching jams: $error", isError: true);
-        },
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () {
+            if (selectedTitle != null) {
+              _handleJamSelection(
+                context: context,
+                ref: ref,
+                jamId: jamMap[selectedTitle]!,
+                onLoading: onLoading,
+                onMessage: onMessage,
+              );
+            }
+          },
+          child: const Text("Update"),
+        ),
+      ],
+    ),
+  );
+}
+
+static void _handleJamSelection({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String jamId,
+  required Function(bool) onLoading,
+  required Function(String, {bool isError}) onMessage,
+}) {
+  Navigator.of(context).pop();
+
+  ref.read(jamByIdProvider(jamId)).when(
+    data: (jam) {
+      if (jam == null) {
+        LogService.instance.error('Jam not found: $jamId');
+        onMessage("Jam not found", isError: true);
+        return;
+      }
+
+      showDialog(
+        context: context,
+        builder: (context) => UpdateJamDialog(
+          jamId: jamId,
+          initialData: {
+            'title': jam.title,
+            'date': jam.eventDatetime.toIso8601String(),
+            'zoom_link': jam.zoomLink,
+          },
+          onJamUpdated: (updatedData) async {
+            try {
+              LogService.instance.info('Updating jam with data: $updatedData');
+              await ref.read(jamsProvider.notifier).updateJam(
+                jamId,
+                title: updatedData['title'],
+                eventDatetime: DateTime.parse(updatedData['date']),
+                zoomLink: updatedData['zoom_link'],
+              );
+              onMessage("Jam updated successfully");
+            } catch (e) {
+              LogService.instance.error('Error updating jam: $e');
+              onMessage("Error updating jam: $e", isError: true);
+            }
+          },
+        ),
       );
-    } catch (e) {
-      LogService.instance.error('Error in fetchAndOpenUpdateJamDialog: $e');
-      onMessage("Error fetching jams", isError: true);
-    } finally {
-      onLoading(false);
-    }
-  }
+    },
+    loading: () => onLoading(true),
+    error: (error, stack) {
+      LogService.instance.error('Error fetching jam: $error');
+      onMessage("Error fetching jam details", isError: true);
+    },
+  );
+}
 
   static Future<void> fetchAndOpenDeleteJamDialog({
     required BuildContext context,
@@ -163,5 +248,4 @@ class JamManagementActions {
     }
   }
 
-  // Additional action methods for journeys, lessons, etc. would go here
 }

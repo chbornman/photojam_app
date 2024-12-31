@@ -97,15 +97,6 @@ class StorageNotifier extends StateNotifier<AsyncValue<List<StorageFile>>> {
       fileId: fileId,
     );
   }
-
-  Future<String> getFilePreviewUrl(String fileId) async {
-    return await _repository.getFilePreviewUrl(
-      bucket: bucket,
-      fileId: fileId,
-      width: 2000,  // Default width for photos
-      height: 2000, // Default height for photos
-    );
-  }
 }
 
 // Optional: Helper provider to get storage notifier by bucket type

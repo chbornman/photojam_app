@@ -6,6 +6,7 @@ import 'package:photojam_app/features/admin/content_management/widgets/danger/da
 import 'package:photojam_app/features/admin/content_management/widgets/jam/jam_section.dart';
 import 'package:photojam_app/features/admin/content_management/widgets/journey/journey_section.dart';
 import 'package:photojam_app/features/admin/content_management/widgets/lesson/lesson_section.dart';
+import 'package:photojam_app/features/admin/content_management/widgets/submission/submission_section.dart';
 
 class ContentManagementScreen extends ConsumerStatefulWidget {
   const ContentManagementScreen({super.key});
@@ -49,7 +50,11 @@ class _ContentManagementScreenState extends ConsumerState<ContentManagementScree
                     onLoading: _setLoading,
                     onMessage: _showMessage,
                   ),
-                  JourneySection(
+                  // JourneySection(
+                  //   onLoading: _setLoading,
+                  //   onMessage: _showMessage,
+                  // ),
+                  SubmissionSection(
                     onLoading: _setLoading,
                     onMessage: _showMessage,
                   ),
