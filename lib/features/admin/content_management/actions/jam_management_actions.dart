@@ -30,7 +30,7 @@ class JamManagementActions {
               title: jamData['title'],
               eventDatetime: DateTime.parse(jamData['date']),
               zoomLink: jamData['zoom_link'],
-              selectedPhotos: const [],
+              selectedPhotosIds: const [],
               dateCreated: DateTime.now(),
               dateUpdated: DateTime.now(),
               isActive: true,

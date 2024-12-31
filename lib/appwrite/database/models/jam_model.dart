@@ -7,7 +7,7 @@ class Jam {
   final DateTime eventDatetime;
   final String zoomLink;
   final String? facilitatorId;
-  final List<String> selectedPhotos;
+  final List<String> selectedPhotosIds;
   final String? lessonId;
   final DateTime dateCreated;
   final DateTime dateUpdated;
@@ -20,7 +20,7 @@ class Jam {
     required this.eventDatetime,
     required this.zoomLink,
     this.facilitatorId,
-    this.selectedPhotos = const [],
+    this.selectedPhotosIds = const [],
     this.lessonId,
     required this.dateCreated,
     required this.dateUpdated,
@@ -39,8 +39,8 @@ factory Jam.fromDocument(Document doc) {
     eventDatetime: DateTime.parse(data['event_datetime'] ?? DateTime.now().toIso8601String()),
     zoomLink: data['zoom_link'] ?? '',
     facilitatorId: data['facilitator_id'],
-    selectedPhotos: data['selected_photos'] is List
-        ? List<String>.from(data['selected_photos'])
+    selectedPhotosIds: data['selected_photos_ids'] is List
+        ? List<String>.from(data['selected_photos_ids'])
         : [],
     lessonId: data['lesson'] is Map
         ? data['lesson']['\$id']
@@ -57,7 +57,7 @@ factory Jam.fromDocument(Document doc) {
     'event_datetime': eventDatetime.toIso8601String(),
     'zoom_link': zoomLink,
     'facilitator_id': facilitatorId,
-    'selected_photos': selectedPhotos,
+    'selected_photos_ids': selectedPhotosIds,
     'lesson': lessonId,
     'date_created': dateCreated.toIso8601String(),
     'date_updated': dateUpdated.toIso8601String(),

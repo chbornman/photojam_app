@@ -117,7 +117,7 @@ class JamsNotifier extends StateNotifier<AsyncValue<List<Jam>>> {
     String? title,
     DateTime? eventDatetime,
     String? zoomLink,
-    List<String>? selectedPhotos,
+    List<String>? selectedPhotosIds,
   }) async {
     try {
       await _repository.updateJam(
@@ -125,7 +125,7 @@ class JamsNotifier extends StateNotifier<AsyncValue<List<Jam>>> {
         title: title,
         eventDatetime: eventDatetime,
         zoomLink: zoomLink,
-        selectedPhotos: selectedPhotos,
+        selectedPhotosIds: selectedPhotosIds,
       );
       await loadJams();
     } catch (error) {

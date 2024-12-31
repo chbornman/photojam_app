@@ -37,7 +37,7 @@ final jamEventsMapProvider =
           facilitatorId: jam.facilitatorId,
           submissionCount: submissionCount,
           zoomLink: jam.zoomLink,
-          selectedPhotos: jam.selectedPhotos,
+          selectedPhotosIds: jam.selectedPhotosIds,
         );
 
         events.putIfAbsent(normalizedDate, () => []).add(jamEvent);

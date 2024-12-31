@@ -7,7 +7,7 @@ class JamEvent {
   final String? facilitatorId;
   final int submissionCount;
   final String? zoomLink;
-  final List<String> selectedPhotos;
+  final List<String> selectedPhotosIds;
 
   const JamEvent({
     required this.id,
@@ -16,10 +16,10 @@ class JamEvent {
     this.facilitatorId,
     required this.submissionCount,
     this.zoomLink,
-    required this.selectedPhotos,
+    required this.selectedPhotosIds,
   });
 
   // Helper getters for status checks
   bool get hasFacilitator => facilitatorId != null && facilitatorId!.isNotEmpty;
-  bool get hasPhotosSelected => selectedPhotos.isNotEmpty;
+  bool get hasPhotosSelected => selectedPhotosIds.isNotEmpty;
 }

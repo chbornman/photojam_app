@@ -93,7 +93,7 @@ class JamSelectionDialog extends ConsumerWidget {
                     itemCount: jams.length,
                     itemBuilder: (context, index) {
                       final jam = jams[index];
-                      final hasSelectedPhotos = jam.selectedPhotos.isNotEmpty;
+                      final hasSelectedPhotos = jam.selectedPhotosIds.isNotEmpty;
 
                       return ListTile(
                         title: Text(jam.title),
