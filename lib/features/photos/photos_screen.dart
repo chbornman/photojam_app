@@ -11,12 +11,12 @@ final photoCacheServiceProvider = Provider<PhotoCacheService>((ref) {
 });
 
 // Create a provider for PhotosController
-final photosControllerProvider = StateNotifierProvider<PhotosController, AsyncValue<List<Submission>>>((ref) {
-  return PhotosController(
-    ref: ref,
-    cacheService: ref.watch(photoCacheServiceProvider),
-  )..fetchSubmissions(); // Initialize fetch
-});
+final photosControllerProvider =
+    StateNotifierProvider<PhotosController, AsyncValue<List<Submission>>>(
+  (ref) {
+    return PhotosController(ref: ref)..fetchSubmissions(); // Initialize fetch
+  },
+);
 
 class PhotosPage extends ConsumerWidget {
   const PhotosPage({super.key});
@@ -25,11 +25,30 @@ class PhotosPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final photosState = ref.watch(photosControllerProvider);
 
-    return photosState.when(
-      data: (submissions) => PhotosContent(submissions: submissions),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => Center(
-        child: Text('Error: $error'),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Photo Submissions"),
+      ),
+      body: photosState.when(
+        data: (submissions) => submissions.isNotEmpty
+            ? PhotosContent(submissions: submissions)
+            : const Center(
+                child: Text(
+                  "No submissions yet.",
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'Error loading submissions: $error',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.red, fontSize: 16),
+            ),
+          ),
+        ),
       ),
     );
   }

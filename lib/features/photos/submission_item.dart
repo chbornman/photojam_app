@@ -1,12 +1,10 @@
-// submission_item.dart
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/database/models/submission_model.dart';
+import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/widgets/standard_submissioncard.dart';
-import 'package:photojam_app/features/photos/photos_screen.dart';
-import 'package:photojam_app/features/photos/photoscroll_screen.dart';
 
 class SubmissionItem extends ConsumerWidget {
   final Submission submission;
@@ -18,58 +16,75 @@ class SubmissionItem extends ConsumerWidget {
     required this.index,
   });
 
-  void _navigateToPhotoScrollPage(BuildContext context, WidgetRef ref, int photoIndex) {
-    // Get all submissions from the provider
-    final photosState = ref.read(photosControllerProvider);
-    
-    photosState.whenOrNull(
-      data: (submissions) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PhotoScrollPage(
-              submissions: submissions,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final photoWidgets = [
-      Row(
-        children: submission.photos.asMap().entries.map((entry) {
-          final photoIndex = entry.key;
-          final photoData = entry.value;
-
-          return GestureDetector(
-            onTap: () => _navigateToPhotoScrollPage(context, ref, photoIndex),
-            child: Padding(
+    final photoWidgets = submission.photos.take(3).map((photoId) {
+      return FutureBuilder<Uint8List?>(
+        future: _fetchPhoto(photoId, ref),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Padding(
+              padding: EdgeInsets.only(right: 8.0),
+              child: SizedBox(
+                width: 100,
+                height: 100,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            );
+          } else if (snapshot.hasError) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: Container(
+                width: 100,
+                height: 100,
+                color: Colors.grey,
+                child: const Icon(Icons.error, color: Colors.red),
+              ),
+            );
+          } else {
+            final photoData = snapshot.data;
+            return Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
-                child: Image.memory(
-                  photoData as Uint8List,
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
-                ),
+                child: photoData != null
+                    ? Image.memory(
+                        photoData,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      )
+                    : Container(
+                        width: 100,
+                        height: 100,
+                        color: Colors.grey,
+                        child: const Icon(Icons.image_not_supported, color: Colors.white),
+                      ),
               ),
-            ),
-          );
-        }).toList(),
-      ),
-    ];
+            );
+          }
+        },
+      );
+    }).toList();
 
     return SubmissionCard(
       title: submission.jamId,
-      date: submission.dateCreation.toString(), // Update this based on your Submission model
-      photoWidgets: photoWidgets,
+      date: submission.dateCreation.toString(), // Format date as needed
+      photoWidgets: [
+        Row(
+          children: photoWidgets,
+        ),
+      ],
     );
   }
-}
 
-// Optional: Add a provider for the selected photo index if needed
-final selectedPhotoIndexProvider = StateProvider<int>((ref) => 0);
+  Future<Uint8List?> _fetchPhoto(String fileId, WidgetRef ref) async {
+    try {
+      final storageNotifier = ref.read(photoStorageProvider.notifier);
+      return await storageNotifier.downloadFile(fileId);
+    } catch (e) {
+      debugPrint('Error fetching photo with ID $fileId: $e');
+      return null;
+    }
+  }
+}
