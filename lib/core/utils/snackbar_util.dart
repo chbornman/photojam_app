@@ -7,6 +7,7 @@ class SnackbarUtil {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
+        duration: Duration(seconds: 1),
       ),
     );
   }
@@ -17,6 +18,7 @@ class SnackbarUtil {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.green,
+        duration: Duration(seconds: 1),
       ),
     );
   }
@@ -28,6 +30,7 @@ class SnackbarUtil {
       SnackBar(
         content: Text(message),
         backgroundColor: backgroundColor,
+        duration: Duration(seconds: 1),
       ),
     );
   }

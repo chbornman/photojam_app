@@ -22,13 +22,15 @@ class MarkdownProcessor {
 
     for (final match in matches) {
       final altText = match.group(1) ?? '';
-      final imagePath = path.basename(match.group(2) ?? '');
+      final initimagePath = match.group(2) ?? '';
 
       // If it's a web image, leave it as-is.
-      if (_imageUrlPattern.hasMatch(imagePath)) {
-        LogService.instance.info('Skipping web image; not modifying: $imagePath');
+      if (_imageUrlPattern.hasMatch(initimagePath)) {
+        LogService.instance.info('Skipping web image; not modifying: $initimagePath');
         continue;
       }
+
+      final imagePath = path.basename(match.group(2) ?? '');
 
       // Otherwise, treat it as a local image.
       final originalFilename = imagePath;
