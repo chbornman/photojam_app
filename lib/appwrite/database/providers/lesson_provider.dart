@@ -15,14 +15,15 @@ final lessonRepositoryProvider = Provider<LessonRepository>((ref) {
 });
 
 // Main state notifier provider for all lessons
-final lessonsProvider = StateNotifierProvider<LessonsNotifier, AsyncValue<List<Lesson>>>((ref) {
+final lessonsProvider =
+    StateNotifierProvider<LessonsNotifier, AsyncValue<List<Lesson>>>((ref) {
   final repository = ref.watch(lessonRepositoryProvider);
   return LessonsNotifier(repository);
 });
 
 class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
   final LessonRepository _repository;
-  
+
   LessonsNotifier(this._repository) : super(const AsyncValue.loading()) {
     loadLessons();
   }
@@ -31,9 +32,9 @@ class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
     try {
       LogService.instance.info('Loading all lessons');
       state = const AsyncValue.loading();
-      
+
       final allLessons = await _repository.getAllLessons();
-      
+
       LogService.instance.info('Loaded ${allLessons.length} lessons');
       state = AsyncValue.data(allLessons);
     } catch (error, stackTrace) {
@@ -44,23 +45,25 @@ class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
   }
 
   Future<void> createLesson({
-    required String fileName,
-    required Uint8List fileBytes,
+    required String mdFileName,
+    required Uint8List mdFileBytes,
+    required Map<String, Uint8List> otherFiles,
     String? journeyId,
     String? jamId,
   }) async {
     try {
-      LogService.instance.info('Creating new lesson: $fileName');
-            
+      LogService.instance.info('Creating new lesson: $mdFileName');
+
       final newLesson = await _repository.createLesson(
-        fileName: fileName,
-        fileBytes: fileBytes,
+        mdFileName: mdFileName,
+        mdFileBytes: mdFileBytes,
+        otherFiles: otherFiles,
         journeyId: journeyId,
         jamId: jamId,
       );
 
       LogService.instance.info('Created lesson with ID: ${newLesson.id}');
-      
+
       state = state.whenData((lessons) => [...lessons, newLesson]);
     } catch (error) {
       LogService.instance.error('Error creating lesson: $error');
@@ -69,9 +72,10 @@ class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
   }
 
   Future<void> updateLesson({
-    required String lessonId, 
+    required String lessonId,
     required String fileName,
     required Uint8List fileBytes,
+    required Map<String, Uint8List> otherFiles,
   }) async {
     try {
       LogService.instance.info('Updating lesson: $lessonId');
@@ -80,60 +84,56 @@ class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
         docId: lessonId,
         fileName: fileName,
         fileBytes: fileBytes,
+        otherFiles: otherFiles,
       );
 
-      LogService.instance.info('Successfully updated lesson: ${updatedLesson.id}');
+      LogService.instance
+          .info('Successfully updated lesson: ${updatedLesson.id}');
 
-      state = state.whenData((lessons) => lessons.map((lesson) =>
-          lesson.id == lessonId ? updatedLesson : lesson).toList());
+      state = state.whenData((lessons) => lessons
+          .map((lesson) => lesson.id == lessonId ? updatedLesson : lesson)
+          .toList());
     } catch (error) {
       LogService.instance.error('Error updating lesson: $error');
       rethrow;
     }
   }
 
-Future<void> deleteLesson({required String lessonId}) async {
-  try {
-    LogService.instance.info('Deleting lesson: $lessonId');
+  Future<void> deleteLesson({required String lessonId}) async {
+    try {
+      LogService.instance.info('Deleting lesson: $lessonId');
 
-    await _repository.deleteLesson(lessonId);
+      await _repository.deleteLesson(lessonId);
 
-    // Update the provider state by removing the deleted lesson
-    state = state.whenData(
-      (lessons) => lessons.where((lesson) => lesson.id != lessonId).toList(),
-    );
-  } catch (error) {
-    LogService.instance.error('Error deleting lesson: $error');
-    rethrow;
+      // Update the provider state by removing the deleted lesson
+      state = state.whenData(
+        (lessons) => lessons.where((lesson) => lesson.id != lessonId).toList(),
+      );
+    } catch (error) {
+      LogService.instance.error('Error deleting lesson: $error');
+      rethrow;
+    }
+  }
+
+  Future<Lesson?> getLessonByID(String lessonId) async {
+    try {
+      LogService.instance.info('Fetching lesson with ID: $lessonId');
+
+      final lessons =
+          await _repository.getAllLessons(); // Fetch lessons from repository
+      return lessons.firstWhereOrNull((lesson) => lesson.id == lessonId);
+    } catch (error) {
+      LogService.instance.error('Error fetching lesson by ID: $error');
+      rethrow;
+    }
   }
 }
 
-Future<Lesson?> getLessonByID(String lessonId) async {
-  try {
-    LogService.instance.info('Fetching lesson with ID: $lessonId');
-
-    final lessons = await _repository.getAllLessons(); // Fetch lessons from repository
-    return lessons.firstWhereOrNull((lesson) => lesson.id == lessonId);
-  } catch (error) {
-    LogService.instance.error('Error fetching lesson by ID: $error');
-    rethrow;
-  }
-}
-
-
-
-
-
-
-
-
-}extension FirstWhereOrNullExtension<T> on List<T> {
+extension FirstWhereOrNullExtension<T> on List<T> {
   T? firstWhereOrNull(bool Function(T element) test) {
     for (var element in this) {
       if (test(element)) return element;
     }
     return null;
   }
-
-
 }

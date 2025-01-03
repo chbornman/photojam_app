@@ -7,6 +7,8 @@ import 'package:photojam_app/appwrite/database/providers/lesson_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/journey_provider.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/features/journeys/journey_page.dart';
+import 'package:archive/archive.dart';
+import 'package:path/path.dart' as p;
 
 class LessonManagementActions {
   static void openAddLessonDialog({
@@ -22,38 +24,80 @@ class LessonManagementActions {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text("Select a Markdown (.md) file to upload"),
+            const Text(
+                "Select a .zip file containing your markdown file and associated images"),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () async {
                 try {
                   LogService.instance.info("Starting lesson file selection");
 
+                  // Let user pick a single .zip
                   FilePickerResult? result =
                       await FilePicker.platform.pickFiles(
                     type: FileType.custom,
-                    allowedExtensions: ['md'],
+                    allowedExtensions: ['zip'],
                     withData: true,
                   );
 
                   if (result != null && result.files.single.bytes != null) {
+                    final zipBytes = result.files.single.bytes!;
                     LogService.instance
-                        .info("Selected file: ${result.files.single.name}");
+                        .info("Selected ZIP: ${result.files.single.name}");
 
-                    // Pop the dialog before starting upload
+                    // Pop the dialog before handling the ZIP
                     Navigator.of(dialogContext).pop();
-
                     if (!context.mounted) return;
 
-                    // Start upload process with context check
+                    // Decode the ZIP using `archive`
+                    final archive = ZipDecoder().decodeBytes(zipBytes);
+
+                    // Variables to store the extracted .md and other files
+                    String? mdFileName;
+                    Uint8List? mdFileBytes;
+                    final Map<String, Uint8List> otherFiles = {};
+
+                    // Loop through every file in the ZIP
+                    for (final file in archive) {
+                      if (file.isFile) {
+                        final filename = p.basename(file.name);
+                        final data = file.content as List<int>;
+
+                        // Skip hidden files.
+                        if (filename.startsWith('.')) {
+                          LogService.instance
+                              .info('Skipping hidden file: $filename');
+                          continue;
+                        }
+
+                        // If it’s a .md file, store it separately
+                        if (filename.toLowerCase().endsWith('.md')) {
+                          mdFileName = filename;
+                          mdFileBytes = Uint8List.fromList(data);
+                        } else {
+                          // Otherwise collect in `otherFiles`
+                          otherFiles[filename] = Uint8List.fromList(data);
+                        }
+                      }
+                    }
+
+                    // If we didn’t find any .md file, notify the user
+                    if (mdFileName == null || mdFileBytes == null) {
+                      onMessage("No .md file found in the ZIP", isError: true);
+                      return;
+                    }
+
+                    onLoading(true);
                     await _handleCreateLesson(
                       context: context,
                       ref: ref,
-                      fileName: result.files.single.name,
-                      fileBytes: result.files.single.bytes!,
+                      mdFileName: mdFileName,
+                      mdFileBytes: mdFileBytes,
+                      otherFiles: otherFiles,
                       onLoading: onLoading,
                       onMessage: onMessage,
                     );
+                    onLoading(false);
                   }
                 } catch (e) {
                   LogService.instance.error("Error during file selection: $e");
@@ -76,188 +120,68 @@ class LessonManagementActions {
     );
   }
 
-  static Future<void> _handleCreateLesson({
-    required BuildContext context,
-    required WidgetRef ref,
-    required String fileName,
-    required Uint8List fileBytes,
-    required Function(bool) onLoading,
-    required Function(String, {bool isError}) onMessage,
-  }) async {
-    // Get providers early, before any async operations
-    final lessonsNotifier = ref.read(lessonsProvider.notifier);
+static Future<void> _handleCreateLesson({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String mdFileName,
+  required Uint8List mdFileBytes,
+  required Map<String, Uint8List> otherFiles,
+  required Function(bool) onLoading,
+  required Function(String, {bool isError}) onMessage,
+}) async {
+  // If no .md file was found
+  if (mdFileName.isEmpty || mdFileBytes.isEmpty) {
+    onMessage("No .md file found in the ZIP", isError: true);
+    return;
+  }
 
-    try {
-      // Create lesson
-      await lessonsNotifier.createLesson(
-        fileName: fileName,
-        fileBytes: fileBytes,
+  // Get providers early, before async
+  final lessonsNotifier = ref.read(lessonsProvider.notifier);
+
+  // Check if a lesson with the same title (mdFileName) already exists
+  try {
+    // Attempt to read the current list of lessons
+    final lessonsAsync = ref.read(lessonsProvider);
+
+    // The lessons provider may be in different states, so handle them safely
+    final currentLessons = lessonsAsync.maybeWhen(
+      data: (lessons) => lessons,
+      orElse: () => <dynamic>[],
+    );
+
+    final duplicateFound = currentLessons.any(
+      (lesson) => (lesson.title as String).toLowerCase() == mdFileName.toLowerCase(),
+    );
+
+    if (duplicateFound) {
+      onMessage(
+        "A lesson with the name '$mdFileName' already exists. Delete other lesson before adding this one.",
+        isError: true,
       );
-
-      if (!context.mounted) return;
-      onMessage("Lesson added successfully");
-    } catch (e) {
-      LogService.instance.error("Error handling lesson file upload: $e");
-      if (!context.mounted) return;
-      onMessage("Error handling lesson upload: $e", isError: true);
-    } finally {
-      if (context.mounted) {
-        onLoading(false);
-      }
-    }
-  }
-
-  static void openUpdateLessonDialog({
-    required BuildContext context,
-    required WidgetRef ref,
-    required Function(bool) onLoading,
-    required Function(String, {bool isError}) onMessage,
-  }) {
-    final lessonsAsync = ref.watch(lessonsProvider);
-
-    lessonsAsync.when(
-      data: (lessons) {
-        if (!context.mounted) return;
-
-        if (lessons.isEmpty) {
-          onMessage("No lessons available", isError: true);
-          return;
-        }
-
-        _showUpdateLessonDialog(
-          context: context,
-          ref: ref,
-          lessons: lessons,
-          onLoading: onLoading,
-          onMessage: onMessage,
-        );
-      },
-      loading: () {
-        onLoading(true);
-      },
-      error: (error, stack) {
-        LogService.instance.error("Error fetching lessons: $error");
-        onMessage("Error fetching lessons: $error", isError: true);
-      },
-    );
-  }
-
-  static void _showUpdateLessonDialog({
-    required BuildContext context,
-    required WidgetRef ref,
-    required List<dynamic> lessons,
-    required Function(bool) onLoading,
-    required Function(String, {bool isError}) onMessage,
-  }) {
-    String? selectedLessonId;
-    final titleController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Update Lesson"),
-        content: StatefulBuilder(
-          builder: (context, setState) {
-            return SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: selectedLessonId,
-                    hint: const Text("Select Lesson"),
-                    items: lessons.map<DropdownMenuItem<String>>((lesson) {
-                      return DropdownMenuItem<String>(
-                        value: lesson.id as String,
-                        child: Text(lesson.title as String),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedLessonId = value;
-                        if (value != null) {
-                          final lesson = lessons.firstWhere((l) => l.id == value);
-                          titleController.text = lesson.title;
-                        }
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => _pickAndUploadNewLessonFile(
-                      context: context,
-                      ref: ref,
-                      selectedLessonId: selectedLessonId,
-                      titleController: titleController,
-                      lessons: lessons,
-                      onLoading: onLoading,
-                      onMessage: onMessage,
-                    ),
-                    child: const Text("Select New File"),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Cancel"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Future<void> _pickAndUploadNewLessonFile({
-    required BuildContext context,
-    required WidgetRef ref,
-    required String? selectedLessonId,
-    required TextEditingController titleController,
-    required List<dynamic> lessons,
-    required Function(bool) onLoading,
-    required Function(String, {bool isError}) onMessage,
-  }) async {
-    if (selectedLessonId == null) {
-      onMessage("Please select a lesson first", isError: true);
       return;
     }
 
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['md'],
-        withData: true,
-      );
+    onLoading(true);
 
-      if (result != null && result.files.single.bytes != null) {
-        onLoading(true);
-        Navigator.of(context).pop();
+    // If no duplicates, proceed with creating a new lesson
+    await lessonsNotifier.createLesson(
+      mdFileName: mdFileName,
+      mdFileBytes: mdFileBytes,
+      otherFiles: otherFiles,
+    );
 
-        final fileBytes = result.files.single.bytes!;
-        final fileName = result.files.single.name;
-        final lesson = lessons.firstWhere((l) => l.id == selectedLessonId);
-
-        LogService.instance.info("Updating lesson file: ${lesson.id}");
-
-        await ref.read(lessonsProvider.notifier).updateLesson(
-          lessonId: selectedLessonId,
-          fileName: fileName,
-          fileBytes: fileBytes,
-        );
-
-        onMessage("Lesson updated successfully");
-      }
-    } catch (e) {
-      LogService.instance.error("Error updating lesson file: $e");
-      onMessage("Error updating lesson: $e", isError: true);
-    } finally {
+    if (!context.mounted) return;
+    onMessage("Lesson added successfully");
+  } catch (e) {
+    LogService.instance.error("Error handling lesson file upload: $e");
+    if (!context.mounted) return;
+    onMessage("Error handling lesson upload: $e", isError: true);
+  } finally {
+    if (context.mounted) {
       onLoading(false);
     }
   }
-
-
-
+}
 
 
   static void openDeleteLessonDialog({

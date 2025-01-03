@@ -15,84 +15,89 @@ class LessonRepository {
   final String collectionId = AppConstants.collectionLessons;
 
   LessonRepository(this._db, this._storage);
-Future<Lesson> createLesson({
- required String fileName,
- required Uint8List fileBytes,
- String? journeyId,
- String? jamId,
-}) async {
- try {
-   LogService.instance.info('Create Lesson for: $fileName');
+  Future<Lesson> createLesson({
+    required String mdFileName,
+    required Uint8List mdFileBytes,
+    required Map<String, Uint8List> otherFiles,
+    String? journeyId,
+    String? jamId,
+  }) async {
+    try {
+      LogService.instance.info('Create Lesson for: $mdFileName');
 
-   final lessonId = ID.unique();
-   final markdownProcessor = MarkdownProcessor();
-   
-   // Process markdown to handle images
-   final processedMarkdown = await markdownProcessor.processMarkdown(
-     markdownContent: utf8.decode(fileBytes),
-     lessonId: lessonId,
-   );
+      final lessonId = ID.unique();
+      final markdownProcessor = MarkdownProcessor();
 
-   // Upload all images
-   final uploadedImagePaths = <String>[];
-   for (final entry in processedMarkdown.images.entries) {
-     final imageFile = await _storage.uploadFile(
-       entry.key,
-       entry.value,
-     );
-     uploadedImagePaths.add(imageFile.id);
-     LogService.instance.info('Uploaded image: ${imageFile.id}');
-   }
+      // Process markdown to handle images
+      final processedMarkdown = await markdownProcessor.processMarkdown(
+        markdownContent: utf8.decode(mdFileBytes),
+        otherFiles: otherFiles,
+        lessonId: lessonId,
+      );
 
-   // Upload markdown content
-   final file = await _storage.uploadFile(
-     fileName,
-     utf8.encode(processedMarkdown.content),
-   );
-   LogService.instance.info("Markdown file uploaded: ${file.id}");
+      // Upload all images
+      final uploadedImageIds = <String>[];
+      for (final entry in processedMarkdown.images.entries) {
+        final imageFile = await _storage.uploadFile(
+          entry.key,
+          entry.value,
+        );
+        uploadedImageIds.add(imageFile.id);
+        LogService.instance.info('Uploaded image: ${imageFile.id}');
+      }
 
-   final now = DateTime.now().toIso8601String();
-   final documentData = {
-     'title': fileName,
-     'contentFileId': file.id,
-     'version': 1,
-     'is_active': true,
-     'journey': journeyId != null ? {'\$id': journeyId} : null,
-     'jam': jamId != null ? {'\$id': jamId} : null,
-     'date_creation': now,
-     'date_updated': now,
-     'image_paths': uploadedImagePaths,
-   };
+      // Upload markdown content
+      final file = await _storage.uploadFile(
+        mdFileName,
+        utf8.encode(processedMarkdown.content),
+      );
+      LogService.instance.info("Markdown file uploaded: ${file.id}");
 
-   final doc = await _db.createDocument(
-     collectionId,
-     documentData,
-   );
+      final now = DateTime.now().toIso8601String();
+      final documentData = {
+        'title': mdFileName,
+        'contentFileId': file.id,
+        'version': 1,
+        'is_active': true,
+        'journey': journeyId != null ? {'\$id': journeyId} : null,
+        'jam': jamId != null ? {'\$id': jamId} : null,
+        'date_creation': now,
+        'date_updated': now,
+        'image_ids': uploadedImageIds,
+      };
 
-   LogService.instance.info('Created lesson document: ${doc.$id}');
-   return Lesson.fromDocument(doc);
- } catch (e) {
-   LogService.instance.error('Error creating lesson: $e');
-   rethrow;
- }
-}
+      final doc = await _db.createDocument(
+        collectionId,
+        documentData,
+      );
+
+      LogService.instance.info('Created lesson document: ${doc.$id}');
+      return Lesson.fromDocument(doc);
+    } catch (e) {
+      LogService.instance.error('Error creating lesson: $e');
+      rethrow;
+    }
+  }
+
   Future<Lesson> updateLesson({
     required String docId,
     required String fileName,
     required Uint8List fileBytes,
+    required Map<String, Uint8List> otherFiles,
     String? journeyId,
     String? jamId,
   }) async {
     try {
       LogService.instance.info('Updating Lesson: $fileName (docId: $docId)');
-      
+
       // Delete existing lesson and its images
       await deleteLesson(docId);
-      
+
       // Create new lesson with processed content
       return await createLesson(
-        fileName: fileName,
-        fileBytes: fileBytes,
+        mdFileName: fileName,
+        mdFileBytes: fileBytes,
+        otherFiles: otherFiles,
         journeyId: journeyId,
         jamId: jamId,
       );
@@ -109,11 +114,11 @@ Future<Lesson> createLesson({
       // Get document to find associated files
       final doc = await _db.getDocument(collectionId, docId);
       final content = await _storage.downloadFile(doc.data['contentFileId']);
-      
+
       // Parse markdown to find image references
       final markdownText = utf8.decode(content);
       final imageRefs = _extractImageRefs(markdownText);
-      
+
       // Delete all images
       for (final imageRef in imageRefs) {
         final imageId = path.basename(imageRef);
@@ -123,7 +128,8 @@ Future<Lesson> createLesson({
 
       // Delete markdown file
       await _storage.deleteFile(doc.data['contentFileId']);
-      LogService.instance.info('Deleted markdown file: ${doc.data['contentFileId']}');
+      LogService.instance
+          .info('Deleted markdown file: ${doc.data['contentFileId']}');
 
       // Delete document
       await _db.deleteDocument(collectionId, docId);
@@ -137,14 +143,14 @@ Future<Lesson> createLesson({
   List<String> _extractImageRefs(String markdown) {
     final imageRefs = <String>[];
     final matches = RegExp(r'!\[.*?\]\((.*?)\)').allMatches(markdown);
-    
+
     for (final match in matches) {
       final path = match.group(1);
       if (path != null && path.startsWith('/lessons/')) {
         imageRefs.add(path);
       }
     }
-    
+
     return imageRefs;
   }
 

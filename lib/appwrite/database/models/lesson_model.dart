@@ -11,7 +11,7 @@ class Lesson {
   final int version;
   final String? journeyId;
   final String? jamId;
-  final List<String> imagePaths;
+  final List<String> imageIds;
 
   Lesson({
     required this.id,
@@ -23,7 +23,7 @@ class Lesson {
     required this.version,
     this.journeyId,
     this.jamId,
-    this.imagePaths = const [], // Default to empty list
+    this.imageIds = const [], // Default to empty list
   });
 
   factory Lesson.fromDocument(Document doc) {
@@ -37,7 +37,7 @@ class Lesson {
       version: doc.data['version'],
       journeyId: doc.data['journey']?['\$id'],
       jamId: doc.data['jam']?['\$id'],
-      imagePaths: List<String>.from(doc.data['image_paths'] ?? []),
+      imageIds: List<String>.from(doc.data['image_ids'] ?? []),
     );
   }
 
@@ -50,6 +50,6 @@ class Lesson {
     'version': version,
     'journey': journeyId != null ? {'\$id': journeyId} : null,
     'jam': jamId != null ? {'\$id': jamId} : null,
-    'image_paths': imagePaths,
+    'image_ids': imageIds,
   };
 }
