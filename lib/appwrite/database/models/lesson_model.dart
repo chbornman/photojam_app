@@ -6,11 +6,12 @@ class Lesson {
   final String title;
   final DateTime dateCreation;
   final DateTime dateUpdated;
-  final String contentFileId;  // Changed from Uri to String
+  final String contentFileId;
   final bool isActive;
   final int version;
   final String? journeyId;
   final String? jamId;
+  final List<String> imagePaths;
 
   Lesson({
     required this.id,
@@ -22,6 +23,7 @@ class Lesson {
     required this.version,
     this.journeyId,
     this.jamId,
+    this.imagePaths = const [], // Default to empty list
   });
 
   factory Lesson.fromDocument(Document doc) {
@@ -35,6 +37,7 @@ class Lesson {
       version: doc.data['version'],
       journeyId: doc.data['journey']?['\$id'],
       jamId: doc.data['jam']?['\$id'],
+      imagePaths: List<String>.from(doc.data['image_paths'] ?? []),
     );
   }
 
@@ -47,5 +50,6 @@ class Lesson {
     'version': version,
     'journey': journeyId != null ? {'\$id': journeyId} : null,
     'jam': jamId != null ? {'\$id': jamId} : null,
+    'image_paths': imagePaths,
   };
 }

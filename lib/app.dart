@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/auth/role_utils.dart';
 import 'package:photojam_app/config/app_constants.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/features/auth/login_screen.dart';
 import 'package:photojam_app/features/facilitator/facilitator_screen.dart';
 import 'package:photojam_app/features/jams/jams_page.dart';
@@ -126,22 +127,11 @@ class _AppState extends ConsumerState<App> {
     try {
       await ref.read(authStateProvider.notifier).signOut();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Signed out successfully!"),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        SnackbarUtil.showSuccessSnackBar(context, 'Signed out successfully!');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Error signing out: $e"),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
-          ),
-        );
+        SnackbarUtil.showErrorSnackBar(context, 'Error signing out: $e');
       }
     }
   }
@@ -162,13 +152,7 @@ class _AppState extends ConsumerState<App> {
           );
         },
         error: (message) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: Colors.red,
-            ),
-          );
+          SnackbarUtil.showErrorSnackBar(context, message);
         },
       );
     });

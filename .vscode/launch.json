@@ -14,7 +14,7 @@
             "name": "iOS Simulator",
             "request": "launch",
             "type": "dart",
-            "deviceId": "5E49E71E-46D1-448B-ABA6-2C8A668FAFE8",
+            "deviceId": "iPhone 16 Pro",
             "flutterMode": "debug"
         },
         {

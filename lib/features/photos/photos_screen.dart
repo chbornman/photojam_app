@@ -26,9 +26,6 @@ class PhotosPage extends ConsumerWidget {
     final photosState = ref.watch(photosControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Photo Submissions"),
-      ),
       body: photosState.when(
         data: (submissions) => submissions.isNotEmpty
             ? PhotosContent(submissions: submissions)

@@ -5,6 +5,7 @@ import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/submission_provider.dart';
 import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/features/admin/jam_event.dart';
 import 'package:photojam_app/features/admin/jam_event_card.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -210,27 +211,20 @@ class _JamCalendarPageState extends ConsumerState<JamCalendarPage> {
                               );
 
                           container.refresh(jamEventsMapProvider);
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(newFacilitatorId == null
+                          SnackbarUtil.showSuccessSnackBar(
+                              context,
+                              newFacilitatorId == null
                                   ? 'Facilitator role removed successfully!'
-                                  : 'You are now the facilitator!'),
-                            ),
-                          );
+                                  : 'You are now the facilitator!');
                         } catch (error) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content:
-                                    Text('Error updating facilitator: $error')),
-                          );
+                          SnackbarUtil.showErrorSnackBar(
+                              context, 'Error updating facilitator: $error');
                         }
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text(
-                                  'You must be logged in to toggle facilitator role.')),
-                        );
+                        SnackbarUtil.showCustomSnackBar(
+                            context,
+                            'You must be logged in to toggle facilitator role.',
+                            Colors.blue);
                       }
                     },
                   );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/core/widgets/standard_button.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
 import 'package:photojam_app/core/services/log_service.dart';
@@ -217,7 +218,7 @@ class AccountActions extends ConsumerWidget {
     String newName,
   ) async {
     if (newName.trim().isEmpty) {
-      _showErrorSnackBar(context, 'Name cannot be empty');
+      SnackbarUtil.showErrorSnackBar(context, 'Name cannot be empty');
       return;
     }
 
@@ -225,12 +226,12 @@ class AccountActions extends ConsumerWidget {
       await ref.read(accountProvider.notifier).updateName(newName.trim());
       if (context.mounted) {
         Navigator.of(context).pop();
-        _showSuccessSnackBar(context, 'Name updated successfully');
+        SnackbarUtil.showSuccessSnackBar(context, 'Name updated successfully');
       }
     } catch (e) {
       LogService.instance.error('Failed to update name: $e');
       if (context.mounted) {
-        _showErrorSnackBar(context, 'Failed to update name');
+        SnackbarUtil.showErrorSnackBar(context, 'Failed to update name');
       }
     }
   }
@@ -242,7 +243,7 @@ class AccountActions extends ConsumerWidget {
     String password,
   ) async {
     if (newEmail.trim().isEmpty || password.isEmpty) {
-      _showErrorSnackBar(context, 'Please fill in all fields');
+      SnackbarUtil.showErrorSnackBar(context, 'Please fill in all fields');
       return;
     }
 
@@ -253,12 +254,12 @@ class AccountActions extends ConsumerWidget {
           );
       if (context.mounted) {
         Navigator.of(context).pop();
-        _showSuccessSnackBar(context, 'Email updated successfully');
+        SnackbarUtil.showSuccessSnackBar(context, 'Email updated successfully');
       }
     } catch (e) {
       LogService.instance.error('Failed to update email: $e');
       if (context.mounted) {
-        _showErrorSnackBar(context, 'Failed to update email');
+        SnackbarUtil.showErrorSnackBar(context, 'Failed to update email');
       }
     }
   }
@@ -273,12 +274,12 @@ class AccountActions extends ConsumerWidget {
     if (currentPassword.isEmpty ||
         newPassword.isEmpty ||
         confirmPassword.isEmpty) {
-      _showErrorSnackBar(context, 'Please fill in all fields');
+      SnackbarUtil.showErrorSnackBar(context, 'Please fill in all fields');
       return;
     }
 
     if (newPassword != confirmPassword) {
-      _showErrorSnackBar(context, 'New passwords do not match');
+      SnackbarUtil.showErrorSnackBar(context, 'New passwords do not match');
       return;
     }
 
@@ -289,12 +290,12 @@ class AccountActions extends ConsumerWidget {
           );
       if (context.mounted) {
         Navigator.of(context).pop();
-        _showSuccessSnackBar(context, 'Password updated successfully');
+        SnackbarUtil.showSuccessSnackBar(context, 'Password updated successfully');
       }
     } catch (e) {
       LogService.instance.error('Failed to update password: $e');
       if (context.mounted) {
-        _showErrorSnackBar(context, 'Failed to update password');
+        SnackbarUtil.showErrorSnackBar(context, 'Failed to update password');
       }
     }
   }
@@ -307,7 +308,7 @@ class AccountActions extends ConsumerWidget {
     try {
       await ref.read(accountProvider.notifier).requestRole(role);
       if (context.mounted) {
-        _showSuccessSnackBar(
+        SnackbarUtil.showSuccessSnackBar(
           context,
           'Successfully requested ${role.toLowerCase()} role',
         );
@@ -315,28 +316,9 @@ class AccountActions extends ConsumerWidget {
     } catch (e) {
       LogService.instance.error('Failed to request $role role: $e');
       if (context.mounted) {
-        _showErrorSnackBar(context, 'Failed to request role');
+        SnackbarUtil.showErrorSnackBar(context, 'Failed to request role');
       }
     }
   }
 
-  void _showSuccessSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _showErrorSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
 }

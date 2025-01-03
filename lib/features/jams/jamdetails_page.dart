@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_providers.dart';
+import 'package:photojam_app/appwrite/database/models/submission_model.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
+import 'package:photojam_app/features/photos/photoscroll_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/database/models/jam_model.dart';
@@ -19,7 +22,7 @@ final photoCacheServiceProvider = Provider<PhotoCacheService>((ref) {
 
 class JamDetailsPage extends ConsumerStatefulWidget {
   final Jam jam;
-  
+
   const JamDetailsPage({
     super.key,
     required this.jam,
@@ -32,6 +35,7 @@ class JamDetailsPage extends ConsumerStatefulWidget {
 class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
   bool _isLoading = true;
   List<Uint8List?> _photos = [];
+  Submission? _submission; // Add a field for the submission
 
   @override
   void initState() {
@@ -45,7 +49,6 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
     try {
       setState(() => _isLoading = true);
 
-      // Get current user from auth state
       final authState = ref.read(authStateProvider);
       final userId = authState.user?.id;
 
@@ -113,10 +116,13 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
         });
       }
 
+      _submission = submission; // Store the submission for later use
+
+      // Load photos logic...
     } catch (e) {
       LogService.instance.error('Error loading submission photos: $e');
       if (mounted) {
-        _showErrorSnackBar('Failed to load photos');
+        SnackbarUtil.showErrorSnackBar(context, 'Failed to load photos');
         setState(() => _isLoading = false);
       }
     }
@@ -181,8 +187,8 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final formattedDate = DateFormat('MMM dd, yyyy - hh:mm a')
-        .format(widget.jam.eventDatetime);
+    final formattedDate =
+        DateFormat('MMM dd, yyyy - hh:mm a').format(widget.jam.eventDatetime);
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.jam.title)),
@@ -190,15 +196,7 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.jam.title,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
             Row(
               children: [
                 Icon(Icons.calendar_today, color: Colors.grey[600]),
@@ -214,7 +212,7 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
             const SizedBox(height: 20),
             if (_isLoading)
               const Center(child: CircularProgressIndicator())
-            else if (_photos.isNotEmpty)
+            else if (_photos.isNotEmpty && _submission != null)
               SubmissionCard(
                 title: "Your submitted photos",
                 photoWidgets: [
@@ -222,24 +220,41 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
                     children: _photos.map((photoData) {
                       return Padding(
                         padding: const EdgeInsets.only(right: 8.0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
-                          child: photoData != null
-                              ? Image.memory(
-                                  photoData,
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                )
-                              : Container(
-                                  width: 100,
-                                  height: 100,
-                                  color: theme.colorScheme.error,
-                                  child: Icon(
-                                    Icons.image_not_supported,
-                                    color: theme.colorScheme.onError,
+                        child: GestureDetector(
+                          onTap: () {
+                            if (_submission != null) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PhotoScrollPage(
+                                    submission: _submission!,
                                   ),
                                 ),
+                              );
+                            } else {
+                              SnackbarUtil.showErrorSnackBar(
+                                  context, 'Submission data is missing.');
+                            }
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8.0),
+                            child: photoData != null
+                                ? Image.memory(
+                                    photoData,
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Container(
+                                    width: 100,
+                                    height: 100,
+                                    color: theme.colorScheme.error,
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      color: theme.colorScheme.onError,
+                                    ),
+                                  ),
+                          ),
                         ),
                       );
                     }).toList(),

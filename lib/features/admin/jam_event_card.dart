@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/features/admin/jam_calendar_page.dart';
 import 'package:photojam_app/features/admin/jam_event.dart';
 
@@ -42,7 +43,8 @@ class JamEventCard extends StatelessWidget {
         contentPadding: const EdgeInsets.all(16.0),
         title: Text(
           event.title,
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium
+              ?.copyWith(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,7 +65,9 @@ class JamEventCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              event.hasFacilitator ? 'Facilitator Assigned' : 'No Facilitator Assigned',
+              event.hasFacilitator
+                  ? 'Facilitator Assigned'
+                  : 'No Facilitator Assigned',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: event.hasFacilitator
                     ? theme.colorScheme.primary
@@ -77,7 +81,6 @@ class JamEventCard extends StatelessWidget {
     );
   }
 }
-
 
 class JamEventCardParent extends StatefulWidget {
   final JamEvent event;
@@ -111,26 +114,22 @@ class _JamEventCardParentState extends State<JamEventCardParent> {
                 : currentUserId;
 
             await container.read(jamsProvider.notifier).updateFacilitator(
-              widget.event.id,
-              newFacilitatorId,
-            );
+                  widget.event.id,
+                  newFacilitatorId,
+                );
 
             container.refresh(jamEventsMapProvider);
 
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(newFacilitatorId == null
+              SnackbarUtil.showSuccessSnackBar(
+                  context,
+                  newFacilitatorId == null
                       ? 'Facilitator role removed successfully!'
-                      : 'You are now the facilitator!'),
-                ),
-              );
+                      : 'You are now the facilitator!');
             }
           } catch (error) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Error updating facilitator: $error')),
-              );
+              SnackbarUtil.showErrorSnackBar(context, 'Error updating facilitator: $error');
             }
           }
         }

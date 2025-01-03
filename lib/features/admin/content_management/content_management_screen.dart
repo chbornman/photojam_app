@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/features/admin/content_management/widgets/danger/danger_section.dart';
 import 'package:photojam_app/features/admin/content_management/widgets/jam/jam_section.dart';
 import 'package:photojam_app/features/admin/content_management/widgets/lesson/lesson_section.dart';
@@ -11,10 +12,12 @@ class ContentManagementScreen extends ConsumerStatefulWidget {
   const ContentManagementScreen({super.key});
 
   @override
-  ConsumerState<ContentManagementScreen> createState() => _ContentManagementScreenState();
+  ConsumerState<ContentManagementScreen> createState() =>
+      _ContentManagementScreenState();
 }
 
-class _ContentManagementScreenState extends ConsumerState<ContentManagementScreen> {
+class _ContentManagementScreenState
+    extends ConsumerState<ContentManagementScreen> {
   bool _isLoading = false;
 
   void _setLoading(bool loading) {
@@ -25,12 +28,8 @@ class _ContentManagementScreenState extends ConsumerState<ContentManagementScree
 
   void _showMessage(String message, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-      ),
-    );
+    SnackbarUtil.showCustomSnackBar(
+        context, message, isError ? Colors.red : Colors.green);
   }
 
   @override

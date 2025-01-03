@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/features/auth/login_controller.dart';
 import 'package:photojam_app/features/auth/login_form.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
@@ -17,13 +18,13 @@ class LoginPage extends ConsumerWidget {
       next.whenOrNull(
         authenticated: (_) async {
           LogService.instance.info('User authenticated, fetching role...');
-          
+
           try {
             // Wait for the role provider to refresh and get the new role
             await Future.delayed(const Duration(milliseconds: 100));
             final roleAsync = await ref.read(userRoleProvider.future);
             LogService.instance.info('User role fetched: $roleAsync');
-            
+
             if (context.mounted) {
               // Navigate to App with the user role
               Navigator.of(context).pushAndRemoveUntil(
@@ -36,24 +37,15 @@ class LoginPage extends ConsumerWidget {
           } catch (e) {
             LogService.instance.error('Error fetching user role: $e');
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Error loading user role'),
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                ),
-              );
+              SnackbarUtil.showErrorSnackBar(
+                  context, 'Error loading user role');
             }
           }
         },
         error: (message) {
           LogService.instance.error('Auth error: $message');
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(message),
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-            );
+            SnackbarUtil.showErrorSnackBar(context, message);
           }
         },
       );
@@ -86,7 +78,10 @@ class LoginPage extends ConsumerWidget {
                     Center(
                       child: Text(
                         'Photo Jam',
-                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineLarge
+                            ?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: Theme.of(context).colorScheme.onSurface,
                             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
 
 class UpdateJourneyDialog extends StatefulWidget {
@@ -36,17 +37,9 @@ class _UpdateJourneyDialogState extends State<UpdateJourneyDialog> {
     }
   }
 
-  void _showMessage(String message, {bool isError = false}) {
-    final snackBar = SnackBar(
-      content: Text(message),
-      backgroundColor: isError ? Colors.red : Colors.green,
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  }
-
   void _submit() {
     if (_titleController.text.isEmpty || _startDate == null || _startTime == null) {
-      _showMessage("Please enter a title, start date, and time.", isError: true);
+      SnackbarUtil.showErrorSnackBar(context, 'Please enter a title, start date, and time.');
       return;
     }
 

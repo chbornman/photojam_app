@@ -11,6 +11,7 @@ import 'package:photojam_app/appwrite/database/providers/submission_provider.dar
 import 'package:photojam_app/appwrite/storage/models/storage_types.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
 import 'package:photojam_app/core/widgets/standard_button.dart';
 import 'package:photojam_app/features/jams/photo_upload_service.dart';
@@ -65,11 +66,11 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
           if (!mounted) return;
           setState(() => _jams = jams);
         },
-        orElse: () => _showErrorSnackBar('Failed to load jams'),
+        orElse: () => SnackbarUtil.showErrorSnackBar(context, 'Failed to load jams'),
       );
     } catch (e) {
       LogService.instance.error('Unexpected error fetching jams: $e');
-      _showErrorSnackBar('Unexpected error occurred');
+      SnackbarUtil.showErrorSnackBar(context, 'Unexpected error occurred');
     }
   }
 
@@ -94,7 +95,7 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
       setState(() => _photos[index] = file);
     } catch (e) {
       LogService.instance.error('Error selecting photo: $e');
-      _showErrorSnackBar('Failed to select photo');
+      SnackbarUtil.showErrorSnackBar(context, 'Failed to select photo');
     }
   }
 
@@ -146,7 +147,7 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
     } catch (e) {
       LogService.instance.error("Error during submission: $e");
       if (!mounted) return;
-      _showErrorSnackBar('Failed to submit photos');
+      SnackbarUtil.showErrorSnackBar(context, 'Failed to submit photos');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -215,33 +216,25 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
       Navigator.pop(context);
     } catch (e) {
       LogService.instance.error('Error deleting submission: $e');
-      _showErrorSnackBar('Failed to delete submission');
+      SnackbarUtil.showErrorSnackBar(context, 'Failed to delete submission');
     }
   }
 
   bool _validateSubmission() {
     if (!authState.isAuthenticated || authState.user?.id == null) {
-      _showErrorSnackBar('User not authenticated');
+      SnackbarUtil.showErrorSnackBar(context, 'User not authenticated');
       return false;
     }
 
     if (_selectedJamId == null) {
-      _showErrorSnackBar('Please select a jam event');
+      SnackbarUtil.showErrorSnackBar(context, 'Please select a jam event');
       return false;
     }
 
     return true;
   }
 
-  void _showErrorSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error,
-      ),
-    );
-  }
+
 
   Future<void> _showDialog({
     required String title,
@@ -335,9 +328,7 @@ void _onSubmissionSuccess(BuildContext context, WidgetRef ref) {
   );
 
   // Navigate back or show a confirmation
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Jam updated successfully!')),
-  );
+  SnackbarUtil.showSuccessSnackBar(context, 'Jam updated successfully!');
 }
 
 

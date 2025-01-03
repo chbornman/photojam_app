@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photojam_app/config/app_constants.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
 
 class CreateJamDialog extends StatefulWidget {
@@ -20,20 +21,13 @@ class _CreateJamDialogState extends State<CreateJamDialog> {
   DateTime? _jamDate;
   TimeOfDay? _jamTime;
 
-  void _showMessage(String message, {bool isError = false}) {
-    final snackBar = SnackBar(
-      content: Text(message),
-      backgroundColor: isError ? Colors.red : Colors.green,
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  }
-
   void _submit() {
     if (_titleController.text.isEmpty ||
         _jamDate == null ||
         _jamTime == null ||
         _zoomLinkController.text.isEmpty) {
-      _showMessage("Please enter all required fields, including the Zoom link.", isError: true);
+      SnackbarUtil.showErrorSnackBar(context,
+          'Please enter all required fields, including the Zoom link.');
       return;
     }
 

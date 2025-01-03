@@ -1,9 +1,13 @@
+import 'dart:convert';
 import 'dart:typed_data';
+import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/appwrite/database/models/lesson_model.dart';
 import 'package:photojam_app/appwrite/database/repositories/base_repository.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/config/app_constants.dart';
 import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/core/utils/markdown_processor.dart';
+import 'package:path/path.dart' as path;
 
 class LessonRepository {
   final DatabaseRepository _db;
@@ -11,49 +15,67 @@ class LessonRepository {
   final String collectionId = AppConstants.collectionLessons;
 
   LessonRepository(this._db, this._storage);
+Future<Lesson> createLesson({
+ required String fileName,
+ required Uint8List fileBytes,
+ String? journeyId,
+ String? jamId,
+}) async {
+ try {
+   LogService.instance.info('Create Lesson for: $fileName');
 
-  Future<Lesson> createLesson({
-    required String fileName,
-    required Uint8List fileBytes,
-    String? journeyId,
-    String? jamId,
-  }) async {
-    try {
-      LogService.instance.info('Create Lesson for: $fileName');
+   final lessonId = ID.unique();
+   final markdownProcessor = MarkdownProcessor();
+   
+   // Process markdown to handle images
+   final processedMarkdown = await markdownProcessor.processMarkdown(
+     markdownContent: utf8.decode(fileBytes),
+     lessonId: lessonId,
+   );
 
-      // Upload File to storage
-      final file = await _storage.uploadFile(fileName, fileBytes);
-      LogService.instance.info("File uploaded successfully: ${file.id}");
+   // Upload all images
+   final uploadedImagePaths = <String>[];
+   for (final entry in processedMarkdown.images.entries) {
+     final imageFile = await _storage.uploadFile(
+       entry.key,
+       entry.value,
+     );
+     uploadedImagePaths.add(imageFile.id);
+     LogService.instance.info('Uploaded image: ${imageFile.id}');
+   }
 
-      final now = DateTime.now().toIso8601String();
+   // Upload markdown content
+   final file = await _storage.uploadFile(
+     fileName,
+     utf8.encode(processedMarkdown.content),
+   );
+   LogService.instance.info("Markdown file uploaded: ${file.id}");
 
-      final documentData = {
-        'title': fileName,
-        'contentFileId': file.id,
-        'version': 1,
-        'is_active': true,
-        'journey': journeyId != null ? {'\$id': journeyId} : null,
-        'jam': jamId != null ? {'\$id': jamId} : null,
-        'date_creation': now,
-        'date_updated': now,
-      };
+   final now = DateTime.now().toIso8601String();
+   final documentData = {
+     'title': fileName,
+     'contentFileId': file.id,
+     'version': 1,
+     'is_active': true,
+     'journey': journeyId != null ? {'\$id': journeyId} : null,
+     'jam': jamId != null ? {'\$id': jamId} : null,
+     'date_creation': now,
+     'date_updated': now,
+     'image_paths': uploadedImagePaths,
+   };
 
-      LogService.instance.info(
-          'Creating document in collection: $collectionId Document data: $documentData');
+   final doc = await _db.createDocument(
+     collectionId,
+     documentData,
+   );
 
-      final doc = await _db.createDocument(
-        collectionId,
-        documentData,
-      );
-
-      LogService.instance.info('Created lesson document: ${doc.$id}');
-      return Lesson.fromDocument(doc);
-    } catch (e) {
-      LogService.instance.error('Error creating lesson: $e');
-      rethrow;
-    }
-  }
-
+   LogService.instance.info('Created lesson document: ${doc.$id}');
+   return Lesson.fromDocument(doc);
+ } catch (e) {
+   LogService.instance.error('Error creating lesson: $e');
+   rethrow;
+ }
+}
   Future<Lesson> updateLesson({
     required String docId,
     required String fileName,
@@ -63,41 +85,17 @@ class LessonRepository {
   }) async {
     try {
       LogService.instance.info('Updating Lesson: $fileName (docId: $docId)');
-
-      // 1. Fetch the existing document
-      final existingDoc = await _db.getDocument(collectionId, docId);
-      final oldFileId = existingDoc.data['contentFileId'];
-
-      // 2. Increment the version
-      final oldVersion = existingDoc.data['version'] ?? 1;
-      final newVersion = oldVersion + 1;
-
-      // 3. Delete the old file if it exists
-      if (oldFileId != null && oldFileId is String && oldFileId.isNotEmpty) {
-        await _storage.deleteFile(oldFileId);
-        LogService.instance.info('Deleted old file: $oldFileId');
-      }
-
-      // 4. Upload the new file
-      final newFile = await _storage.uploadFile(fileName, fileBytes);
-      LogService.instance.info("New file uploaded: ${newFile.id}");
-
-      // 5. Prepare updated fields
-      final now = DateTime.now().toIso8601String();
-      final updatedData = <String, dynamic>{
-        'title': fileName,
-        'contentFileId': newFile.id,
-        'version': newVersion,
-        'date_updated': now,
-        if (journeyId != null) 'journey': {'\$id': journeyId},
-        if (jamId != null) 'jam': {'\$id': jamId},
-      };
-
-      // 6. Update the document
-      final doc = await _db.updateDocument(collectionId, docId, updatedData);
-      LogService.instance.info('Updated lesson document: ${doc.$id}');
-
-      return Lesson.fromDocument(doc);
+      
+      // Delete existing lesson and its images
+      await deleteLesson(docId);
+      
+      // Create new lesson with processed content
+      return await createLesson(
+        fileName: fileName,
+        fileBytes: fileBytes,
+        journeyId: journeyId,
+        jamId: jamId,
+      );
     } catch (e) {
       LogService.instance.error('Error updating lesson: $e');
       rethrow;
@@ -108,25 +106,46 @@ class LessonRepository {
     try {
       LogService.instance.info('Deleting Lesson with docId: $docId');
 
-      // 1. Retrieve the document so we know which file to remove
-      final existingDoc = await _db.getDocument(collectionId, docId);
-      final oldFileId = existingDoc.data['contentFileId'];
-
-      // 2. Delete the associated file (if any)
-      if (oldFileId != null && oldFileId is String && oldFileId.isNotEmpty) {
-        await _storage.deleteFile(oldFileId);
-        LogService.instance.info('Deleted file: $oldFileId');
-      } else {
-        LogService.instance.info('No file found to delete for docId: $docId');
+      // Get document to find associated files
+      final doc = await _db.getDocument(collectionId, docId);
+      final content = await _storage.downloadFile(doc.data['contentFileId']);
+      
+      // Parse markdown to find image references
+      final markdownText = utf8.decode(content);
+      final imageRefs = _extractImageRefs(markdownText);
+      
+      // Delete all images
+      for (final imageRef in imageRefs) {
+        final imageId = path.basename(imageRef);
+        await _storage.deleteFile(imageId);
+        LogService.instance.info('Deleted image: $imageId');
       }
 
-      // 3. Finally, delete the document itself
+      // Delete markdown file
+      await _storage.deleteFile(doc.data['contentFileId']);
+      LogService.instance.info('Deleted markdown file: ${doc.data['contentFileId']}');
+
+      // Delete document
       await _db.deleteDocument(collectionId, docId);
       LogService.instance.info('Deleted lesson document: $docId');
     } catch (e) {
-      LogService.instance.error('Error deleting lesson (docId: $docId): $e');
+      LogService.instance.error('Error deleting lesson: $e');
       rethrow;
     }
+  }
+
+  List<String> _extractImageRefs(String markdown) {
+    final imageRefs = <String>[];
+    final matches = RegExp(r'!\[.*?\]\((.*?)\)').allMatches(markdown);
+    
+    for (final match in matches) {
+      final path = match.group(1);
+      if (path != null && path.startsWith('/lessons/')) {
+        imageRefs.add(path);
+      }
+    }
+    
+    return imageRefs;
   }
 
   Future<List<Lesson>> getAllLessons() async {

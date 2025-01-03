@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/features/auth/register_controller.dart';
 import 'package:photojam_app/features/auth/register_form.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
@@ -16,12 +17,13 @@ class RegisterPage extends ConsumerWidget {
     ref.listen(authStateProvider, (previous, next) {
       next.whenOrNull(
         authenticated: (_) async {
-          LogService.instance.info('User authenticated after registration, fetching role...');
-          
+          LogService.instance
+              .info('User authenticated after registration, fetching role...');
+
           try {
             // Invalidate any cached role data
             ref.invalidate(userRoleProvider);
-            
+
             // Get fresh user role
             final roleAsync = await ref.read(userRoleProvider.future);
             LogService.instance.info('New user role fetched: $roleAsync');
@@ -36,26 +38,18 @@ class RegisterPage extends ConsumerWidget {
               );
             }
           } catch (e) {
-            LogService.instance.error('Error fetching user role after registration: $e');
+            LogService.instance
+                .error('Error fetching user role after registration: $e');
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Error loading user role'),
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                ),
-              );
+              SnackbarUtil.showErrorSnackBar(
+                  context, 'Error loading user role');
             }
           }
         },
         error: (message) {
           LogService.instance.error('Registration error: $message');
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(message),
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-            );
+            SnackbarUtil.showErrorSnackBar(context, message);
           }
         },
       );
@@ -84,23 +78,28 @@ class RegisterPage extends ConsumerWidget {
                     // Header section
                     Text(
                       'Create Account',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Join our community and start sharing your moments',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.7),
                           ),
                     ),
                     const SizedBox(height: 48),
                     // Registration form with controller from provider
                     Consumer(
                       builder: (context, ref, _) {
-                        final controller = ref.watch(registerControllerProvider);
+                        final controller =
+                            ref.watch(registerControllerProvider);
                         return RegisterForm(controller: controller);
                       },
                     ),
