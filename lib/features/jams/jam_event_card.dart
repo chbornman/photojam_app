@@ -1,14 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
-import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
-import 'package:photojam_app/core/utils/snackbar_util.dart';
-import 'package:photojam_app/features/admin/facilitator_calendar_page.dart';
-import 'package:photojam_app/features/admin/event.dart';
 import 'package:photojam_app/features/admin/jam_event_model.dart';
-import 'package:photojam_app/features/jams/jamdetails_page.dart';
-import 'package:photojam_app/features/jams/jamsignup_page.dart';
 
 class JamEventCard extends StatelessWidget {
   final JamEvent jamEvent;
@@ -89,8 +81,6 @@ class JamEventCardParent extends StatefulWidget {
 class _JamEventCardParentState extends State<JamEventCardParent> {
   @override
   Widget build(BuildContext context) {
-    final container = ProviderScope.containerOf(context, listen: false);
-
     return JamEventCard(
       jamEvent: widget.jamEvent,
     );

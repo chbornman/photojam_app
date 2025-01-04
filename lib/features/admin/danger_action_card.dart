@@ -36,9 +36,9 @@ class _DangerActionCardState extends State<DangerActionCard> {
             isUnlocked = !isUnlocked;
           });
           if (!isUnlocked) {
-            SnackbarUtil.showSuccessSnackBar(context, 'Action locked');
+            SnackbarUtil.showCustomSnackBar(context, 'Action locked', Colors.blue);
           } else {
-            SnackbarUtil.showErrorSnackBar(context, 'Warning: Dangerous action unlocked');
+            SnackbarUtil.showCustomSnackBar(context, 'Warning: Dangerous action unlocked', Colors.orange);
           }
         },
       ),

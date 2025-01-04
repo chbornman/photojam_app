@@ -18,10 +18,10 @@ class AdminPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Jam Calendar Section
+            // Facilitator Calendar Section
             StandardCard(
               icon: Icons.calendar_month,
-              title: 'Jam Calendar',
+              title: 'Facilitator Calendar',
               onTap: () {
                 Navigator.push(
                   context,

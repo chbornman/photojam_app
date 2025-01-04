@@ -25,7 +25,7 @@ class FacilitatorPage extends StatelessWidget {
           children: [
             StandardCard(
               icon: Icons.calendar_month,
-              title: 'Jam Calendar',
+              title: 'Facilitator Calendar',
               onTap: () {
                 Navigator.push(
                   context,

@@ -99,6 +99,18 @@ class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
       rethrow;
     }
   }
+
+  Future<List<Lesson>> getAllLessons() async {
+    try {
+      LogService.instance.info('Retrieving all lessons directly');
+      final lessons = await _repository.getAllLessons();
+      LogService.instance.info('Retrieved ${lessons.length} lessons directly');
+      return lessons;
+    } catch (error) {
+      LogService.instance.error('Error retrieving lessons directly: $error');
+      rethrow;
+    }
+  }
 }
 
 extension FirstWhereOrNullExtension<T> on List<T> {

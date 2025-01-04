@@ -16,59 +16,54 @@ class DangerManagementActions {
     required Function(String, {bool isError}) onMessage,
   }) async {
     onLoading(true);
+
     try {
       LogService.instance.info('Initializing lessons deletion process');
-      final lessonsAsync = ref.read(lessonsProvider);
 
-      await lessonsAsync.when(
-        data: (lessons) async {
-          if (!context.mounted) return;
+      // Get notifier references up front
+      final lessonsNotifier = ref.read(lessonsProvider.notifier);
 
-          if (lessons.isEmpty) {
-            LogService.instance.info('No lessons found to delete');
-            onMessage("No lessons found", isError: true);
-            return;
-          }
-
-          final result = await showConfirmationDialog(
-            context: context,
-            title: "Delete All Lessons",
-            content: "Are you sure you want to delete ${lessons.length} lessons and their associated files? This action cannot be undone.",
-          );
-
-          if (result != true) return;
-
-          var successCount = 0;
-          var errorCount = 0;
-
-          final storageNotifier = ref.read(lessonStorageProvider.notifier);
-
-          for (final lesson in lessons) {
-            try {
-              // // Delete lesson file from storage
-              // final fileId = lesson.content.pathSegments.last;
-              // await storageNotifier.deleteFile(fileId);
-              // LogService.instance.info("Deleted lesson file: $fileId");
-
-              // // Delete lesson document
-              // await ref.read(lessonsProvider.notifier).deleteLessonContent(lesson.id);
-              // LogService.instance.info("Deleted lesson: ${lesson.id}");
-              
-              successCount++;
-            } catch (e) {
-              LogService.instance.error("Error deleting lesson ${lesson.id}: $e");
-              errorCount++;
-            }
-          }
-
-          onMessage("Deleted $successCount lessons. Errors: $errorCount");
-        },
-        loading: () => onLoading(true),
-        error: (error, stack) {
-          LogService.instance.error('Error loading lessons: $error');
-          onMessage("Error loading lessons: $error", isError: true);
-        },
+      // Show dialog BEFORE fetching data to avoid mounting issue
+      final result = await showConfirmationDialog(
+        context: context,
+        title: "Delete All Lessons",
+        content:
+            "Are you sure you want to delete all lessons and their associated files? This action cannot be undone.",
       );
+
+      if (result != true) {
+        onLoading(false);
+        return;
+      }
+
+      // Only fetch data if user confirmed
+      final lessons = await lessonsNotifier.getAllLessons();
+
+      if (lessons.isEmpty) {
+        LogService.instance.info('No lessons found to delete');
+        onMessage("No lessons found", isError: true);
+        return;
+      }
+
+      var successCount = 0;
+      var errorCount = 0;
+
+      for (final lesson in lessons) {
+        try {
+          await lessonsNotifier.deleteLesson(lessonId: lesson.id);
+          LogService.instance.info("Deleted lesson: ${lesson.id}");
+
+          successCount++;
+        } catch (e) {
+          LogService.instance.error("Error deleting lesson ${lesson.id}: $e");
+          errorCount++;
+        }
+      }
+
+      onMessage("Deleted $successCount lessons. Errors: $errorCount");
+
+      ref.invalidate(lessonStorageProvider);
+      ref.invalidate(lessonsProvider);
     } catch (e) {
       LogService.instance.error('Error in deletion process: $e');
       onMessage("Error deleting lessons: $e", isError: true);
@@ -85,7 +80,8 @@ class DangerManagementActions {
   }) async {
     onLoading(true);
     try {
-      LogService.instance.info('Initializing lesson files deletion from storage');
+      LogService.instance
+          .info('Initializing lesson files deletion from storage');
       final storageNotifier = ref.read(lessonStorageProvider.notifier);
       final filesAsync = ref.read(lessonStorageProvider);
 
@@ -102,7 +98,8 @@ class DangerManagementActions {
           final result = await showConfirmationDialog(
             context: context,
             title: "Delete All Lesson Files",
-            content: "Are you sure you want to delete ${files.length} lesson files from storage? This action cannot be undone.",
+            content:
+                "Are you sure you want to delete ${files.length} lesson files from storage? This action cannot be undone.",
           );
 
           if (result != true) return;
@@ -160,7 +157,8 @@ class DangerManagementActions {
         final result = await showConfirmationDialog(
           context: context,
           title: "Delete All Submissions",
-          content: "Are you sure you want to delete ${submissions.length} submissions and their associated photos? This action cannot be undone.",
+          content:
+              "Are you sure you want to delete ${submissions.length} submissions and their associated photos? This action cannot be undone.",
         );
 
         if (result != true) return;
@@ -184,7 +182,9 @@ class DangerManagementActions {
             }
 
             // Delete submission document
-            await ref.read(submissionsProvider.notifier).deleteSubmission(submission.id);
+            await ref
+                .read(submissionsProvider.notifier)
+                .deleteSubmission(submission.id);
             LogService.instance.info("Deleted submission: ${submission.id}");
             successCount++;
           } catch (e) {
@@ -228,7 +228,8 @@ class DangerManagementActions {
           final result = await showConfirmationDialog(
             context: context,
             title: "Delete All Photos",
-            content: "Are you sure you want to delete ${files.length} photos from storage? This action cannot be undone.",
+            content:
+                "Are you sure you want to delete ${files.length} photos from storage? This action cannot be undone.",
           );
 
           if (result != true) return;

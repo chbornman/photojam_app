@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
-import 'package:photojam_app/appwrite/database/models/jam_model.dart';
 import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
-import 'package:photojam_app/features/admin/facilitator_calendar_page.dart';
 import 'package:photojam_app/features/jams/jam_calendar_page.dart';
-import 'package:photojam_app/features/jams/jamdetails_page.dart';
-import 'package:photojam_app/features/jams/jamsignup_page.dart';
-import 'package:photojam_app/core/widgets/standard_card.dart';
 
 class JamPage extends ConsumerStatefulWidget {
   const JamPage({super.key});
@@ -37,14 +31,6 @@ class _JamPageState extends ConsumerState<JamPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch the user's upcoming jams
-    final authState = ref.watch(authStateProvider);
-    final userJams = authState.maybeWhen(
-      authenticated: (user) => ref.watch(userUpcomingJamsProvider(user.id)),
-      orElse: () => const AsyncValue<List<Jam>>.error(
-          "User not authenticated", StackTrace.empty),
-    );
-
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(0.0),

@@ -89,7 +89,7 @@ class _FacilitatorCalendarPageState extends ConsumerState<FacilitatorCalendarPag
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Jam Calendar'),
+        title: const Text('Facilitator Calendar'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

@@ -7,7 +7,6 @@ import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/config/app_constants.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/core/utils/markdown_processor.dart';
-import 'package:path/path.dart' as path;
 
 class LessonRepository {
   final DatabaseRepository _db;
@@ -69,49 +68,60 @@ class LessonRepository {
 
   Future<void> deleteLesson(String docId) async {
     try {
-      LogService.instance.info('Deleting Lesson with docId: $docId');
-
-      // Get document to find associated files
+      LogService.instance.info('Starting deletion process for lesson: $docId');
+      
+      // First, try to get the document and all its associated data in one go
       final doc = await _db.getDocument(collectionId, docId);
-      final content = await _storage.downloadFile(doc.data['contentFileId']);
-
-      // Parse markdown to find image references
-      final markdownText = utf8.decode(content);
-      final imageRefs = _extractImageRefs(markdownText);
-
-      // Delete all images
-      for (final imageRef in imageRefs) {
-        final imageId = path.basename(imageRef);
-        await _storage.deleteFile(imageId);
-        LogService.instance.info('Deleted image: $imageId');
+      final imageIds = List<String>.from(doc.data['image_ids'] ?? []);
+      final contentFileId = doc.data['contentFileId'] as String?;
+      
+      // Store all deletion errors to handle them appropriately
+      final errors = <String>[];
+      
+      // Delete images if they exist
+      if (imageIds.isNotEmpty) {
+        for (final imageId in imageIds) {
+          try {
+            await _storage.deleteFile(imageId);
+            LogService.instance.info('Deleted image: $imageId');
+          } catch (e) {
+            // Log but continue with other deletions
+            errors.add('Failed to delete image $imageId: $e');
+            LogService.instance.error('Error deleting image $imageId: $e');
+          }
+        }
       }
-
-      // Delete markdown file
-      await _storage.deleteFile(doc.data['contentFileId']);
-      LogService.instance
-          .info('Deleted markdown file: ${doc.data['contentFileId']}');
-
-      // Delete document
-      await _db.deleteDocument(collectionId, docId);
-      LogService.instance.info('Deleted lesson document: $docId');
+      
+      // Delete markdown file if it exists
+      if (contentFileId != null) {
+        try {
+          await _storage.deleteFile(contentFileId);
+          LogService.instance.info('Deleted markdown file: $contentFileId');
+        } catch (e) {
+          errors.add('Failed to delete content file: $e');
+          LogService.instance.error('Error deleting content file: $e');
+        }
+      }
+      
+      // Finally delete the document itself
+      try {
+        await _db.deleteDocument(collectionId, docId);
+        LogService.instance.info('Deleted lesson document: $docId');
+      } catch (e) {
+        errors.add('Failed to delete lesson document: $e');
+        LogService.instance.error('Error deleting lesson document: $e');
+        throw AppwriteException('Failed to delete lesson: ${errors.join(", ")}');
+      }
+      
+      // If we had any errors during the process, throw them all together
+      if (errors.isNotEmpty) {
+        throw AppwriteException('Partial deletion occurred: ${errors.join(", ")}');
+      }
+      
     } catch (e) {
-      LogService.instance.error('Error deleting lesson: $e');
+      LogService.instance.error('Error in deleteLesson: $e');
       rethrow;
     }
-  }
-
-  List<String> _extractImageRefs(String markdown) {
-    final imageRefs = <String>[];
-    final matches = RegExp(r'!\[.*?\]\((.*?)\)').allMatches(markdown);
-
-    for (final match in matches) {
-      final path = match.group(1);
-      if (path != null && path.startsWith('/lessons/')) {
-        imageRefs.add(path);
-      }
-    }
-
-    return imageRefs;
   }
 
   Future<List<Lesson>> getAllLessons() async {

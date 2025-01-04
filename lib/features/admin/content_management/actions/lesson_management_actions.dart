@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/database/providers/globals_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/lesson_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/journey_provider.dart';
+import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/features/journeys/journey_page.dart';
 import 'package:archive/archive.dart';
@@ -120,69 +121,73 @@ class LessonManagementActions {
     );
   }
 
-static Future<void> _handleCreateLesson({
-  required BuildContext context,
-  required WidgetRef ref,
-  required String mdFileName,
-  required Uint8List mdFileBytes,
-  required Map<String, Uint8List> otherFiles,
-  required Function(bool) onLoading,
-  required Function(String, {bool isError}) onMessage,
-}) async {
-  // If no .md file was found
-  if (mdFileName.isEmpty || mdFileBytes.isEmpty) {
-    onMessage("No .md file found in the ZIP", isError: true);
-    return;
-  }
-
-  // Get providers early, before async
-  final lessonsNotifier = ref.read(lessonsProvider.notifier);
-
-  // Check if a lesson with the same title (mdFileName) already exists
-  try {
-    // Attempt to read the current list of lessons
-    final lessonsAsync = ref.read(lessonsProvider);
-
-    // The lessons provider may be in different states, so handle them safely
-    final currentLessons = lessonsAsync.maybeWhen(
-      data: (lessons) => lessons,
-      orElse: () => <dynamic>[],
-    );
-
-    final duplicateFound = currentLessons.any(
-      (lesson) => (lesson.title as String).toLowerCase() == mdFileName.toLowerCase(),
-    );
-
-    if (duplicateFound) {
-      onMessage(
-        "A lesson with the name '$mdFileName' already exists. Delete other lesson before adding this one.",
-        isError: true,
-      );
+  static Future<void> _handleCreateLesson({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String mdFileName,
+    required Uint8List mdFileBytes,
+    required Map<String, Uint8List> otherFiles,
+    required Function(bool) onLoading,
+    required Function(String, {bool isError}) onMessage,
+  }) async {
+    // If no .md file was found
+    if (mdFileName.isEmpty || mdFileBytes.isEmpty) {
+      onMessage("No .md file found in the ZIP", isError: true);
       return;
     }
 
-    onLoading(true);
+    // Get providers early, before async
+    final lessonsNotifier = ref.read(lessonsProvider.notifier);
 
-    // If no duplicates, proceed with creating a new lesson
-    await lessonsNotifier.createLesson(
-      mdFileName: mdFileName,
-      mdFileBytes: mdFileBytes,
-      otherFiles: otherFiles,
-    );
+    // Check if a lesson with the same title (mdFileName) already exists
+    try {
+      // Attempt to read the current list of lessons
+      final lessonsAsync = ref.read(lessonsProvider);
 
-    if (!context.mounted) return;
-    onMessage("Lesson added successfully");
-  } catch (e) {
-    LogService.instance.error("Error handling lesson file upload: $e");
-    if (!context.mounted) return;
-    onMessage("Error handling lesson upload: $e", isError: true);
-  } finally {
-    if (context.mounted) {
-      onLoading(false);
+      // The lessons provider may be in different states, so handle them safely
+      final currentLessons = lessonsAsync.maybeWhen(
+        data: (lessons) => lessons,
+        orElse: () => <dynamic>[],
+      );
+
+      final duplicateFound = currentLessons.any(
+        (lesson) =>
+            (lesson.title as String).toLowerCase() == mdFileName.toLowerCase(),
+      );
+
+      if (duplicateFound) {
+        onMessage(
+          "A lesson with the name '$mdFileName' already exists. Delete other lesson before adding this one.",
+          isError: true,
+        );
+        return;
+      }
+
+      onLoading(true);
+
+      // If no duplicates, proceed with creating a new lesson
+      await lessonsNotifier.createLesson(
+        mdFileName: mdFileName,
+        mdFileBytes: mdFileBytes,
+        otherFiles: otherFiles,
+      );
+
+      if (!context.mounted) return;
+
+      ref.invalidate(lessonsProvider);
+      ref.invalidate(lessonStorageProvider);
+
+      onMessage("Lesson added successfully");
+    } catch (e) {
+      LogService.instance.error("Error handling lesson file upload: $e");
+      if (!context.mounted) return;
+      onMessage("Error handling lesson upload: $e", isError: true);
+    } finally {
+      if (context.mounted) {
+        onLoading(false);
+      }
     }
   }
-}
-
 
   static void openDeleteLessonDialog({
     required BuildContext context,
@@ -273,20 +278,47 @@ static Future<void> _handleCreateLesson({
     required String? selectedLessonId,
     required Function(String, {bool isError}) onMessage,
   }) async {
-    if (selectedLessonId != null) {
-      try {
-        // Delete the lesson document
-        await ref.read(lessonsProvider.notifier).deleteLesson(
-              lessonId: selectedLessonId,
-            );
-        LogService.instance.info("Deleted lesson: $selectedLessonId");
+    if (selectedLessonId == null) return;
 
-        Navigator.of(context).pop();
-        onMessage("Lesson deleted successfully");
-      } catch (e) {
-        LogService.instance.error("Error deleting lesson: $e");
-        onMessage("Error deleting lesson: $e", isError: true);
+    try {
+      // Show a loading indicator
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
       }
+
+      // Delete the lesson document
+      await ref.read(lessonsProvider.notifier).deleteLesson(
+            lessonId: selectedLessonId,
+          );
+
+      LogService.instance.info("Deleted lesson: $selectedLessonId");
+
+      // Close both the loading indicator and the selection dialog
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading indicator
+        Navigator.of(context).pop(); // Close selection dialog
+      }
+
+      onMessage("Lesson deleted successfully");
+
+      // Invalidate the providers to refresh the UI
+      ref.invalidate(lessonsProvider);
+      ref.invalidate(lessonStorageProvider);
+    } catch (e) {
+      LogService.instance.error("Error deleting lesson: $e");
+
+      // Close the loading indicator if it's still showing
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      onMessage("Error deleting lesson: $e", isError: true);
     }
   }
 
@@ -580,6 +612,8 @@ static Future<void> _handleCreateLesson({
                         lessonId: selectedLessonId!,
                         onMessage: onMessage,
                       );
+
+                      ref.invalidate(globalsProvider);
                     } catch (e) {
                       LogService.instance.error(
                         "Error setting current lesson: $e",
@@ -684,6 +718,9 @@ static Future<void> _handleCreateLesson({
                         lessonId: selectedLessonId!,
                         onMessage: onMessage,
                       );
+
+                      ref.invalidate(globalsProvider);
+
                     } catch (e) {
                       LogService.instance.error(
                         "Error setting lesson snippet: $e",

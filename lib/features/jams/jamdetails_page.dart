@@ -13,7 +13,6 @@ import 'package:photojam_app/appwrite/database/models/jam_model.dart';
 import 'package:photojam_app/appwrite/database/providers/submission_provider.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/services/log_service.dart';
-import 'package:photojam_app/core/services/photo_cache_service.dart';
 import 'package:photojam_app/core/widgets/standard_submissioncard.dart';
 
 
