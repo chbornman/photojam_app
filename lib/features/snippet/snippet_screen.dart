@@ -271,14 +271,14 @@ class _SnippetScreenState extends ConsumerState<SnippetScreen> {
     });
 
     try {
-      // final lessonId = ref.read(globalValueByKeyProvider('current_lesson_snippet')).value;
-      // if (lessonId == null) {
-      //   throw Exception('No snippet available');
-      // }
+      final lessonId = ref.read(globalValueByKeyProvider('current_lesson_snippet')).value;
+      if (lessonId == null) {
+        throw Exception('No snippet available');
+      }
 
-      // LogService.instance.info('Fetching lesson content for ID: $lessonId');
+      LogService.instance.info('Fetching lesson content for ID: $lessonId');
 
-      final lesson = await ref.read(lessonsProvider.notifier).getLessonByID("67786f8765313416ae59");
+      final lesson = await ref.read(lessonsProvider.notifier).getLessonByID(lessonId);
       if (lesson == null) {
         throw Exception('Lesson data not found');
       }
