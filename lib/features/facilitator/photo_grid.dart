@@ -18,9 +18,10 @@ class PhotoGrid extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       itemCount: submission.images.length,
       itemBuilder: (context, index) {
-        final isSelected = ref
-            .watch(selectedPhotosProvider(submission.submission.jamId))[submission.submission.id] ==
-            index;
+        final isSelected =
+            ref.watch(selectedPhotosProvider(submission.submission.jamId))[
+                    submission.submission.id] ==
+                index;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
@@ -30,12 +31,9 @@ class PhotoGrid extends ConsumerWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Image.memory(
-                      submission.images[index],
-                      fit: BoxFit.cover,
-                    ),
+                  child: Image.memory(
+                    submission.images[index],
+                    fit: BoxFit.cover,
                   ),
                 ),
                 if (isSelected)
