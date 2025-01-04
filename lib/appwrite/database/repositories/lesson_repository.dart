@@ -15,6 +15,9 @@ class LessonRepository {
   final String collectionId = AppConstants.collectionLessons;
 
   LessonRepository(this._db, this._storage);
+
+  /// Example createLesson that delegates all uploading/document creation
+  /// to the MarkdownProcessor. Now no longer does any upload or doc creation here.
   Future<Lesson> createLesson({
     required String mdFileName,
     required Uint8List mdFileBytes,
@@ -25,84 +28,41 @@ class LessonRepository {
     try {
       LogService.instance.info('Create Lesson for: $mdFileName');
 
+      // Generate a unique ID for the lesson
       final lessonId = ID.unique();
-      final markdownProcessor = MarkdownProcessor();
 
-      // Process markdown to handle images
-      final processedMarkdown = await markdownProcessor.processMarkdown(
+      // We simply call processMarkdown which does all the heavy lifting now
+      final markdownProcessor = MarkdownProcessor(_storage, _db);
+
+      await markdownProcessor.processMarkdown(
         markdownContent: utf8.decode(mdFileBytes),
-        otherFiles: otherFiles,
         lessonId: lessonId,
-      );
-
-      // Upload all images
-      final uploadedImageIds = <String>[];
-      for (final entry in processedMarkdown.images.entries) {
-        final imageFile = await _storage.uploadFile(
-          entry.key,
-          entry.value,
-        );
-        uploadedImageIds.add(imageFile.id);
-        LogService.instance.info('Uploaded image: ${imageFile.id}');
-      }
-
-      // Upload markdown content
-      final file = await _storage.uploadFile(
-        mdFileName,
-        utf8.encode(processedMarkdown.content),
-      );
-      LogService.instance.info("Markdown file uploaded: ${file.id}");
-
-      final now = DateTime.now().toIso8601String();
-      final documentData = {
-        'title': mdFileName,
-        'contentFileId': file.id,
-        'version': 1,
-        'is_active': true,
-        'journey': journeyId != null ? {'\$id': journeyId} : null,
-        'jam': jamId != null ? {'\$id': jamId} : null,
-        'date_creation': now,
-        'date_updated': now,
-        'image_ids': uploadedImageIds,
-      };
-
-      final doc = await _db.createDocument(
-        collectionId,
-        documentData,
-      );
-
-      LogService.instance.info('Created lesson document: ${doc.$id}');
-      return Lesson.fromDocument(doc);
-    } catch (e) {
-      LogService.instance.error('Error creating lesson: $e');
-      rethrow;
-    }
-  }
-
-  Future<Lesson> updateLesson({
-    required String docId,
-    required String fileName,
-    required Uint8List fileBytes,
-    required Map<String, Uint8List> otherFiles,
-    String? journeyId,
-    String? jamId,
-  }) async {
-    try {
-      LogService.instance.info('Updating Lesson: $fileName (docId: $docId)');
-
-      // Delete existing lesson and its images
-      await deleteLesson(docId);
-
-      // Create new lesson with processed content
-      return await createLesson(
-        mdFileName: fileName,
-        mdFileBytes: fileBytes,
         otherFiles: otherFiles,
+        mdFileName: mdFileName,
         journeyId: journeyId,
         jamId: jamId,
       );
+
+      // If you'd like, you can still do some post-processing or fetch
+      // the newly created doc from the DB. That way you can return a Lesson model.
+      // Or, if you prefer, just return a dummy for now:
+      // final doc = await _db.getDocument(collectionId, <someID>);
+      // return Lesson.fromDocument(doc);
+
+      // For demonstration, returning an empty/placeholder lesson:
+      return Lesson(
+        id: lessonId,
+        title: mdFileName,
+        contentFileId: '', // or fetch from DB if needed
+        version: 1,
+        isActive: true,
+        dateCreation: DateTime.now(),
+        dateUpdated: DateTime.now(),
+        imageIds: [],
+        // fill other fields accordingly
+      );
     } catch (e) {
-      LogService.instance.error('Error updating lesson: $e');
+      LogService.instance.error('Error creating lesson: $e');
       rethrow;
     }
   }

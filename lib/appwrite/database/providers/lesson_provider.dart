@@ -71,34 +71,6 @@ class LessonsNotifier extends StateNotifier<AsyncValue<List<Lesson>>> {
     }
   }
 
-  Future<void> updateLesson({
-    required String lessonId,
-    required String fileName,
-    required Uint8List fileBytes,
-    required Map<String, Uint8List> otherFiles,
-  }) async {
-    try {
-      LogService.instance.info('Updating lesson: $lessonId');
-
-      final updatedLesson = await _repository.updateLesson(
-        docId: lessonId,
-        fileName: fileName,
-        fileBytes: fileBytes,
-        otherFiles: otherFiles,
-      );
-
-      LogService.instance
-          .info('Successfully updated lesson: ${updatedLesson.id}');
-
-      state = state.whenData((lessons) => lessons
-          .map((lesson) => lesson.id == lessonId ? updatedLesson : lesson)
-          .toList());
-    } catch (error) {
-      LogService.instance.error('Error updating lesson: $error');
-      rethrow;
-    }
-  }
-
   Future<void> deleteLesson({required String lessonId}) async {
     try {
       LogService.instance.info('Deleting lesson: $lessonId');
