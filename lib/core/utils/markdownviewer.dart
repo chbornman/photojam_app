@@ -13,7 +13,7 @@ class MarkdownViewer extends ConsumerStatefulWidget {
   final Uint8List content;
 
   const MarkdownViewer({
-    super.key, 
+    super.key,
     required this.content,
   });
 
@@ -35,7 +35,7 @@ class _MarkdownViewerState extends ConsumerState<MarkdownViewer> {
   Future<void> _processMarkdown() async {
     try {
       String markdown = utf8.decode(widget.content);
-      
+
       // Find all image references
       final regex = RegExp(r'!\[([^\]]*)\]\(/imageBuilder/([^\)]+)\)');
       final matches = regex.allMatches(markdown);
@@ -43,7 +43,7 @@ class _MarkdownViewerState extends ConsumerState<MarkdownViewer> {
       for (final match in matches) {
         final altText = match[1] ?? '';
         final contentId = match[2] ?? '';
-        
+
         if (contentId.isEmpty) continue;
 
         // Download and cache image
@@ -54,7 +54,7 @@ class _MarkdownViewerState extends ConsumerState<MarkdownViewer> {
         final tempDir = await getTemporaryDirectory();
         final file = File('${tempDir.path}/$contentId.jpg');
         await file.writeAsBytes(bytes);
-        
+
         // Cache the file path
         _imageCache[contentId] = file.path;
 
@@ -69,13 +69,13 @@ class _MarkdownViewerState extends ConsumerState<MarkdownViewer> {
           _loading = false;
         });
       }
-
     } catch (e) {
       LogService.instance.error('Error processing markdown: $e');
       if (mounted) {
         setState(() {
           _loading = false;
-          _processedMarkdown = utf8.decode(widget.content); // Fallback to original
+          _processedMarkdown =
+              utf8.decode(widget.content); // Fallback to original
         });
       }
     }
@@ -112,32 +112,31 @@ class _MarkdownViewerState extends ConsumerState<MarkdownViewer> {
     }
   }
 
-  @override 
+  @override
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Lesson'),
-      ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(0.0),
         child: Markdown(
           data: _processedMarkdown ?? '',
-          onTapLink: _handleLinkTap, // Add this
+          onTapLink: _handleLinkTap,
           imageBuilder: (uri, title, alt) {
             // Handle local file images
             if (uri.scheme == 'file') {
               return Image.file(File(uri.path));
             }
-            // Handle web images 
+            // Handle web images
             if (uri.scheme == 'http' || uri.scheme == 'https') {
               return Image.network(uri.toString());
             }
             return const SizedBox.shrink();
           },
+          styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
+              .copyWith(textScaler: TextScaler.linear(1.5)),
         ),
       ),
     );
