@@ -4,15 +4,15 @@ import 'package:intl/intl.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
 import 'package:photojam_app/core/utils/snackbar_util.dart';
-import 'package:photojam_app/features/admin/jam_calendar_page.dart';
-import 'package:photojam_app/features/admin/jam_event.dart';
+import 'package:photojam_app/features/admin/facilitator_calendar_page.dart';
+import 'package:photojam_app/features/admin/event.dart';
 
-class JamEventCard extends StatelessWidget {
-  final JamEvent event;
+class EventCard extends StatelessWidget {
+  final Event event;
   final String userRole;
   final VoidCallback? onTap;
 
-  const JamEventCard({
+  const EventCard({
     super.key,
     required this.event,
     required this.userRole,
@@ -82,27 +82,27 @@ class JamEventCard extends StatelessWidget {
   }
 }
 
-class JamEventCardParent extends StatefulWidget {
-  final JamEvent event;
+class EventCardParent extends StatefulWidget {
+  final Event event;
   final String userRole;
 
-  const JamEventCardParent({
+  const EventCardParent({
     Key? key,
     required this.event,
     required this.userRole,
   }) : super(key: key);
 
   @override
-  _JamEventCardParentState createState() => _JamEventCardParentState();
+  _EventCardParentState createState() => _EventCardParentState();
 }
 
-class _JamEventCardParentState extends State<JamEventCardParent> {
+class _EventCardParentState extends State<EventCardParent> {
   @override
   Widget build(BuildContext context) {
     final container = ProviderScope.containerOf(context, listen: false);
     final currentUser = container.read(authStateProvider).user;
 
-    return JamEventCard(
+    return EventCard(
       event: widget.event,
       userRole: widget.userRole,
       onTap: () async {
@@ -118,7 +118,7 @@ class _JamEventCardParentState extends State<JamEventCardParent> {
                   newFacilitatorId,
                 );
 
-            container.refresh(jamEventsMapProvider);
+            container.refresh(EventsMapProvider);
 
             if (mounted) {
               SnackbarUtil.showSuccessSnackBar(

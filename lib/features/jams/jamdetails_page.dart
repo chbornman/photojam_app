@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_providers.dart';
 import 'package:photojam_app/appwrite/database/models/submission_model.dart';
 import 'package:photojam_app/core/utils/snackbar_util.dart';
+import 'package:photojam_app/features/photos/photos_screen.dart';
 import 'package:photojam_app/features/photos/photoscroll_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
@@ -15,10 +16,6 @@ import 'package:photojam_app/core/services/log_service.dart';
 import 'package:photojam_app/core/services/photo_cache_service.dart';
 import 'package:photojam_app/core/widgets/standard_submissioncard.dart';
 
-// Provider for photo cache service
-final photoCacheServiceProvider = Provider<PhotoCacheService>((ref) {
-  return PhotoCacheService();
-});
 
 class JamDetailsPage extends ConsumerStatefulWidget {
   final Jam jam;

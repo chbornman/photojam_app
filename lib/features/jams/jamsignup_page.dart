@@ -19,7 +19,9 @@ import 'package:photojam_app/features/jams/photo_selector.dart';
 import 'package:photojam_app/features/photos/photos_screen.dart';
 
 class JamSignupPage extends ConsumerStatefulWidget {
-  const JamSignupPage({super.key});
+  final Jam? jam;
+
+  const JamSignupPage({super.key, this.jam});
 
   @override
   ConsumerState<JamSignupPage> createState() => _JamSignupPageState();
@@ -54,7 +56,11 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
   void _initializeServices() {
     final storageRepository = ref.read(storageRepositoryProvider);
     _photoUploadService = PhotoUploadService(storageRepository);
-    _fetchJams();
+    if (widget.jam == null) {
+      _fetchJams();
+    } else {
+      _selectedJamId = widget.jam!.id;
+    }
   }
 
   Future<void> _fetchJams() async {
@@ -155,7 +161,8 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
 
   Future<void> _submitPhotos(
       String userId, Submission? existingSubmission) async {
-    final selectedJam = _jams.firstWhere((jam) => jam.id == _selectedJamId);
+    final selectedJam = widget.jam ??
+        _jams.firstWhere((jam) => jam.id == _selectedJamId);
 
     final photoUrls = await _photoUploadService.uploadPhotos(
       photos: _photos,
@@ -233,8 +240,6 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
 
     return true;
   }
-
-
 
   Future<void> _showDialog({
     required String title,
@@ -315,24 +320,22 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
     );
   }
 
-void _onSubmissionSuccess(BuildContext context, WidgetRef ref) {
-  // Invalidate photo-related providers
-  ref.invalidate(photoCacheServiceProvider);
-  ref.invalidate(photosControllerProvider);
+  void _onSubmissionSuccess(BuildContext context, WidgetRef ref) {
+    ref.invalidate(photoCacheServiceProvider);
+    ref.invalidate(photosControllerProvider);
 
-  // Optionally invalidate user-related submissions
-  final authState = ref.read(authStateProvider);
-  authState.maybeWhen(
-    authenticated: (user) => ref.invalidate(userSubmissionsProvider(user.id)),
-    orElse: () {},
-  );
+    final authState = ref.read(authStateProvider);
+    authState.maybeWhen(
+      authenticated: (user) => ref.invalidate(userSubmissionsProvider(user.id)),
+      orElse: () {},
+    );
 
-  // Navigate back or show a confirmation
-  SnackbarUtil.showSuccessSnackBar(context, 'Jam updated successfully!');
-}
-
+    SnackbarUtil.showSuccessSnackBar(context, 'Jam updated successfully!');
+  }
 
   Widget _buildJamDropdown() {
+    if (widget.jam != null) return const SizedBox.shrink();
+
     return DropdownButtonFormField<String>(
       value: _selectedJamId,
       hint: const Text('Select a Jam'),
@@ -380,8 +383,7 @@ void _onSubmissionSuccess(BuildContext context, WidgetRef ref) {
   }
 
   Widget _buildSubmitButton() {
-    final bool isDisabled = _selectedJamId == null ||
-        _jams.isEmpty ||
+    final bool isDisabled = _selectedJamId == null && widget.jam == null ||
         _photos.every((photo) => photo == null);
 
     return StandardButton(
@@ -404,7 +406,20 @@ void _onSubmissionSuccess(BuildContext context, WidgetRef ref) {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildJamDropdown(),
+                if (widget.jam != null) ...[
+                  Text(
+                    "Signing up for: ${widget.jam!.title}",
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    DateFormat('MMMM dd, yyyy – h:mm a')
+                        .format(widget.jam!.eventDatetime),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ] else
+                  _buildJamDropdown(),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
