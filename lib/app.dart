@@ -86,12 +86,12 @@ class _AppState extends ConsumerState<App> {
         icon: Icons.subscriptions,
         backgroundColor: AppConstants.photojamPaleBlue,
       ),
-      NavigationItem(
-        screen: const AccountScreen(),
-        label: 'Account',
-        icon: Icons.account_circle,
-        backgroundColor: AppConstants.photojamPurple,
-      ),
+//      NavigationItem(
+//        screen: const AccountScreen(),
+//        label: 'Account',
+//        icon: Icons.account_circle,
+//        backgroundColor: AppConstants.photojamPurple,
+//      ),
       NavigationItem(
         screen: const FacilitatorPage(),
         label: 'Facilitate',
@@ -123,18 +123,7 @@ class _AppState extends ConsumerState<App> {
     }
   }
 
-  Future<void> _signOut() async {
-    try {
-      await ref.read(authStateProvider.notifier).signOut();
-      if (mounted) {
-        SnackbarUtil.showSuccessSnackBar(context, 'Signed out successfully!');
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackbarUtil.showErrorSnackBar(context, 'Error signing out: $e');
-      }
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -158,23 +147,23 @@ class _AppState extends ConsumerState<App> {
     });
 
     final currentItem = visibleItems[_currentIndex];
-    final isAccountScreen = currentItem.screen is AccountScreen;
 
     return Scaffold(
       appBar: StandardAppBar(
         title: currentItem.label,
-        actions: isAccountScreen
-            ? [
-                IconButton(
-                  icon: Icon(
-                    Icons.logout,
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                  onPressed: _signOut,
-                  tooltip: 'Sign Out',
-                ),
-              ]
-            : null,
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.account_circle,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AccountScreen()),
+              );
+            },
+          ),
+        ],
         onLogoTap: () => setState(() => _currentIndex = 0),
       ),
       body: IndexedStack(

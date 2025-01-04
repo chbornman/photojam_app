@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/core/widgets/standard_button.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
@@ -54,9 +55,35 @@ class AccountActions extends ConsumerWidget {
             () => _handleRoleRequest(context, ref, 'facilitator'),
           ),
         ],
+                _buildActionButton(
+          context,
+          'Logout',
+          Icons.logout,
+          () => _signOut(context, ref),
+        ),
       ],
     );
   }
+
+
+
+
+  Future<void> _signOut(context, ref) async {
+    await ref.read(authStateProvider.notifier).signOut();
+
+    // try {
+    //   await ref.read(authStateProvider.notifier).signOut();
+    //   if (mounted) {
+    //     SnackbarUtil.showSuccessSnackBar(context, 'Signed out successfully!');
+    //   }
+    // } catch (e) {
+    //   if (mounted) {
+    //     SnackbarUtil.showErrorSnackBar(context, 'Error signing out: $e');
+    //   }
+    // }
+  }
+
+
 
   Widget _buildActionButton(
     BuildContext context,
