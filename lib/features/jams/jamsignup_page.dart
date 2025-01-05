@@ -303,13 +303,15 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
       items: _jams.map((jam) {
         return DropdownMenuItem(
           value: jam.id,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 jam.title,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
+
               Text(
                 DateFormat('MMMM dd, yyyy – h:mm a').format(jam.eventDatetime),
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
