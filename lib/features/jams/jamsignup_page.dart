@@ -72,7 +72,8 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
           if (!mounted) return;
           setState(() => _jams = jams);
         },
-        orElse: () => SnackbarUtil.showErrorSnackBar(context, 'Failed to load jams'),
+        orElse: () =>
+            SnackbarUtil.showErrorSnackBar(context, 'Failed to load jams'),
       );
     } catch (e) {
       LogService.instance.error('Unexpected error fetching jams: $e');
@@ -112,11 +113,6 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
   Future<void> _handleSubmit() async {
     if (_selectedJamId == null) {
       await _showNoJamSelectedDialog();
-      return;
-    }
-
-    if (_photos.every((photo) => photo == null)) {
-      await _handleEmptySubmission();
       return;
     }
 
@@ -161,8 +157,8 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
 
   Future<void> _submitPhotos(
       String userId, Submission? existingSubmission) async {
-    final selectedJam = widget.jam ??
-        _jams.firstWhere((jam) => jam.id == _selectedJamId);
+    final selectedJam =
+        widget.jam ?? _jams.firstWhere((jam) => jam.id == _selectedJamId);
 
     final photoUrls = await _photoUploadService.uploadPhotos(
       photos: _photos,
@@ -189,41 +185,6 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
       );
 
       await jamRepository.addSubmissionToJam(selectedJam.id, newSubmission.id);
-    }
-  }
-
-  Future<void> _handleEmptySubmission() async {
-    final shouldDelete = await _showDeleteConfirmationDialog();
-    if (shouldDelete) {
-      await _deleteExistingSubmission();
-    }
-  }
-
-  Future<void> _deleteExistingSubmission() async {
-    if (_selectedJamId == null) return;
-
-    try {
-      final userId = authState.user?.id;
-      if (userId == null) throw Exception('User not authenticated');
-
-      final submissionRepository = ref.read(submissionRepositoryProvider);
-      final existingSubmission =
-          await submissionRepository.getUserSubmissionForJam(
-        _selectedJamId!,
-        userId,
-      );
-
-      if (existingSubmission != null) {
-        // Pass Submission directly, no need for toDocument()
-        await _photoUploadService.deleteSubmissionPhotos(existingSubmission);
-        await submissionRepository.deleteSubmission(existingSubmission.id);
-      }
-
-      if (!mounted) return;
-      Navigator.pop(context);
-    } catch (e) {
-      LogService.instance.error('Error deleting submission: $e');
-      SnackbarUtil.showErrorSnackBar(context, 'Failed to delete submission');
     }
   }
 
@@ -410,8 +371,8 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
                   Text(
                     "Signing up for: ${widget.jam!.title}",
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   Text(
                     DateFormat('MMMM dd, yyyy – h:mm a')

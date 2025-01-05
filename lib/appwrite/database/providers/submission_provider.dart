@@ -2,12 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/appwrite_database_repository.dart';
 import 'package:photojam_app/appwrite/database/models/submission_model.dart';
 import 'package:photojam_app/appwrite/database/repositories/submission_repository.dart';
+import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 
 // Base repository provider
 final submissionRepositoryProvider = Provider<SubmissionRepository>((ref) {
   final dbRepository = ref.watch(databaseRepositoryProvider);
-  return SubmissionRepository(dbRepository);
+   final photoStorageNotifier = ref.watch(photoStorageProvider.notifier); 
+  return SubmissionRepository(dbRepository, photoStorageNotifier);
 });
 
 // Main state notifier provider for all submissions
@@ -151,7 +153,7 @@ class SubmissionsNotifier extends StateNotifier<AsyncValue<List<Submission>>> {
 
   Future<void> deleteSubmission(String submissionId) async {
     try {
-      await _repository.deleteSubmission(submissionId);
+      await _repository.deleteSubmission(submissionId); 
       state = state.whenData((submissions) =>
           submissions.where((s) => s.id != submissionId).toList());
     } catch (error) {

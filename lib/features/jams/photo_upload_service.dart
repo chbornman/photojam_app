@@ -61,19 +61,6 @@ class PhotoUploadService {
     }
   }
 
-  Future<void> deleteSubmissionPhotos(Submission submission) async {
-    for (String fileId in submission.photos) {
-      try {
-        await _storageRepository.deleteFile(
-          bucket: StorageBucket.photos,
-          fileId: fileId,
-        );
-        LogService.instance.info('Deleted photo with ID: $fileId');
-      } catch (e) {
-        LogService.instance.error('Error deleting photo: $e');
-      }
-    }
-  }
 
   String _formatFileName(int index, String jamName, String username) {
     final date = DateFormat('yyyyMMdd').format(DateTime.now());

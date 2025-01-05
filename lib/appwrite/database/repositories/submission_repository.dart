@@ -1,14 +1,16 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:photojam_app/appwrite/database/models/submission_model.dart';
 import 'package:photojam_app/appwrite/database/repositories/base_repository.dart';
+import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/config/app_constants.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 
 class SubmissionRepository {
   final DatabaseRepository _db;
+  final StorageNotifier _storage;
   final String collectionId = AppConstants.collectionSubmissions;
 
-  SubmissionRepository(this._db);
+  SubmissionRepository(this._db, this._storage);
 
   /// Validates submission input parameters
   void _validateSubmissionInput({
@@ -119,6 +121,20 @@ class SubmissionRepository {
 
   Future<void> deleteSubmission(String submissionId) async {
     try {
+
+      //delete photos associated with a submision first
+      final doc = await _db.getDocument(collectionId, submissionId);
+      final photos = List<String>.from(doc.data['photos'] ?? []);
+
+      for (String photoId in photos) {
+        try {
+          await _storage.deleteFile(photoId);
+          LogService.instance.info('Deleted photo with ID: $photoId');
+        } catch (e) {
+          LogService.instance.error('Error deleting photo: $e');
+        }
+      }
+
       await _db.deleteDocument(collectionId, submissionId);
     } catch (e) {
       LogService.instance.error('Error deleting submission: $e');

@@ -26,15 +26,7 @@ class DangerSection extends ConsumerWidget {
           onLoading: onLoading,
           onMessage: onMessage,
         ),
-        DeleteLessonFilesCard(
-          onLoading: onLoading,
-          onMessage: onMessage,
-        ),
         DeleteAllSubmissionsCard(
-          onLoading: onLoading,
-          onMessage: onMessage,
-        ),
-        DeleteAllPhotosCard(
           onLoading: onLoading,
           onMessage: onMessage,
         ),

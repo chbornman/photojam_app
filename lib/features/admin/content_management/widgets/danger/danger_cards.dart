@@ -30,31 +30,6 @@ class DeleteAllLessonsCard extends ConsumerWidget {
   }
 }
 
-class DeleteLessonFilesCard extends ConsumerWidget {
-  final void Function(bool) onLoading;
-  final void Function(String, {bool isError}) onMessage;
-
-  const DeleteLessonFilesCard({
-    super.key,
-    required this.onLoading,
-    required this.onMessage,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return DangerActionCard(
-      icon: Icons.folder_delete_outlined,
-      title: "Delete All Lesson Files from Storage",
-      onTap: () => DangerManagementActions.deleteAllLessonsFromStorage(
-        context: context,
-        ref: ref,
-        onLoading: onLoading,
-        onMessage: onMessage,
-      ),
-    );
-  }
-}
-
 class DeleteAllSubmissionsCard extends ConsumerWidget {
   final void Function(bool) onLoading;
   final void Function(String, {bool isError}) onMessage;
@@ -70,32 +45,7 @@ class DeleteAllSubmissionsCard extends ConsumerWidget {
     return DangerActionCard(
       icon: Icons.delete_sweep,
       title: "Delete All Submissions and Photos",
-      onTap: () => DangerManagementActions.deleteSubmissionsAndPhotos(
-        context: context,
-        ref: ref,
-        onLoading: onLoading,
-        onMessage: onMessage,
-      ),
-    );
-  }
-}
-
-class DeleteAllPhotosCard extends ConsumerWidget {
-  final void Function(bool) onLoading;
-  final void Function(String, {bool isError}) onMessage;
-
-  const DeleteAllPhotosCard({
-    super.key,
-    required this.onLoading,
-    required this.onMessage,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return DangerActionCard(
-      icon: Icons.photo_library_outlined,
-      title: "Delete All Photos from Storage",
-      onTap: () => DangerManagementActions.deleteAllPhotosFromStorage(
+      onTap: () => DangerManagementActions.deleteAllSubmissionsAndPhotos(
         context: context,
         ref: ref,
         onLoading: onLoading,
