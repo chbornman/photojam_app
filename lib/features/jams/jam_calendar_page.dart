@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
-import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/submission_provider.dart';
 import 'package:photojam_app/core/services/log_service.dart';
-import 'package:photojam_app/features/admin/jam_event.dart';
-import 'package:photojam_app/features/admin/jam_event_card.dart';
+import 'package:photojam_app/features/admin/jam_event_model.dart';
+import 'package:photojam_app/features/jams/jam_event_card.dart';
+import 'package:photojam_app/features/jams/jamdetails_page.dart';
+import 'package:photojam_app/features/jams/jamsignup_page.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 
@@ -15,36 +16,45 @@ final jamEventsMapProvider =
     FutureProvider<Map<DateTime, List<JamEvent>>>((ref) async {
   // Watch the AsyncValue<List<Jam>> and handle it
   final jamsAsync = ref.watch(jamsProvider);
+  final authState = ref.read(authStateProvider);
+  final user = authState.whenOrNull(authenticated: (user) => user);
+
+  if (user == null) {
+    // Handle the case where user is null, e.g., return an empty map
+    return {};
+  }
+
+  final userSubmissionsAsync = ref.watch(userSubmissionsProvider(user.id));
 
   return jamsAsync.when(
-    data: (jams) async {
-      final events = <DateTime, List<JamEvent>>{};
+    data: (jams) {
+      return userSubmissionsAsync.when(
+        data: (userSubmissions) async {
+          final userSubmissionIds =
+              userSubmissions.map((submission) => submission.id).toSet();
 
-      for (final jam in jams) {
-        final date = jam.eventDatetime.toLocal();
-        final normalizedDate = DateTime(date.year, date.month, date.day);
+          final events = <DateTime, List<JamEvent>>{};
 
-        // Handle submissions AsyncValue
-        final submissionsAsync = ref.watch(jamSubmissionsProvider(jam.id));
-        final submissionCount = submissionsAsync.whenOrNull(
-              data: (submissions) => submissions.length,
-            ) ??
-            0;
+          for (final jam in jams) {
+            final date = jam.eventDatetime.toLocal();
+            final normalizedDate = DateTime(date.year, date.month, date.day);
 
-        final jamEvent = JamEvent(
-          id: jam.id,
-          title: jam.title,
-          dateTime: date,
-          facilitatorId: jam.facilitatorId,
-          submissionCount: submissionCount,
-          zoomLink: jam.zoomLink,
-          selectedPhotosIds: jam.selectedPhotosIds,
-        );
+            final event = JamEvent(
+              signedUp: jam.submissionIds.any(userSubmissionIds.contains),
+              jam: jam, // Pass the entire Jam object
+            );
 
-        events.putIfAbsent(normalizedDate, () => []).add(jamEvent);
-      }
+            events.putIfAbsent(normalizedDate, () => []).add(event);
+          }
 
-      return events;
+          return events;
+        },
+        loading: () => <DateTime, List<JamEvent>>{},
+        error: (error, stack) {
+          LogService.instance.error('Error loading user submissions: $error');
+          throw error;
+        },
+      );
     },
     loading: () => <DateTime, List<JamEvent>>{},
     error: (error, stack) {
@@ -83,20 +93,9 @@ class _JamCalendarPageState extends ConsumerState<JamCalendarPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final userRole = ref.watch(userRoleProvider).valueOrNull ?? 'nonmember';
     final eventsAsync = ref.watch(jamEventsMapProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Jam Calendar'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.refresh(jamEventsMapProvider),
-            tooltip: 'Refresh Calendar',
-          ),
-        ],
-      ),
       body: eventsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
@@ -115,7 +114,7 @@ class _JamCalendarPageState extends ConsumerState<JamCalendarPage> {
                     lastDay: DateTime.now().add(const Duration(days: 365)),
                     focusedDay: _focusedDay,
                     selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                    calendarFormat: CalendarFormat.month,
+                    calendarFormat: CalendarFormat.week,
                     eventLoader: (day) => _getEventsForDay(day, events),
                     startingDayOfWeek: StartingDayOfWeek.sunday,
                     calendarStyle: CalendarStyle(
@@ -183,56 +182,28 @@ class _JamCalendarPageState extends ConsumerState<JamCalendarPage> {
                       ),
                     );
                   }
-                  return JamEventCard(
-                    event: dayEvents[index],
-                    userRole: userRole,
-                    onTap: () async {
-                      final container = ProviderScope.containerOf(context,
-                          listen:
-                              false); // Get a non-widget-tied ProviderContainer
-                      final currentUser = container
-                          .read(authStateProvider)
-                          .user; // Fetch user directly
-                      final currentUserId = currentUser?.id;
-
-                      if (currentUserId != null) {
-                        try {
-                          final newFacilitatorId =
-                              dayEvents[index].facilitatorId == currentUserId
-                                  ? null
-                                  : currentUserId;
-
-                          await container
-                              .read(jamsProvider.notifier)
-                              .updateFacilitator(
-                                dayEvents[index].id,
-                                newFacilitatorId,
-                              );
-
-                          container.refresh(jamEventsMapProvider);
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(newFacilitatorId == null
-                                  ? 'Facilitator role removed successfully!'
-                                  : 'You are now the facilitator!'),
-                            ),
-                          );
-                        } catch (error) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content:
-                                    Text('Error updating facilitator: $error')),
-                          );
-                        }
+                  return GestureDetector(
+                    onTap: () {
+                      if (dayEvents[index].signedUp) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                JamDetailsPage(jam: dayEvents[index].jam),
+                          ),
+                        );
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text(
-                                  'You must be logged in to toggle facilitator role.')),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => JamSignupPage(jam: dayEvents[index].jam),
+                          ),
                         );
                       }
                     },
+                    child: JamEventCard(
+                      jamEvent: dayEvents[index],
+                    ),
                   );
                 },
                 childCount: _getEventsForDay(_selectedDay, events).isEmpty

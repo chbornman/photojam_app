@@ -1,6 +1,7 @@
 // account_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photojam_app/core/widgets/standard_appbar.dart';
 import 'package:photojam_app/features/account/account_actions.dart';
 import 'package:photojam_app/features/account/account_info.dart';
 import 'package:photojam_app/features/account/account_provider.dart';
@@ -19,6 +20,12 @@ class AccountScreen extends ConsumerWidget {
     }
 
     return Scaffold(
+      appBar: StandardAppBar(
+        title: "Account",
+        onLogoTap: () {
+          Navigator.of(context).pop();
+        },
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(

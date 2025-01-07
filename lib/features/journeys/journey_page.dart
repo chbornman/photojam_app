@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
 import 'package:photojam_app/dialogs/signup_journey_dialog.dart';
 import 'package:photojam_app/appwrite/database/providers/journey_provider.dart';
 import 'package:photojam_app/features/admin/journey_lessons_edit.dart';
 import 'package:photojam_app/features/journeys/journey_list.dart';
+
 class JourneyPage extends ConsumerWidget {
   final String? journeyId;
   final String? journeyTitle;
@@ -58,12 +60,10 @@ class _JourneyPageContent extends ConsumerWidget {
   const _JourneyPageContent({
     required this.userRole,
     required this.userId,
-
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-
     // // If journeyId is provided, show journey lessons edit page
     // if (journeyId != null && journeyTitle != null) {
     //   return JourneyLessonsEditPage(
@@ -109,20 +109,17 @@ class _JourneyPageContent extends ConsumerWidget {
         onSignUp: (journeyId) async {
           try {
             await ref.read(journeysProvider.notifier).addParticipant(
-              journeyId,
-              userId,
-            );
+                  journeyId,
+                  userId,
+                );
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Successfully signed up for journey!')),
-              );
+              SnackbarUtil.showSuccessSnackBar(
+                  context, 'Successfully signed up for journey!');
               Navigator.pop(context);
             }
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Error signing up: $e')),
-              );
+              SnackbarUtil.showErrorSnackBar(context, 'Error signing up: $e');
             }
           }
         },

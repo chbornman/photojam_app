@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/auth/role_utils.dart';
 import 'package:photojam_app/config/app_constants.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/features/auth/login_screen.dart';
 import 'package:photojam_app/features/facilitator/facilitator_screen.dart';
 import 'package:photojam_app/features/jams/jams_page.dart';
@@ -85,12 +86,12 @@ class _AppState extends ConsumerState<App> {
         icon: Icons.subscriptions,
         backgroundColor: AppConstants.photojamPaleBlue,
       ),
-      NavigationItem(
-        screen: const AccountScreen(),
-        label: 'Account',
-        icon: Icons.account_circle,
-        backgroundColor: AppConstants.photojamPurple,
-      ),
+//      NavigationItem(
+//        screen: const AccountScreen(),
+//        label: 'Account',
+//        icon: Icons.account_circle,
+//        backgroundColor: AppConstants.photojamPurple,
+//      ),
       NavigationItem(
         screen: const FacilitatorPage(),
         label: 'Facilitate',
@@ -122,29 +123,7 @@ class _AppState extends ConsumerState<App> {
     }
   }
 
-  Future<void> _signOut() async {
-    try {
-      await ref.read(authStateProvider.notifier).signOut();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Signed out successfully!"),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Error signing out: $e"),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -162,35 +141,29 @@ class _AppState extends ConsumerState<App> {
           );
         },
         error: (message) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: Colors.red,
-            ),
-          );
+          SnackbarUtil.showErrorSnackBar(context, message);
         },
       );
     });
 
     final currentItem = visibleItems[_currentIndex];
-    final isAccountScreen = currentItem.screen is AccountScreen;
 
     return Scaffold(
       appBar: StandardAppBar(
         title: currentItem.label,
-        actions: isAccountScreen
-            ? [
-                IconButton(
-                  icon: Icon(
-                    Icons.logout,
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                  onPressed: _signOut,
-                  tooltip: 'Sign Out',
-                ),
-              ]
-            : null,
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.account_circle,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AccountScreen()),
+              );
+            },
+          ),
+        ],
         onLogoTap: () => setState(() => _currentIndex = 0),
       ),
       body: IndexedStack(

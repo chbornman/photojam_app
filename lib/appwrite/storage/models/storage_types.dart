@@ -12,21 +12,12 @@ enum StorageBucket {
     }
   }
 
-  String get mimePattern {
-    switch (this) {
-      case StorageBucket.photos:
-        return 'image/*';
-      case StorageBucket.lessons:
-        return 'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain';
-    }
-  }
-
   List<String> get allowedExtensions {
     switch (this) {
       case StorageBucket.photos:
         return ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
       case StorageBucket.lessons:
-        return ['.pdf', '.doc', '.docx', '.txt', '.md'];
+        return ['.pdf', '.doc', '.docx', '.txt', '.md', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
     }
   }
 

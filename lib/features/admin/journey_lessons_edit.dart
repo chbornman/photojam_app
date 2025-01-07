@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:photojam_app/appwrite/database/providers/journey_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/lesson_provider.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/core/widgets/standard_button.dart';
 import 'package:photojam_app/core/services/log_service.dart';
 
@@ -187,7 +188,7 @@ Future<void> _addLesson() async {
         LogService.instance.info("- Total lessons: ${lessonTitles.length}");
         LogService.instance.info("- Latest lesson URL: ${file.id}");
         
-        _showSuccessSnackBar("Lesson added successfully");
+        SnackbarUtil.showSuccessSnackBar(context, "Lesson added successfully");
       }
     }
   } catch (e, stackTrace) {
@@ -195,7 +196,7 @@ Future<void> _addLesson() async {
     LogService.instance.error("Stack trace: $stackTrace");
     if (mounted) {
       setState(() => isLoading = false);
-      _showErrorSnackBar("Error adding lesson: $e");
+      SnackbarUtil.showErrorSnackBar(context, "Error adding lesson: $e");
     }
   }
 }
@@ -247,13 +248,13 @@ Future<void> _addLesson() async {
           hasUnsavedChanges = true;
           isLoading = false;
         });
-        _showSuccessSnackBar("Lesson deleted successfully");
+        SnackbarUtil.showSuccessSnackBar(context, "Lesson deleted successfully");
       }
     } catch (e) {
       LogService.instance.error("Error deleting lesson: $e");
       if (mounted) {
         setState(() => isLoading = false);
-        _showErrorSnackBar("Error deleting lesson: $e");
+        SnackbarUtil.showErrorSnackBar(context, "Error deleting lesson: $e");
       }
     }
   }
@@ -274,14 +275,14 @@ Future<void> _addLesson() async {
           hasUnsavedChanges = false;
           isLoading = false;
         });
-        _showSuccessSnackBar("Lessons updated successfully");
+        SnackbarUtil.showSuccessSnackBar(context, "Lessons updated successfully");
         Navigator.of(context).pop();
       }
     } catch (e) {
       LogService.instance.error("Error saving lessons: $e");
       if (mounted) {
         setState(() => isLoading = false);
-        _showErrorSnackBar("Error saving lessons: $e");
+        SnackbarUtil.showErrorSnackBar(context, "Error saving lessons: $e");
       }
     }
   }
@@ -312,22 +313,6 @@ Future<void> _addLesson() async {
     );
 
     return shouldDiscard ?? false;
-  }
-
-  void _showErrorSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: Colors.red,
-    ));
-  }
-
-  void _showSuccessSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: Colors.green,
-    ));
   }
 
   @override

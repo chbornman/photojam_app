@@ -7,9 +7,7 @@ import 'package:photojam_app/features/admin/collapsable_section.dart';
 import 'package:photojam_app/features/admin/content_management/widgets/lesson/set_current_lesson_card.dart';
 import 'package:photojam_app/features/admin/content_management/widgets/lesson/set_current_lesson_snippet_card.dart';
 import './add_lesson_card.dart';
-import './update_lesson_card.dart';
 import './delete_lesson_card.dart';
-import './update_journey_lessons_card.dart';
 
 class LessonSection extends ConsumerWidget {
   final void Function(bool) onLoading;
@@ -28,10 +26,6 @@ class LessonSection extends ConsumerWidget {
       color: AppConstants.photojamDarkGreen,
       children: [
         AddLessonCard(
-          onLoading: onLoading,
-          onMessage: onMessage,
-        ),
-        UpdateLessonCard(
           onLoading: onLoading,
           onMessage: onMessage,
         ),

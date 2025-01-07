@@ -1,6 +1,7 @@
 // lib/features/admin/content_management/dialogs/submission/delete_submission_dialog.dart
 
 import 'package:flutter/material.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
 
 class DeleteSubmissionDialog extends StatefulWidget {
@@ -22,9 +23,7 @@ class _DeleteSubmissionDialogState extends State<DeleteSubmissionDialog> {
 
   void _confirmDeletion() {
     if (_selectedSubmissionId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a submission to delete")),
-      );
+      SnackbarUtil.showCustomSnackBar(context, 'Please select a submission to delete', Colors.blue);
       return;
     }
 

@@ -3,23 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_providers.dart';
+import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
+import 'package:photojam_app/appwrite/database/models/submission_model.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
+import 'package:photojam_app/features/photos/photos_screen.dart';
+import 'package:photojam_app/features/photos/photoscroll_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/database/models/jam_model.dart';
 import 'package:photojam_app/appwrite/database/providers/submission_provider.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/services/log_service.dart';
-import 'package:photojam_app/core/services/photo_cache_service.dart';
 import 'package:photojam_app/core/widgets/standard_submissioncard.dart';
-
-// Provider for photo cache service
-final photoCacheServiceProvider = Provider<PhotoCacheService>((ref) {
-  return PhotoCacheService();
-});
 
 class JamDetailsPage extends ConsumerStatefulWidget {
   final Jam jam;
-  
+
   const JamDetailsPage({
     super.key,
     required this.jam,
@@ -32,11 +31,14 @@ class JamDetailsPage extends ConsumerStatefulWidget {
 class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
   bool _isLoading = true;
   List<Uint8List?> _photos = [];
+  List<Uint8List?> _selectedPhotos = [];
+  Submission? _submission;
 
   @override
   void initState() {
     super.initState();
     _loadSubmissionPhotos();
+    _loadSelectedPhotos();
   }
 
   Future<void> _loadSubmissionPhotos() async {
@@ -45,7 +47,6 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
     try {
       setState(() => _isLoading = true);
 
-      // Get current user from auth state
       final authState = ref.read(authStateProvider);
       final userId = authState.user?.id;
 
@@ -53,14 +54,13 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
         throw Exception("User not authenticated");
       }
 
-      LogService.instance.info('Fetching submission for user: $userId and jam: ${widget.jam.id}');
+      LogService.instance.info(
+          'Fetching submission for user: $userId and jam: ${widget.jam.id}');
 
-      // Get user's submission for this jam
       final submissionAsync = ref.read(userJamSubmissionProvider(
-        (userId: userId, jamId: widget.jam.id)
+        (userId: userId, jamId: widget.jam.id),
       ));
 
-      // Handle the AsyncValue state
       final submission = submissionAsync.when(
         data: (submission) => submission,
         loading: () => null,
@@ -77,32 +77,26 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
         return;
       }
 
-      // Get the photo cache service
       final photoCache = ref.read(photoCacheServiceProvider);
       final storageNotifier = ref.read(photoStorageProvider.notifier);
-      // Get auth repository to access session
       final authRepository = ref.read(authRepositoryProvider);
       final session = await authRepository.getCurrentSession();
 
-      // Load photos from storage using their IDs
       List<Uint8List?> loadedPhotos = [];
       for (final photoId in submission.photos) {
         if (!mounted) return;
 
         try {
           LogService.instance.info('Fetching photo with ID: $photoId');
-          
-          // Use PhotoCacheService to handle caching based on platform
           final photoData = await photoCache.getImage(
             photoId,
             session.$id,
             () => storageNotifier.downloadFile(photoId),
           );
-          
           loadedPhotos.add(photoData);
         } catch (e) {
           LogService.instance.error('Error loading photo $photoId: $e');
-          loadedPhotos.add(null); // Add null for failed photos
+          loadedPhotos.add(null);
         }
       }
 
@@ -113,11 +107,66 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
         });
       }
 
+      _submission = submission;
     } catch (e) {
       LogService.instance.error('Error loading submission photos: $e');
       if (mounted) {
-        _showErrorSnackBar('Failed to load photos');
+        SnackbarUtil.showErrorSnackBar(context, 'Failed to load photos');
         setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _loadSelectedPhotos() async {
+    if (!mounted) return;
+
+    try {
+      // Watch the userRole asynchronously
+      final userRoleAsync = ref.read(userRoleProvider);
+
+      // Check if the userRole is still loading or has an error
+      final userRole = await userRoleAsync.when(
+        data: (role) => role,
+        loading: () async {
+          LogService.instance.info('Waiting for user role to load...');
+          await Future.delayed(
+              const Duration(milliseconds: 100)); // Optional delay
+          throw Exception('User role is still loading.');
+        },
+        error: (error, stack) {
+          LogService.instance.error('Error fetching user role: $error');
+          throw Exception('Failed to fetch user role.');
+        },
+      );
+
+      // Only proceed for 'facilitator' or 'admin' roles
+      if (!["facilitator", "admin"].contains(userRole)) return;
+
+      final storageNotifier = ref.read(photoStorageProvider.notifier);
+
+      List<Uint8List?> loadedPhotos = [];
+      for (final photoId in widget.jam.selectedPhotosIds) {
+        try {
+          LogService.instance.info('Fetching selected photo with ID: $photoId');
+          final photoData = await storageNotifier.downloadFile(photoId);
+          loadedPhotos.add(photoData);
+        } catch (e) {
+          LogService.instance
+              .error('Error loading selected photo $photoId: $e');
+          loadedPhotos.add(null); // Add null if loading fails
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _selectedPhotos = loadedPhotos;
+        });
+      }
+    } catch (e) {
+      LogService.instance.error('Error loading selected photos: $e');
+      if (mounted) {
+        SnackbarUtil.showErrorSnackBar(
+            context, 'Failed to load selected photos');
       }
     }
   }
@@ -137,12 +186,16 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
   }
 
   Future<void> _addToGoogleCalendar() async {
-    final startDate = widget.jam.eventDatetime.toUtc().toIso8601String()
+    final startDate = widget.jam.eventDatetime
+        .toUtc()
+        .toIso8601String()
         .replaceAll('-', '')
         .replaceAll(':', '')
         .split('.')[0];
-    
-    final endDate = widget.jam.eventDatetime.add(const Duration(hours: 1)).toUtc()
+
+    final endDate = widget.jam.eventDatetime
+        .add(const Duration(hours: 1))
+        .toUtc()
         .toIso8601String()
         .replaceAll('-', '')
         .replaceAll(':', '')
@@ -181,8 +234,11 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final formattedDate = DateFormat('MMM dd, yyyy - hh:mm a')
-        .format(widget.jam.eventDatetime);
+    final formattedDate =
+        DateFormat('MMM dd, yyyy - hh:mm a').format(widget.jam.eventDatetime);
+
+    // Watch userRole provider
+    final userRoleAsync = ref.watch(userRoleProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.jam.title)),
@@ -190,15 +246,7 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.jam.title,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
             Row(
               children: [
                 Icon(Icons.calendar_today, color: Colors.grey[600]),
@@ -212,47 +260,128 @@ class _JamDetailsPageState extends ConsumerState<JamDetailsPage> {
               ],
             ),
             const SizedBox(height: 20),
-            if (_isLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (_photos.isNotEmpty)
-              SubmissionCard(
-                title: "Your submitted photos",
-                photoWidgets: [
-                  Row(
-                    children: _photos.map((photoData) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
-                          child: photoData != null
-                              ? Image.memory(
-                                  photoData,
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                )
-                              : Container(
-                                  width: 100,
-                                  height: 100,
-                                  color: theme.colorScheme.error,
-                                  child: Icon(
-                                    Icons.image_not_supported,
-                                    color: theme.colorScheme.onError,
+
+            // Handle loading, error, and data states for userRole
+            userRoleAsync.when(
+              data: (userRole) {
+                if (_isLoading)
+                  return const Center(child: CircularProgressIndicator());
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_photos.isNotEmpty && _submission != null)
+                      SubmissionCard(
+                        title: "Your Submitted Photos",
+                        photoWidgets: [
+                          Row(
+                            children: _photos.map((photoData) {
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    if (_submission != null) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => PhotoScrollPage(
+                                            submission: _submission!,
+                                          ),
+                                        ),
+                                      );
+                                    } else {
+                                      SnackbarUtil.showErrorSnackBar(context,
+                                          'Submission data is missing.');
+                                    }
+                                  },
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8.0),
+                                    child: photoData != null
+                                        ? Image.memory(
+                                            photoData,
+                                            width: 100,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Container(
+                                            width: 100,
+                                            height: 100,
+                                            color: theme.colorScheme.error,
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              color: theme.colorScheme.onError,
+                                            ),
+                                          ),
                                   ),
                                 ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      )
+                    else
+                      Center(
+                        child: Text(
+                          'No photos submitted yet',
+                          style: theme.textTheme.titleMedium,
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              )
-            else
-              Center(
-                child: Text(
-                  'No photos submitted yet',
-                  style: theme.textTheme.titleMedium,
-                ),
+                      ),
+                    const SizedBox(height: 20),
+
+                    // Selected Photos Section
+                    if (["facilitator", "admin"].contains(userRole))
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Selected Photos",
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          _selectedPhotos.isEmpty
+                              ? const Center(
+                                  child: Text('No selected photos available'),
+                                )
+                              : GridView.builder(
+                                  shrinkWrap: true,
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 4,
+                                    crossAxisSpacing: 8,
+                                    mainAxisSpacing: 8,
+                                    childAspectRatio: 1,
+                                  ),
+                                  itemCount: _selectedPhotos.length,
+                                  itemBuilder: (context, index) {
+                                    final photoData = _selectedPhotos[index];
+                                    return ClipRRect(
+                                      borderRadius: BorderRadius.circular(8.0),
+                                      child: photoData != null
+                                          ? Image.memory(
+                                              photoData,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Container(
+                                              color: theme.colorScheme.error,
+                                              child: Icon(
+                                                Icons.image_not_supported,
+                                                color:
+                                                    theme.colorScheme.onError,
+                                              ),
+                                            ),
+                                    );
+                                  },
+                                ),
+                        ],
+                      ),
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stack) => Center(
+                child: Text('Error loading user role: $error'),
               ),
+            ),
           ],
         ),
       ),

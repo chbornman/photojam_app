@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photojam_app/features/admin/jam_calendar_page.dart';
+import 'package:photojam_app/features/admin/facilitator_calendar_page.dart';
 import 'package:photojam_app/features/facilitator/jam_selection_dialog.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
 
@@ -25,11 +25,11 @@ class FacilitatorPage extends StatelessWidget {
           children: [
             StandardCard(
               icon: Icons.calendar_month,
-              title: 'Jam Calendar',
+              title: 'Facilitator Calendar',
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => JamCalendarPage()),
+                  MaterialPageRoute(builder: (context) => FacilitatorCalendarPage()),
                 );
               },
             ),

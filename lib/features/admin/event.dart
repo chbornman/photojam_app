@@ -1,6 +1,6 @@
 // lib/features/admin/screens/jam_event.dart
 
-class JamEvent {
+class Event {
   final String id;
   final String title;
   final DateTime dateTime;
@@ -9,7 +9,7 @@ class JamEvent {
   final String? zoomLink;
   final List<String> selectedPhotosIds;
 
-  const JamEvent({
+  const Event({
     required this.id,
     required this.title,
     required this.dateTime,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/core/widgets/standard_button.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
 
@@ -32,9 +33,7 @@ class _DeleteJamDialogState extends State<DeleteJamDialog> {
 
   void _confirmDeletion() {
     if (_selectedJamId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Please select a jam to delete.")),
-      );
+      SnackbarUtil.showCustomSnackBar(context, 'Please select a jam to delete.', Colors.blue);
       return;
     }
 

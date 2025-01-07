@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photojam_app/appwrite/database/models/journey_model.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/utils/markdownviewer.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/features/journeys/journeycontainer.dart';
 
 class JourneyTile extends ConsumerWidget {
@@ -52,9 +53,7 @@ class JourneyTile extends ConsumerWidget {
         ),
       );
     } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading lesson: $error')),
-      );
+      SnackbarUtil.showErrorSnackBar(context, 'Error loading lesson: $error');
     }
   }
 }

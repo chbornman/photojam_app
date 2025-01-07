@@ -7,6 +7,7 @@ import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
 import 'package:photojam_app/config/app_theme.dart';
 import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/error_screen.dart';
 import 'package:photojam_app/features/auth/login_screen.dart';
 import 'package:photojam_app/app.dart';
@@ -49,7 +50,7 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     // Handle initial URI if the app was launched from a link
     try {
-      final initialUri = await _appLinks.getInitialAppLink();
+      final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null && mounted) {
         LogService.instance.info("Processing initial deep link: $initialUri");
         await _handleDeepLink(initialUri);
@@ -88,12 +89,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         } catch (e) {
           LogService.instance.error("Membership verification failed: $e");
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Verification failed: ${e.toString()}'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            SnackbarUtil.showErrorSnackBar(context, 'Verification failed: ${e.toString()}');
           }
         }
       } else {

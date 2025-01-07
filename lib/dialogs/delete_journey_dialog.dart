@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/core/widgets/standard_button.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
 
@@ -34,9 +35,7 @@ class _DeleteJourneyDialogState extends State<DeleteJourneyDialog> {
 
   void _confirmDeletion() {
     if (_selectedJourneyId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Please select a journey to delete.")),
-      );
+      SnackbarUtil.showCustomSnackBar(context, 'Please select a journey to delete.', Colors.blue);
       return;
     }
 

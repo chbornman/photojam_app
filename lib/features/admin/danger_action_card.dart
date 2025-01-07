@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/core/widgets/standard_card.dart';
 
 class DangerActionCard extends StatefulWidget {
@@ -35,32 +36,16 @@ class _DangerActionCardState extends State<DangerActionCard> {
             isUnlocked = !isUnlocked;
           });
           if (!isUnlocked) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Action locked'),
-                duration: Duration(seconds: 1),
-              ),
-            );
+            SnackbarUtil.showCustomSnackBar(context, 'Action locked', Colors.blue);
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Warning: Dangerous action unlocked'),
-                backgroundColor: Colors.red,
-                duration: Duration(seconds: 2),
-              ),
-            );
+            SnackbarUtil.showCustomSnackBar(context, 'Warning: Dangerous action unlocked', Colors.orange);
           }
         },
       ),
       onTap: isUnlocked
           ? widget.onTap
           : () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Unlock this action first'),
-                  duration: Duration(seconds: 1),
-                ),
-              );
+            SnackbarUtil.showCustomSnackBar(context, 'Unlock this action first', Colors.blue);
             },
     );
   }

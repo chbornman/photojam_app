@@ -11,6 +11,7 @@ import 'package:photojam_app/appwrite/database/providers/submission_provider.dar
 import 'package:photojam_app/appwrite/storage/models/storage_types.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:photojam_app/core/widgets/standard_dialog.dart';
 import 'package:photojam_app/core/widgets/standard_button.dart';
 import 'package:photojam_app/features/jams/photo_upload_service.dart';
@@ -18,7 +19,9 @@ import 'package:photojam_app/features/jams/photo_selector.dart';
 import 'package:photojam_app/features/photos/photos_screen.dart';
 
 class JamSignupPage extends ConsumerStatefulWidget {
-  const JamSignupPage({super.key});
+  final Jam? jam;
+
+  const JamSignupPage({super.key, this.jam});
 
   @override
   ConsumerState<JamSignupPage> createState() => _JamSignupPageState();
@@ -53,7 +56,11 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
   void _initializeServices() {
     final storageRepository = ref.read(storageRepositoryProvider);
     _photoUploadService = PhotoUploadService(storageRepository);
-    _fetchJams();
+    if (widget.jam == null) {
+      _fetchJams();
+    } else {
+      _selectedJamId = widget.jam!.id;
+    }
   }
 
   Future<void> _fetchJams() async {
@@ -65,11 +72,12 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
           if (!mounted) return;
           setState(() => _jams = jams);
         },
-        orElse: () => _showErrorSnackBar('Failed to load jams'),
+        orElse: () =>
+            SnackbarUtil.showErrorSnackBar(context, 'Failed to load jams'),
       );
     } catch (e) {
       LogService.instance.error('Unexpected error fetching jams: $e');
-      _showErrorSnackBar('Unexpected error occurred');
+      SnackbarUtil.showErrorSnackBar(context, 'Unexpected error occurred');
     }
   }
 
@@ -94,7 +102,7 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
       setState(() => _photos[index] = file);
     } catch (e) {
       LogService.instance.error('Error selecting photo: $e');
-      _showErrorSnackBar('Failed to select photo');
+      SnackbarUtil.showErrorSnackBar(context, 'Failed to select photo');
     }
   }
 
@@ -105,11 +113,6 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
   Future<void> _handleSubmit() async {
     if (_selectedJamId == null) {
       await _showNoJamSelectedDialog();
-      return;
-    }
-
-    if (_photos.every((photo) => photo == null)) {
-      await _handleEmptySubmission();
       return;
     }
 
@@ -146,7 +149,7 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
     } catch (e) {
       LogService.instance.error("Error during submission: $e");
       if (!mounted) return;
-      _showErrorSnackBar('Failed to submit photos');
+      SnackbarUtil.showErrorSnackBar(context, 'Failed to submit photos');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -154,7 +157,8 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
 
   Future<void> _submitPhotos(
       String userId, Submission? existingSubmission) async {
-    final selectedJam = _jams.firstWhere((jam) => jam.id == _selectedJamId);
+    final selectedJam =
+        widget.jam ?? _jams.firstWhere((jam) => jam.id == _selectedJamId);
 
     final photoUrls = await _photoUploadService.uploadPhotos(
       photos: _photos,
@@ -184,63 +188,18 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
     }
   }
 
-  Future<void> _handleEmptySubmission() async {
-    final shouldDelete = await _showDeleteConfirmationDialog();
-    if (shouldDelete) {
-      await _deleteExistingSubmission();
-    }
-  }
-
-  Future<void> _deleteExistingSubmission() async {
-    if (_selectedJamId == null) return;
-
-    try {
-      final userId = authState.user?.id;
-      if (userId == null) throw Exception('User not authenticated');
-
-      final submissionRepository = ref.read(submissionRepositoryProvider);
-      final existingSubmission =
-          await submissionRepository.getUserSubmissionForJam(
-        _selectedJamId!,
-        userId,
-      );
-
-      if (existingSubmission != null) {
-        // Pass Submission directly, no need for toDocument()
-        await _photoUploadService.deleteSubmissionPhotos(existingSubmission);
-        await submissionRepository.deleteSubmission(existingSubmission.id);
-      }
-
-      if (!mounted) return;
-      Navigator.pop(context);
-    } catch (e) {
-      LogService.instance.error('Error deleting submission: $e');
-      _showErrorSnackBar('Failed to delete submission');
-    }
-  }
-
   bool _validateSubmission() {
     if (!authState.isAuthenticated || authState.user?.id == null) {
-      _showErrorSnackBar('User not authenticated');
+      SnackbarUtil.showErrorSnackBar(context, 'User not authenticated');
       return false;
     }
 
     if (_selectedJamId == null) {
-      _showErrorSnackBar('Please select a jam event');
+      SnackbarUtil.showErrorSnackBar(context, 'Please select a jam event');
       return false;
     }
 
     return true;
-  }
-
-  void _showErrorSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error,
-      ),
-    );
   }
 
   Future<void> _showDialog({
@@ -322,39 +281,37 @@ class _JamSignupPageState extends ConsumerState<JamSignupPage> {
     );
   }
 
-void _onSubmissionSuccess(BuildContext context, WidgetRef ref) {
-  // Invalidate photo-related providers
-  ref.invalidate(photoCacheServiceProvider);
-  ref.invalidate(photosControllerProvider);
+  void _onSubmissionSuccess(BuildContext context, WidgetRef ref) {
+    ref.invalidate(photoCacheServiceProvider);
+    ref.invalidate(photosControllerProvider);
 
-  // Optionally invalidate user-related submissions
-  final authState = ref.read(authStateProvider);
-  authState.maybeWhen(
-    authenticated: (user) => ref.invalidate(userSubmissionsProvider(user.id)),
-    orElse: () {},
-  );
+    final authState = ref.read(authStateProvider);
+    authState.maybeWhen(
+      authenticated: (user) => ref.invalidate(userSubmissionsProvider(user.id)),
+      orElse: () {},
+    );
 
-  // Navigate back or show a confirmation
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Jam updated successfully!')),
-  );
-}
-
+    SnackbarUtil.showSuccessSnackBar(context, 'Jam updated successfully!');
+  }
 
   Widget _buildJamDropdown() {
+    if (widget.jam != null) return const SizedBox.shrink();
+
     return DropdownButtonFormField<String>(
       value: _selectedJamId,
       hint: const Text('Select a Jam'),
       items: _jams.map((jam) {
         return DropdownMenuItem(
           value: jam.id,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 jam.title,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
+
               Text(
                 DateFormat('MMMM dd, yyyy – h:mm a').format(jam.eventDatetime),
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
@@ -389,8 +346,7 @@ void _onSubmissionSuccess(BuildContext context, WidgetRef ref) {
   }
 
   Widget _buildSubmitButton() {
-    final bool isDisabled = _selectedJamId == null ||
-        _jams.isEmpty ||
+    final bool isDisabled = _selectedJamId == null && widget.jam == null ||
         _photos.every((photo) => photo == null);
 
     return StandardButton(
@@ -413,7 +369,20 @@ void _onSubmissionSuccess(BuildContext context, WidgetRef ref) {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildJamDropdown(),
+                if (widget.jam != null) ...[
+                  Text(
+                    "Signing up for: ${widget.jam!.title}",
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  Text(
+                    DateFormat('MMMM dd, yyyy – h:mm a')
+                        .format(widget.jam!.eventDatetime),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ] else
+                  _buildJamDropdown(),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

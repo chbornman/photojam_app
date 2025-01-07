@@ -1,15 +1,13 @@
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photojam_app/appwrite/database/models/submission_model.dart';
-import 'package:photojam_app/appwrite/database/models/jam_model.dart';
 import 'package:photojam_app/appwrite/database/providers/jam_provider.dart';
 import 'package:photojam_app/appwrite/storage/providers/storage_providers.dart';
 import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 import 'package:share_plus/share_plus.dart';
 
 class PhotoScrollPage extends ConsumerWidget {
@@ -43,9 +41,7 @@ class PhotoScrollPage extends ConsumerWidget {
       await Share.shareXFiles([XFile(file.path)], text: 'Check out my PhotoJam submission!');
     } catch (e) {
       LogService.instance.error("Error sharing photo: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error sharing photo.')),
-      );
+      SnackbarUtil.showErrorSnackBar(context, 'Error sharing photo.');
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:photojam_app/appwrite/auth/providers/auth_state_provider.dart';
 import 'package:photojam_app/appwrite/auth/providers/user_role_provider.dart';
 import 'package:photojam_app/appwrite/database/providers/journey_provider.dart';
 import 'package:photojam_app/core/services/log_service.dart';
+import 'package:photojam_app/core/utils/snackbar_util.dart';
 
 class SignUpJourneyDialog extends ConsumerStatefulWidget {
   final Function(String) onSignUp;
@@ -14,7 +15,8 @@ class SignUpJourneyDialog extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<SignUpJourneyDialog> createState() => _SignUpJourneyDialogState();
+  ConsumerState<SignUpJourneyDialog> createState() =>
+      _SignUpJourneyDialogState();
 }
 
 class _SignUpJourneyDialogState extends ConsumerState<SignUpJourneyDialog> {
@@ -41,7 +43,7 @@ class _SignUpJourneyDialogState extends ConsumerState<SignUpJourneyDialog> {
 
           // Load journeys
           await ref.read(journeysProvider.notifier).loadJourneys();
-          
+
           if (mounted) {
             setState(() => isLoading = false);
           }
@@ -57,10 +59,7 @@ class _SignUpJourneyDialogState extends ConsumerState<SignUpJourneyDialog> {
     if (!mounted) return;
 
     setState(() => isLoading = false);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    SnackbarUtil.showErrorSnackBar(context, message);
     Navigator.of(context).pop();
   }
 
@@ -94,7 +93,7 @@ class _SignUpJourneyDialogState extends ConsumerState<SignUpJourneyDialog> {
     // Watch all journeys and user's journeys
     final journeysAsync = ref.watch(journeysProvider);
     final authState = ref.watch(authStateProvider);
-    
+
     return journeysAsync.when(
       data: (allJourneys) {
         // Get user's existing journey IDs
@@ -106,13 +105,14 @@ class _SignUpJourneyDialogState extends ConsumerState<SignUpJourneyDialog> {
 
         // Filter available journeys
         final availableJourneys = userJourneys?.whenOrNull(
-          data: (userJourneyList) {
-            final userJourneyIds = userJourneyList.map((j) => j.id).toSet();
-            return allJourneys
-                .where((journey) => !userJourneyIds.contains(journey.id))
-                .toList();
-          },
-        ) ?? allJourneys;
+              data: (userJourneyList) {
+                final userJourneyIds = userJourneyList.map((j) => j.id).toSet();
+                return allJourneys
+                    .where((journey) => !userJourneyIds.contains(journey.id))
+                    .toList();
+              },
+            ) ??
+            allJourneys;
 
         if (availableJourneys.isEmpty) {
           return AlertDialog(

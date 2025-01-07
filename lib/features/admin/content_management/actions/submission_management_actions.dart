@@ -6,7 +6,6 @@ import 'package:photojam_app/dialogs/delete_submission_dialog.dart';
 import 'package:photojam_app/dialogs/update_submission_dialog.dart';
 
 class SubmissionManagementActions {
-
   static Future<void> fetchAndOpenUpdateSubmissionDialog({
     required BuildContext context,
     required WidgetRef ref,
@@ -28,10 +27,10 @@ class SubmissionManagementActions {
           }
 
           final submissionMap = {
-            for (var sub in submissions) 
+            for (var sub in submissions)
               '${sub.jamId} - ${sub.dateCreation.toString()}': sub.id
           };
-          
+
           LogService.instance.info('Found ${submissions.length} submissions');
 
           _openSubmissionSelectionDialog(
@@ -49,7 +48,8 @@ class SubmissionManagementActions {
         },
       );
     } catch (e) {
-      LogService.instance.error('Error in fetchAndOpenUpdateSubmissionDialog: $e');
+      LogService.instance
+          .error('Error in fetchAndOpenUpdateSubmissionDialog: $e');
       onMessage("Error fetching submissions", isError: true);
     } finally {
       onLoading(false);
@@ -71,19 +71,29 @@ class SubmissionManagementActions {
         data: (submissions) {
           if (!context.mounted) return;
 
+          if (submissions.isEmpty) {
+            // Show snackbar if no submissions are available
+            onMessage("No submissions available to delete", isError: true);
+            return;
+          }
+
           final submissionMap = {
             for (var sub in submissions)
               '${sub.jamId} - ${sub.dateCreation.toString()}': sub.id
           };
 
+          // Show delete dialog only if submissions are available
           showDialog(
             context: context,
             builder: (context) => DeleteSubmissionDialog(
               submissionMap: submissionMap,
               onSubmissionDeleted: (submissionId) async {
                 try {
-                  LogService.instance.info('Deleting submission: $submissionId');
-                  await ref.read(submissionsProvider.notifier).deleteSubmission(submissionId);
+                  LogService.instance
+                      .info('Deleting submission: $submissionId');
+                  await ref
+                      .read(submissionsProvider.notifier)
+                      .deleteSubmission(submissionId);
                   onMessage("Submission deleted successfully");
                 } catch (e) {
                   LogService.instance.error('Error deleting submission: $e');
@@ -100,7 +110,8 @@ class SubmissionManagementActions {
         },
       );
     } catch (e) {
-      LogService.instance.error('Error in fetchAndOpenDeleteSubmissionDialog: $e');
+      LogService.instance
+          .error('Error in fetchAndOpenDeleteSubmissionDialog: $e');
       onMessage("Error fetching submissions", isError: true);
     } finally {
       onLoading(false);
@@ -115,7 +126,7 @@ class SubmissionManagementActions {
     required Function(String, {bool isError}) onMessage,
   }) {
     String? selectedId;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -169,39 +180,42 @@ class SubmissionManagementActions {
     Navigator.of(context).pop();
 
     ref.read(submissionByIdProvider(submissionId)).when(
-      data: (submission) {
-        if (submission == null) {
-          LogService.instance.error('Submission not found: $submissionId');
-          onMessage("Submission not found", isError: true);
-          return;
-        }
+          data: (submission) {
+            if (submission == null) {
+              LogService.instance.error('Submission not found: $submissionId');
+              onMessage("Submission not found", isError: true);
+              return;
+            }
 
-        showDialog(
-          context: context,
-          builder: (context) => UpdateSubmissionDialog(
-            submission: submission,
-            onSubmissionUpdated: (updatedData) async {
-              try {
-                LogService.instance.info('Updating submission with data: $updatedData');
-                await ref.read(submissionsProvider.notifier).updateSubmission(
-                  submissionId: submissionId,
-                  photos: updatedData['photos'],
-                  comment: updatedData['comment'],
-                );
-                onMessage("Submission updated successfully");
-              } catch (e) {
-                LogService.instance.error('Error updating submission: $e');
-                onMessage("Error updating submission: $e", isError: true);
-              }
-            },
-          ),
+            showDialog(
+              context: context,
+              builder: (context) => UpdateSubmissionDialog(
+                submission: submission,
+                onSubmissionUpdated: (updatedData) async {
+                  try {
+                    LogService.instance
+                        .info('Updating submission with data: $updatedData');
+                    await ref
+                        .read(submissionsProvider.notifier)
+                        .updateSubmission(
+                          submissionId: submissionId,
+                          photos: updatedData['photos'],
+                          comment: updatedData['comment'],
+                        );
+                    onMessage("Submission updated successfully");
+                  } catch (e) {
+                    LogService.instance.error('Error updating submission: $e');
+                    onMessage("Error updating submission: $e", isError: true);
+                  }
+                },
+              ),
+            );
+          },
+          loading: () => onLoading(true),
+          error: (error, stack) {
+            LogService.instance.error('Error fetching submission: $error');
+            onMessage("Error fetching submission details", isError: true);
+          },
         );
-      },
-      loading: () => onLoading(true),
-      error: (error, stack) {
-        LogService.instance.error('Error fetching submission: $error');
-        onMessage("Error fetching submission details", isError: true);
-      },
-    );
   }
 }
