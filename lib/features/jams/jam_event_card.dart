@@ -38,7 +38,7 @@ class JamEventCard extends StatelessWidget {
         contentPadding: const EdgeInsets.all(16.0),
         title: Text(
           jamEvent.jam.title,
-          style: theme.textTheme.titleMedium
+          style: theme.textTheme.titleLarge
               ?.copyWith(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(

@@ -114,7 +114,7 @@ class _JamCalendarPageState extends ConsumerState<JamCalendarPage> {
                     lastDay: DateTime.now().add(const Duration(days: 365)),
                     focusedDay: _focusedDay,
                     selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                    calendarFormat: CalendarFormat.week,
+                    calendarFormat: CalendarFormat.month,
                     eventLoader: (day) => _getEventsForDay(day, events),
                     startingDayOfWeek: StartingDayOfWeek.sunday,
                     calendarStyle: CalendarStyle(
